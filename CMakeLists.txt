@@ -8,7 +8,7 @@ include(cmake/utils.cmake)
 ###############################################################################
 # PROJECT SETUP
 ###############################################################################
-project(SimpleCProject LANGUAGES C)
+project(DangCompiler LANGUAGES C)
 include_directories(include src extern)
 include(cmake/configs.cmake)
 add_subdirectory(tests)
@@ -16,24 +16,23 @@ add_subdirectory(tests)
 ###############################################################################
 # EXECUTABLE TARGETS
 ###############################################################################
-add_executable(main_exe_file 
+add_executable(dang 
     src/main.c
-    src/math_utils.c
 )
 
-define_macro_option(main_exe_file PRINT_GREETINGS ON)
+# define_macro_option(dang PRINT_GREETINGS ON)
 
 ###############################################################################
 # PRE BUILD TESTS
 ###############################################################################
 
-enable_pre_build_testing(main_exe_file all_tests)
+# enable_pre_build_testing(dang all_tests)
 
 ###############################################################################
 # POST BUILD FILE COPIES
 ###############################################################################
-set(FILES_TO_COPY
-    "${CMAKE_SOURCE_DIR}/LICENSE"
-)
+# set(FILES_TO_COPY
+#     "${CMAKE_SOURCE_DIR}/LICENSE"
+# )
 
-define_post_built_copy(main_exe_file "" ${FILES_TO_COPY})
+# define_post_built_copy(dang "" ${FILES_TO_COPY})

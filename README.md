@@ -21,17 +21,7 @@ The idea behind `dang` is to implement a simple programming language which:
 
 ## CMake Configuration Options
 
-- `dang_ENABLE_NAN_BOXING` -> `ON` by default
-- `dang_ENABLE_DEBUG_PRINT_CODE` -> `OFF` by default
-- `dang_ENABLE_DEBUG_TRACE_EXECUTION` -> `OFF` by default
-- `dang_ENABLE_DEBUG_STRESS_GC` -> `ON` by default
-- `dang_ENABLE_DEBUG_LOG_GC` -> `OFF` by default
-
-- `dang_dbg_ENABLE_NAN_BOXING` -> `ON` by default
-- `dang_dbg_ENABLE_DEBUG_PRINT_CODE` -> `ON` by default
-- `dang_dbg_ENABLE_DEBUG_TRACE_EXECUTION` -> `ON` by default
-- `dang_dbg_ENABLE_DEBUG_STRESS_GC` -> `ON` by default
-- `dang_dbg_ENABLE_DEBUG_LOG_GC` -> `OFF` by default
+...
 
 ## License
 
