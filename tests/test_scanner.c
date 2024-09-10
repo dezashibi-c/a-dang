@@ -56,5 +56,7 @@ CLOVE_TEST(ScannerKnowsBasicSigns)
                  "Expected %zu tokens but got=%zu", dc_len(tests),
                  s.tokens.count);
 
+    scanner_free(&s);
+
     CLOVE_PASS();
 }

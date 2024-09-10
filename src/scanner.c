@@ -45,6 +45,11 @@ void scanner_init(Scanner* s, const string input)
     read_char(s);
 }
 
+void scanner_free(Scanner* s)
+{
+    dc_dynarr_free(&s->tokens);
+}
+
 Token* scanner_next_token(Scanner* s)
 {
     Token* token;

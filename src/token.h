@@ -41,31 +41,7 @@ typedef struct
     string text;
 } Token;
 
-static string tostr_TokenType(TokenType enum_item)
-{
-    {
-        switch (enum_item)
-        {
-            tostr_enum_scase(TOK_ILLEGAL);
-            tostr_enum_scase(TOK_EOF);
-            tostr_enum_scase(TOK_IDENT);
-            tostr_enum_scase(TOK_INT);
-            tostr_enum_scase(TOK_ASSIGN);
-            tostr_enum_scase(TOK_PLUS);
-            tostr_enum_scase(TOK_COMMA);
-            tostr_enum_scase(TOK_SEMICOLON);
-            tostr_enum_scase(TOK_NEWLINE);
-            tostr_enum_scase(TOK_LPAREN);
-            tostr_enum_scase(TOK_RPAREN);
-            tostr_enum_scase(TOK_LBRACE);
-            tostr_enum_scase(TOK_RBRACE);
-            tostr_enum_scase(TOK_FUNCTION);
-            tostr_enum_scase(TOK_LET);
-        };
-
-        return NULL;
-    }
-}
+string tostr_TokenType(TokenType enum_item);
 
 Token* token_make(TokenType type);
 Token* token_make_from_char(TokenType type, byte c);

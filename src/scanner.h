@@ -31,6 +31,7 @@ typedef struct
 } Scanner;
 
 void scanner_init(Scanner* s, const string input);
+void scanner_free(Scanner* s);
 Token* scanner_next_token(Scanner* s);
 
 #endif // DANG_SCANNER_H
