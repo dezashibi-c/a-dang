@@ -12,7 +12,7 @@ typedef struct
     const string text;
 } TestExpectedResult;
 
-CLOVE_TEST(ScannerWorksAsExpected)
+CLOVE_TEST(ScannerKnowsBasicSigns)
 {
     const string input = "=+(){},;\n";
 
