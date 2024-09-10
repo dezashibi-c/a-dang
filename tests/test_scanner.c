@@ -52,8 +52,8 @@ CLOVE_TEST(ScannerKnowsBasicSigns)
         ++i;
     }
 
-    dc_halt_when(dc_count(tests) - 1 != s.tokens.count, CLOVE_FAIL(),
-                 "Expected %zu tokens but got=%zu", dc_count(tests) - 1,
+    dc_halt_when(dc_len(tests) != s.tokens.count, CLOVE_FAIL(),
+                 "Expected %zu tokens but got=%zu", dc_len(tests),
                  s.tokens.count);
 
     CLOVE_PASS();
