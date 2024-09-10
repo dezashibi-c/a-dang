@@ -17,23 +17,42 @@
 #ifndef DC_MAIN_HEADER_H
 #define DC_MAIN_HEADER_H
 
-#include <limits.h>
-#include <math.h>
-#include <memory.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#define __DC_BYPASS_PRIVATE_PROTECTION
 
-#define __DC_BYPASS_PRIVATE_HEADER_PROTECTION
+#include "_headers/general.h"
 
 #include "_headers/aliases.h"
 
 #include "_headers/macros.h"
 
+// ***************************************************************************************
+// * FUNCTION DECLARATIONS
+// ***************************************************************************************
+
+void dc_dynarr_init(DCDynArr* darr);
+void dc_dynarr_init_with_values(DCDynArr* darr, usize count, ...);
+void dc_dynarr_add(DCDynArr* darr, DCDynValue value);
+DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el);
+void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(void*));
+void dc_dynarr_free(DCDynArr* darr);
+void dc_dynarr_delete(DCDynArr* darr, usize index, void (*custom_free)(void*));
+
+// ***************************************************************************************
+// * IMPLEMENTATION LOADING
+// ***************************************************************************************
+
+#ifdef DCOMMON_IMPL
+
 FILE* dc_error_logs = NULL;
 DC_ERROR_MODE dc_error_mode = DC_ERR_MODE_NORMAL;
+
+#include "_dynarr.c"
+
+#else
+
+extern FILE* dc_error_logs;
+extern DC_ERROR_MODE dc_error_mode;
+
+#endif
 
 #endif // DC_MAIN_HEADER_H

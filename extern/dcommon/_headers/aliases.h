@@ -18,7 +18,7 @@
 #ifndef DC_ALIASES_H
 #define DC_ALIASES_H
 
-#ifndef __DC_BYPASS_PRIVATE_HEADER_PROTECTION
+#ifndef __DC_BYPASS_PRIVATE_PROTECTION
 #error                                                                         \
     "You cannot use this header (aliases.h) directly, please consider including dcommon.h"
 #endif
@@ -44,6 +44,8 @@ typedef size_t usize;
 
 typedef byte* string;
 
+typedef void* voidptr;
+
 typedef enum
 {
     DC_ERR_MODE_NORMAL,
@@ -60,7 +62,7 @@ typedef enum
 
 #define DC_ARR_TERMINATOR_uptr (uptr) NULL
 #define DC_ARR_TERMINATOR_string NULL
-#define DC_ARR_TERMINATOR_PTR NULL
+#define DC_ARR_TERMINATOR_VOIDPTR NULL
 
 #define DC_ARR_TERMINATOR_byte '\0'
 
@@ -78,11 +80,52 @@ typedef enum
 
 #define DC_IS_ARR_TERMINATOR_uptr(EL) (EL == DC_ARR_TERMINATOR_uptr)
 #define DC_IS_ARR_TERMINATOR_string(EL) (EL == DC_ARR_TERMINATOR_string)
-#define DC_IS_ARR_TERMINATOR_PTR(EL) (EL == DC_ARR_TERMINATOR_PTR)
+#define DC_IS_ARR_TERMINATOR_PTR(EL) (EL == DC_ARR_TERMINATOR_VOIDPTR)
 
 #define DC_IS_ARR_TERMINATOR_byte(EL) (EL == DC_ARR_TERMINATOR_byte)
 
 #define DC_IS_ARR_TERMINATOR_size(EL) (EL == DC_ARR_TERMINATOR_size)
 #define DC_IS_ARR_TERMINATOR_usize(EL) (EL == DC_ARR_TERMINATOR_usize)
+
+// Dynamic Array
+
+typedef enum
+{
+    DC_DYN_VAL_TYPE_u8,
+    DC_DYN_VAL_TYPE_i32,
+    DC_DYN_VAL_TYPE_u32,
+    DC_DYN_VAL_TYPE_u64,
+    DC_DYN_VAL_TYPE_f32,
+    DC_DYN_VAL_TYPE_f64,
+    DC_DYN_VAL_TYPE_uptr,
+    DC_DYN_VAL_TYPE_byte,
+    DC_DYN_VAL_TYPE_string,
+    DC_DYN_VAL_TYPE_voidptr,
+} DCDynValueType;
+
+typedef struct
+{
+    DCDynValueType type;
+    union
+    {
+        u8 u8_val;
+        i32 i32_val;
+        u32 u32_val;
+        u64 u64_val;
+        f32 f32_val;
+        f64 f64_val;
+        uptr uptr_val;
+        byte byte_val;
+        string string_val;
+        void* voidptr_val;
+    } value;
+} DCDynValue;
+
+typedef struct
+{
+    DCDynValue* elements;
+    usize cap;
+    usize count;
+} DCDynArr;
 
 #endif // DC_ALIASES_H
