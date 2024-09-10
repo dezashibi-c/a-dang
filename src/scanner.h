@@ -1,6 +1,6 @@
 // ***************************************************************************************
 //    Project: Dang Compiler -> https://github.com/dezashibi-c/dang
-//    File: main.c
+//    File: scanner.h
 //    Date: 2024-09-10
 //    Author: Navid Dezashibi
 //    Contact: navid@dezashibi.com
@@ -11,14 +11,26 @@
 //     or concerns, please feel free to contact me at the email address provided
 //     above.
 // ***************************************************************************************
-// *  Description:
+// *  Description: Scanner struct and related functionalities
 // ***************************************************************************************
 
-#include <stdio.h>
+#ifndef DANG_SCANNER_H
+#define DANG_SCANNER_H
 
-int main(void)
+#include "dcommon/dcommon.h"
+
+#include "token.h"
+
+typedef struct
 {
-    puts("Hey There");
+    string input;
+    usize pos;
+    usize read_pos;
+    byte c;
+    DCDynArr tokens;
+} Scanner;
 
-    return 0;
-}
+void scanner_init(Scanner* s, const string input);
+Token* scanner_next_token(Scanner* s);
+
+#endif // DANG_SCANNER_H

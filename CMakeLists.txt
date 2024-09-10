@@ -26,7 +26,7 @@ add_executable(dang
 # PRE BUILD TESTS
 ###############################################################################
 
-# enable_pre_build_testing(dang all_tests)
+enable_pre_build_testing(dang all_tests)
 
 ###############################################################################
 # POST BUILD FILE COPIES
