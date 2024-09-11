@@ -12,6 +12,41 @@ typedef struct
     const string text;
 } TestExpectedResult;
 
+static bool perform_scanner_test(const string input, usize number_of_tests,
+                                 TestExpectedResult tests[])
+{
+    Scanner s;
+    scanner_init(&s, input);
+
+    u8 i = 0;
+    dc_sforeach(tests, TestExpectedResult, expected_result,
+                expected_result->type != TOK_EOF)
+    {
+        Token* token = scanner_next_token(&s);
+
+        dc_halt_when(
+            expected_result->type != token->type, return false,
+            "Bad result on token [%d], expected type='%s' but got='%s'", i,
+            tostr_TokenType(expected_result->type),
+            tostr_TokenType(token->type));
+
+        dc_halt_when(
+            strcmp(expected_result->text, token->text) != 0, return false,
+            "Bad result on token [%d], expected text='%s' but got='%s'", i,
+            expected_result->text, token->text);
+
+        ++i;
+    }
+
+    dc_halt_when(number_of_tests != s.tokens.count, return false,
+                 "Expected %zu tokens but got=%zu", number_of_tests,
+                 s.tokens.count);
+
+    scanner_free(&s);
+
+    return true;
+}
+
 CLOVE_TEST(ScannerKnowsBasicSigns)
 {
     const string input = "=+(){},;\n";
@@ -29,34 +64,5 @@ CLOVE_TEST(ScannerKnowsBasicSigns)
         {.type = TOK_EOF, .text = ""},
     };
 
-    Scanner s;
-    scanner_init(&s, input);
-
-    u8 i = 0;
-    dc_sforeach(tests, TestExpectedResult, expected_result,
-                expected_result->type != TOK_EOF)
-    {
-        Token* token = scanner_next_token(&s);
-
-        dc_halt_when(
-            expected_result->type != token->type, CLOVE_FAIL(),
-            "Bad result on token [%d], expected type='%s' but got='%s'", i,
-            tostr_TokenType(expected_result->type),
-            tostr_TokenType(token->type));
-
-        dc_halt_when(
-            strcmp(expected_result->text, token->text) != 0, CLOVE_FAIL(),
-            "Bad result on token [%d], expected text='%s' but got='%s'", i,
-            expected_result->text, token->text);
-
-        ++i;
-    }
-
-    dc_halt_when(dc_len(tests) != s.tokens.count, CLOVE_FAIL(),
-                 "Expected %zu tokens but got=%zu", dc_len(tests),
-                 s.tokens.count);
-
-    scanner_free(&s);
-
-    CLOVE_PASS();
+    if (!perform_scanner_test(input, dc_len(tests), tests)) CLOVE_FAIL();
 }
