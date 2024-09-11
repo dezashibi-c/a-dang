@@ -62,12 +62,12 @@ typedef enum
 
 #define DC_ARR_TERMINATOR_uptr (uptr) NULL
 #define DC_ARR_TERMINATOR_string NULL
-#define DC_ARR_TERMINATOR_VOIDPTR NULL
+#define DC_ARR_TERMINATOR_voidptr NULL
 
 #define DC_ARR_TERMINATOR_byte '\0'
 
-#define DC_ARR_TERMINATOR_size (size) - 1
-#define DC_ARR_TERMINATOR_usize (usize) - 1
+#define DC_ARR_TERMINATOR_size -1
+#define DC_ARR_TERMINATOR_usize SIZE_MAX
 
 // Terminator checks for each type
 #define DC_IS_ARR_TERMINATOR_u8(EL) (EL == DC_ARR_TERMINATOR_u8)
@@ -80,7 +80,7 @@ typedef enum
 
 #define DC_IS_ARR_TERMINATOR_uptr(EL) (EL == DC_ARR_TERMINATOR_uptr)
 #define DC_IS_ARR_TERMINATOR_string(EL) (EL == DC_ARR_TERMINATOR_string)
-#define DC_IS_ARR_TERMINATOR_PTR(EL) (EL == DC_ARR_TERMINATOR_VOIDPTR)
+#define DC_IS_ARR_TERMINATOR_PTR(EL) (EL == DC_ARR_TERMINATOR_voidptr)
 
 #define DC_IS_ARR_TERMINATOR_byte(EL) (EL == DC_ARR_TERMINATOR_byte)
 
@@ -101,6 +101,8 @@ typedef enum
     DC_DYN_VAL_TYPE_byte,
     DC_DYN_VAL_TYPE_string,
     DC_DYN_VAL_TYPE_voidptr,
+    DC_DYN_VAL_TYPE_size,
+    DC_DYN_VAL_TYPE_usize,
 } DCDynValueType;
 
 typedef struct
@@ -118,6 +120,8 @@ typedef struct
         byte byte_val;
         string string_val;
         void* voidptr_val;
+        size size_val;
+        usize usize_val;
     } value;
 } DCDynValue;
 

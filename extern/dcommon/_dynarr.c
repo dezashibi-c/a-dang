@@ -51,20 +51,17 @@ void dc_dynarr_init_with_values(DCDynArr* darr, usize count, ...)
         exit(EXIT_FAILURE);
     }
 
-    // Start processing the variable argument list va_list args;
     va_list args;
     va_start(args, count);
 
     for (usize i = 0; i < count; i++)
     {
-        // First, get the type of the element
         DCDynValue value = va_arg(args, DCDynValue);
 
         // Add the type and value to the dynamic array
         dc_dynarr_add(darr, value);
     }
 
-    // Clean up the variable argument list
     va_end(args);
 }
 
@@ -83,7 +80,6 @@ void dc_dynarr_add(DCDynArr* darr, DCDynValue value)
             exit(EXIT_FAILURE);
         }
     }
-
     // Add the new element with its type and value
     darr->elements[darr->count] = value;
     darr->count++;
@@ -100,44 +96,54 @@ DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el)
             continue; // Skip if the type doesn't match
         }
 
-        // Now check the actual value based on the type
+        // check the actual value based on the type
         switch (el->type)
         {
             case DC_DYN_VAL_TYPE_u8:
                 if (element->value.u8_val == el->value.u8_val) return element;
                 break;
+
             case DC_DYN_VAL_TYPE_i32:
                 if (element->value.i32_val == el->value.i32_val) return element;
                 break;
+
             case DC_DYN_VAL_TYPE_u32:
                 if (element->value.u32_val == el->value.u32_val) return element;
                 break;
+
             case DC_DYN_VAL_TYPE_u64:
                 if (element->value.u64_val == el->value.u64_val) return element;
                 break;
+
             case DC_DYN_VAL_TYPE_f32:
                 if (element->value.f32_val == el->value.f32_val) return element;
                 break;
+
             case DC_DYN_VAL_TYPE_f64:
                 if (element->value.f64_val == el->value.f64_val) return element;
                 break;
+
             case DC_DYN_VAL_TYPE_uptr:
                 if (element->value.uptr_val == el->value.uptr_val)
                     return element;
                 break;
+
             case DC_DYN_VAL_TYPE_byte:
                 if (element->value.byte_val == el->value.byte_val)
                     return element;
                 break;
+
             case DC_DYN_VAL_TYPE_string:
                 if (strcmp(element->value.string_val, el->value.string_val) ==
                     0)
                     return element;
                 break;
+
             case DC_DYN_VAL_TYPE_voidptr:
                 if (element->value.voidptr_val == el->value.voidptr_val)
                     return element;
                 break;
+
             default:
                 break;
         }
@@ -150,20 +156,7 @@ void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(void*))
 {
     switch (element->type)
     {
-        // Do nothing for literal types (integer, float, etc.)
-        case DC_DYN_VAL_TYPE_u8:
-        case DC_DYN_VAL_TYPE_i32:
-        case DC_DYN_VAL_TYPE_u32:
-        case DC_DYN_VAL_TYPE_u64:
-        case DC_DYN_VAL_TYPE_f32:
-        case DC_DYN_VAL_TYPE_f64:
-        case DC_DYN_VAL_TYPE_byte:
-        case DC_DYN_VAL_TYPE_uptr:
-            // These are literal values, no need to free them
-            break;
-
         case DC_DYN_VAL_TYPE_string:
-            // Free string if custom_free is provided, otherwise use free
             if (custom_free)
             {
                 custom_free(element->value.string_val);
@@ -175,7 +168,6 @@ void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(void*))
             break;
 
         case DC_DYN_VAL_TYPE_voidptr:
-            // Free void pointer if custom_free is provided, otherwise use free
             if (custom_free)
             {
                 custom_free(element->value.voidptr_val);
@@ -186,8 +178,8 @@ void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(void*))
             }
             break;
 
+        // Do nothing for literal types (integer, float, etc.)
         default:
-            // Handle any unexpected types (if any)
             break;
     }
 }
@@ -196,11 +188,13 @@ void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(void*))
 // Function to free the dynamic array
 void dc_dynarr_free(DCDynArr* darr)
 {
-    for (usize i = 0; i < darr->count; i++)
+    for (usize i = 0; i < darr->count; ++i)
     {
         dc_dynarr_value_free(&darr->elements[i], NULL);
     }
-    free(darr->elements); // Free the entire array
+
+    free(darr->elements);
+
     darr->elements = NULL;
     darr->cap = 0;
     darr->count = 0;
@@ -210,7 +204,7 @@ void dc_dynarr_delete(DCDynArr* darr, usize index, void (*custom_free)(void*))
 {
     if (index >= darr->count)
     {
-        return; // Index out of bounds
+        return;
     }
 
     // Free the element at the specified index
@@ -236,4 +230,53 @@ void dc_dynarr_delete(DCDynArr* darr, usize index, void (*custom_free)(void*))
             exit(EXIT_FAILURE);
         }
     }
+}
+
+___dc_dynval_converters_decl(u8)
+{
+    ___dc_dynval_converters_impl(u8);
+}
+___dc_dynval_converters_decl(i32)
+{
+    ___dc_dynval_converters_impl(i32);
+}
+___dc_dynval_converters_decl(u32)
+{
+    ___dc_dynval_converters_impl(u32);
+}
+___dc_dynval_converters_decl(u64)
+{
+    ___dc_dynval_converters_impl(u64);
+}
+___dc_dynval_converters_decl(f32)
+{
+    ___dc_dynval_converters_impl(f32);
+}
+___dc_dynval_converters_decl(f64)
+{
+    ___dc_dynval_converters_impl(f64);
+}
+___dc_dynval_converters_decl(uptr)
+{
+    ___dc_dynval_converters_impl(uptr);
+}
+___dc_dynval_converters_decl(byte)
+{
+    ___dc_dynval_converters_impl(byte);
+}
+___dc_dynval_converters_decl(size)
+{
+    ___dc_dynval_converters_impl(size);
+}
+___dc_dynval_converters_decl(usize)
+{
+    ___dc_dynval_converters_impl(usize);
+}
+___dc_dynval_converters_decl(string)
+{
+    ___dc_dynval_converters_impl(string);
+}
+___dc_dynval_converters_decl(voidptr)
+{
+    ___dc_dynval_converters_impl(voidptr);
 }

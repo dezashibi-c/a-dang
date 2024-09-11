@@ -52,6 +52,8 @@
     case ITEM:                                                                 \
         return #ITEM
 
+#define dc_arr_terminator(TYPE) (DC_ARR_TERMINATOR_##TYPE)
+
 // ***************************************************************************************
 // * NON-POINTER ARRAY MACROS
 // ***************************************************************************************
@@ -59,11 +61,11 @@
 #define dc_arr_lit(TYPE, ...)                                                  \
     (TYPE[])                                                                   \
     {                                                                          \
-        __VA_ARGS__, DC_ARR_TERMINATOR_##TYPE                                  \
+        __VA_ARGS__, dc_arr_terminator(TYPE)                                   \
     }
 
 #define dc_array(NAME, TYPE, ...)                                              \
-    TYPE NAME[] = {__VA_ARGS__, DC_ARR_TERMINATOR_##TYPE}
+    TYPE NAME[] = {__VA_ARGS__, dc_arr_terminator(TYPE)}
 
 #define dc_count(ARR) (size)(sizeof(ARR) / sizeof(*(ARR)))
 
@@ -91,7 +93,7 @@
 #define dc_parr_lit(TYPE, ...)                                                 \
     (TYPE[])                                                                   \
     {                                                                          \
-        __VA_ARGS__, DC_ARR_TERMINATOR_VOIDPTR                                 \
+        __VA_ARGS__, DC_ARR_TERMINATOR_voidptr                                 \
     }
 #define dc_parray(NAME, TYPE, ...) TYPE** NAME = dc_parr_lit(TYPE*, __VA_ARGS__)
 
@@ -156,6 +158,37 @@
 
 #define dc_dynval_is(NAME, TYPE) (NAME.type == dc_value_type(TYPE))
 
+#define dc_dynval_is_not(NAME, TYPE) (NAME.type != dc_value_type(TYPE))
+
 #define dc_dynval_get(NAME, TYPE) (NAME.value.TYPE##_val)
+
+#define ___dc_dynval_converters_decl(ORIGIN_TYPE)                              \
+    usize dc_##ORIGIN_TYPE##_dynarr_to_flat_arr(DCDynArr* arr,                 \
+                                                ORIGIN_TYPE** out_arr)
+
+#define ___dc_dynval_converters_impl(ORIGIN_TYPE)                              \
+    if (!arr || arr->count == 0 || !out_arr)                                   \
+    {                                                                          \
+        return 0;                                                              \
+    }                                                                          \
+    *out_arr = (ORIGIN_TYPE*)malloc((arr->count + 1) * sizeof(ORIGIN_TYPE));   \
+    if (!(*out_arr))                                                           \
+    {                                                                          \
+        return 0;                                                              \
+    }                                                                          \
+    for (usize i = 0; i < arr->count; ++i)                                     \
+    {                                                                          \
+        DCDynValue* elem = &arr->elements[i];                                  \
+        if (elem->type != dc_value_type(ORIGIN_TYPE))                          \
+        {                                                                      \
+            free(*out_arr);                                                    \
+            *out_arr = NULL;                                                   \
+            return 0;                                                          \
+        }                                                                      \
+        (*out_arr)[i] = dc_dynval_get((*elem), ORIGIN_TYPE);                   \
+    }                                                                          \
+    (*out_arr)[arr->count] = dc_arr_terminator(ORIGIN_TYPE);                   \
+    return arr->count
+
 
 #endif // DC_MACROS_H

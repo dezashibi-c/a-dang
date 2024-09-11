@@ -37,6 +37,19 @@ void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(void*));
 void dc_dynarr_free(DCDynArr* darr);
 void dc_dynarr_delete(DCDynArr* darr, usize index, void (*custom_free)(void*));
 
+___dc_dynval_converters_decl(u8);
+___dc_dynval_converters_decl(i32);
+___dc_dynval_converters_decl(u32);
+___dc_dynval_converters_decl(u64);
+___dc_dynval_converters_decl(f32);
+___dc_dynval_converters_decl(f64);
+___dc_dynval_converters_decl(uptr);
+___dc_dynval_converters_decl(byte);
+___dc_dynval_converters_decl(size);
+___dc_dynval_converters_decl(usize);
+___dc_dynval_converters_decl(string);
+___dc_dynval_converters_decl(voidptr);
+
 // ***************************************************************************************
 // * IMPLEMENTATION LOADING
 // ***************************************************************************************
