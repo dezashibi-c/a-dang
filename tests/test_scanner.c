@@ -64,7 +64,5 @@ CLOVE_TEST(basic_signs)
         {.type = TOK_EOF, .text = ""},
     };
 
-    if (!perform_scanner_test(input, dc_len(tests), tests)) CLOVE_FAIL();
-
-    CLOVE_PASS();
+    CLOVE_IS_TRUE(perform_scanner_test(input, dc_len(tests), tests));
 }
