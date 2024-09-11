@@ -19,21 +19,19 @@ static bool perform_scanner_test(const string input, usize number_of_tests,
     scanner_init(&s, input);
 
     u8 i = 0;
-    dc_sforeach(tests, TestExpectedResult, expected_result,
-                expected_result->type != TOK_EOF)
+    dc_sforeach(tests, TestExpectedResult, _it->type != TOK_EOF)
     {
         Token* token = scanner_next_token(&s);
 
         dc_halt_when(
-            expected_result->type != token->type, return false,
+            _it->type != token->type, return false,
             "Bad result on token [%d], expected type='%s' but got='%s'", i,
-            tostr_TokenType(expected_result->type),
-            tostr_TokenType(token->type));
+            tostr_TokenType(_it->type), tostr_TokenType(token->type));
 
         dc_halt_when(
-            strcmp(expected_result->text, token->text) != 0, return false,
+            strcmp(_it->text, token->text) != 0, return false,
             "Bad result on token [%d], expected text='%s' but got='%s'", i,
-            expected_result->text, token->text);
+            _it->text, token->text);
 
         ++i;
     }
@@ -50,6 +48,32 @@ static bool perform_scanner_test(const string input, usize number_of_tests,
 CLOVE_TEST(basic_signs)
 {
     const string input = "=+(){},;\n";
+
+    TestExpectedResult tests[] = {
+        {.type = TOK_ASSIGN, .text = "="},
+        {.type = TOK_PLUS, .text = "+"},
+        {.type = TOK_LPAREN, .text = "("},
+        {.type = TOK_RPAREN, .text = ")"},
+        {.type = TOK_LBRACE, .text = "{"},
+        {.type = TOK_RBRACE, .text = "}"},
+        {.type = TOK_COMMA, .text = ","},
+        {.type = TOK_SEMICOLON, .text = ";"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+        {.type = TOK_EOF, .text = ""},
+    };
+
+    CLOVE_IS_TRUE(perform_scanner_test(input, dc_len(tests), tests));
+}
+
+CLOVE_TEST(more_tokens)
+{
+    const string input = "let five = 5;\n"
+                         "let ten = 10;\n"
+                         "let add = fn(x, y)\n"
+                         "{\n"
+                         "x + y;\n"
+                         "};\n"
+                         "let result = add(five, ten);";
 
     TestExpectedResult tests[] = {
         {.type = TOK_ASSIGN, .text = "="},
