@@ -10,6 +10,23 @@
         "RPAREN",
         "scase",
         "sforeach",
-        "voidptr"
+        "voidptr",
+        "arcname",
+        "DCOMMON",
+        "DYNARR",
+        "dynval",
+        "foreachp",
+        "litp",
+        "oneach",
+        "oneachp",
+        "parray",
+        "pforeach",
+        "poneach",
+        "sarr",
+        "sarray",
+        "sforeach",
+        "soneach",
+        "voidptr",
+        "zipf"
     ]
 }
