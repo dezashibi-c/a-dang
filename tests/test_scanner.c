@@ -23,12 +23,12 @@ static bool perform_scanner_test(const string input, usize number_of_tests,
     {
         Token* token = scanner_next_token(&s);
 
-        dc_halt_when(
+        dc_action_on(
             _it->type != token->type, return false,
             "Bad result on token [%d], expected type='%s' but got='%s'", i,
             tostr_TokenType(_it->type), tostr_TokenType(token->type));
 
-        dc_halt_when(
+        dc_action_on(
             strcmp(_it->text, token->text) != 0, return false,
             "Bad result on token [%d], expected text='%s' but got='%s'", i,
             _it->text, token->text);
@@ -36,7 +36,7 @@ static bool perform_scanner_test(const string input, usize number_of_tests,
         ++i;
     }
 
-    dc_halt_when(number_of_tests != s.tokens.count, return false,
+    dc_action_on(number_of_tests != s.tokens.count, return false,
                  "Expected %zu tokens but got=%zu", number_of_tests,
                  s.tokens.count);
 

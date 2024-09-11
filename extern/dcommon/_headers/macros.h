@@ -23,7 +23,7 @@
     "You cannot use this header (macros.h) directly, please consider including dcommon.h"
 #endif
 
-#define dc_halt_when(CONDITION, FAILURE_ACTION, ...)                           \
+#define dc_action_on(CONDITION, FAILURE_ACTION, ...)                           \
     do                                                                         \
     {                                                                          \
         if (CONDITION)                                                         \
