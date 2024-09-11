@@ -42,9 +42,11 @@ typedef struct
 } Token;
 
 string tostr_TokenType(TokenType enum_item);
+TokenType is_keyword(string text);
 
 Token* token_make(TokenType type);
 Token* token_make_from_char(TokenType type, byte c);
 Token* token_make_from_string(TokenType type, string str);
+Token* token_make_from_string_portion(string str, usize start, usize len);
 
 #endif // DANG_TOKEN_H

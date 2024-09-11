@@ -67,24 +67,57 @@ CLOVE_TEST(basic_signs)
 
 CLOVE_TEST(more_tokens)
 {
-    const string input = "let five = 5;\n"
-                         "let ten = 10;\n"
+    const string input = "let five = 5; let ten = 10\n"
                          "let add = fn(x, y)\n"
                          "{\n"
-                         "x + y;\n"
-                         "};\n"
-                         "let result = add(five, ten);";
+                         "  x + y\n"
+                         "}\n"
+                         "let result = (add five, ten)";
 
     TestExpectedResult tests[] = {
+        {.type = TOK_LET, .text = "let"},
+        {.type = TOK_IDENT, .text = "five"},
         {.type = TOK_ASSIGN, .text = "="},
-        {.type = TOK_PLUS, .text = "+"},
-        {.type = TOK_LPAREN, .text = "("},
-        {.type = TOK_RPAREN, .text = ")"},
-        {.type = TOK_LBRACE, .text = "{"},
-        {.type = TOK_RBRACE, .text = "}"},
-        {.type = TOK_COMMA, .text = ","},
+        {.type = TOK_INT, .text = "5"},
         {.type = TOK_SEMICOLON, .text = ";"},
+        {.type = TOK_LET, .text = "let"},
+        {.type = TOK_IDENT, .text = "ten"},
+        {.type = TOK_ASSIGN, .text = "="},
+        {.type = TOK_INT, .text = "10"},
         {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_LET, .text = "let"},
+        {.type = TOK_IDENT, .text = "add"},
+        {.type = TOK_ASSIGN, .text = "="},
+        {.type = TOK_FUNCTION, .text = "fn"},
+        {.type = TOK_LPAREN, .text = "("},
+        {.type = TOK_IDENT, .text = "x"},
+        {.type = TOK_COMMA, .text = ","},
+        {.type = TOK_IDENT, .text = "y"},
+        {.type = TOK_RPAREN, .text = ")"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_LBRACE, .text = "{"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_IDENT, .text = "x"},
+        {.type = TOK_PLUS, .text = "+"},
+        {.type = TOK_IDENT, .text = "y"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_RBRACE, .text = "}"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_LET, .text = "let"},
+        {.type = TOK_IDENT, .text = "result"},
+        {.type = TOK_ASSIGN, .text = "="},
+        {.type = TOK_LPAREN, .text = "("},
+        {.type = TOK_IDENT, .text = "add"},
+        {.type = TOK_IDENT, .text = "five"},
+        {.type = TOK_COMMA, .text = ","},
+        {.type = TOK_IDENT, .text = "ten"},
+        {.type = TOK_RPAREN, .text = ")"},
+
         {.type = TOK_EOF, .text = ""},
     };
 

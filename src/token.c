@@ -42,6 +42,16 @@ string tostr_TokenType(TokenType enum_item)
     }
 }
 
+TokenType is_keyword(string text)
+{
+    if (strcmp(text, "fn") == 0)
+        return TOK_FUNCTION;
+    else if (strcmp(text, "let") == 0)
+        return TOK_LET;
+    else
+        return TOK_IDENT;
+}
+
 Token* token_make(TokenType type)
 {
     Token* token = malloc(sizeof(Token));
@@ -97,6 +107,31 @@ Token* token_make_from_string(TokenType type, string str)
 
     // Set the token type
     token->type = type;
+
+    return token;
+}
+
+Token* token_make_from_string_portion(string str, usize start, usize len)
+{
+    if (!str || start >= strlen(str))
+    {
+        return NULL; // Handle invalid input
+    }
+
+    // Allocate memory for the token
+    Token* token = (Token*)malloc(sizeof(Token));
+    if (!token) return NULL; // Handle memory allocation failure
+
+    token->text = (string)malloc(len + 1);
+    if (!token->text)
+    {
+        free(token); // Clean up in case of failure
+        return NULL;
+    }
+
+    strncpy(token->text, str + start, len);
+
+    token->text[len] = '\0';
 
     return token;
 }

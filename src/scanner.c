@@ -20,6 +20,13 @@
 // * PRIVATE FUNCTIONS
 // ***************************************************************************************
 
+#define is_letter(C)                                                           \
+    (('a' <= (C) && (C) <= 'z') || ('A' <= (C) && (C) <= 'Z') || (C) == '_')
+
+#define is_digit(C) ('0' <= (C) && (C) <= '9')
+
+#define is_whitespace(C) ((C) == ' ' || (C) == '\t' || (C) == '\r')
+
 static void read_char(Scanner* s)
 {
     if (s->read_pos >= strlen(s->input))
@@ -29,6 +36,39 @@ static void read_char(Scanner* s)
 
     s->pos = s->read_pos;
     s->read_pos++;
+}
+
+static void skip_whitespace(Scanner* s)
+{
+    while (is_whitespace(s->c)) read_char(s);
+}
+
+static Token* extract_identifier(Scanner* s)
+{
+    usize start = s->pos;
+
+    while (is_letter(s->c)) read_char(s);
+
+    usize len = s->pos - start;
+
+    Token* t = token_make_from_string_portion(s->input, start, len);
+    t->type = is_keyword(t->text);
+
+    return t;
+}
+
+static Token* extract_number(Scanner* s)
+{
+    usize start = s->pos;
+
+    while (is_digit(s->c)) read_char(s);
+
+    usize len = s->pos - start;
+
+    Token* t = token_make_from_string_portion(s->input, start, len);
+    t->type = TOK_INT;
+
+    return t;
 }
 
 // ***************************************************************************************
@@ -53,6 +93,8 @@ void scanner_free(Scanner* s)
 Token* scanner_next_token(Scanner* s)
 {
     Token* token;
+
+    skip_whitespace(s);
 
     switch (s->c)
     {
@@ -97,8 +139,23 @@ Token* scanner_next_token(Scanner* s)
             break;
 
         default:
-            token = token_make_from_char(TOK_ILLEGAL, s->c);
-            break;
+        {
+            if (is_letter(s->c))
+            {
+                token = extract_identifier(s);
+                dc_dynarr_add(&s->tokens, dc_dynval_lit(voidptr, (void*)token));
+                return token;
+            }
+            else if (is_digit(s->c))
+            {
+                token = extract_number(s);
+                dc_dynarr_add(&s->tokens, dc_dynval_lit(voidptr, (void*)token));
+                return token;
+            }
+            else
+                token = token_make_from_char(TOK_ILLEGAL, s->c);
+        }
+        break;
     }
 
     read_char(s);
