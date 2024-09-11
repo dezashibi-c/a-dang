@@ -47,7 +47,7 @@ static bool perform_scanner_test(const string input, usize number_of_tests,
     return true;
 }
 
-CLOVE_TEST(ScannerKnowsBasicSigns)
+CLOVE_TEST(BasicSigns)
 {
     const string input = "=+(){},;\n";
 
