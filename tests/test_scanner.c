@@ -1,4 +1,4 @@
-#define CLOVE_SUITE_NAME ScannerTests
+#define CLOVE_SUITE_NAME scanner_tests
 #define DCOMMON_IMPL
 
 #include "clove-unit/clove-unit.h"
@@ -47,7 +47,7 @@ static bool perform_scanner_test(const string input, usize number_of_tests,
     return true;
 }
 
-CLOVE_TEST(BasicSigns)
+CLOVE_TEST(basic_signs)
 {
     const string input = "=+(){},;\n";
 
@@ -65,4 +65,6 @@ CLOVE_TEST(BasicSigns)
     };
 
     if (!perform_scanner_test(input, dc_len(tests), tests)) CLOVE_FAIL();
+
+    CLOVE_PASS();
 }
