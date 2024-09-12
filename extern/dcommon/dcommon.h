@@ -30,7 +30,8 @@
 // ***************************************************************************************
 
 void dc_dynarr_init(DCDynArr* darr);
-void dc_dynarr_init_with_values(DCDynArr* darr, usize count, ...);
+void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
+                                   DCDynValue values[]);
 void dc_dynarr_add(DCDynArr* darr, DCDynValue value);
 DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el);
 void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(void*));

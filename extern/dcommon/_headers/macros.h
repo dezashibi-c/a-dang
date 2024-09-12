@@ -161,6 +161,15 @@
 
 #define dc_dynval_get(NAME, TYPE) (NAME.value.TYPE##_val)
 
+// Function to initialize the dynamic array with initial values
+#define dc_dynarr_init_with_values(DYNARRPTR, ...)                             \
+    do                                                                         \
+    {                                                                          \
+        dc_sarray(__initial_values, DCDynValue, __VA_ARGS__);                  \
+        ___dc_dynarr_init_with_values(DYNARRPTR, dc_count(__initial_values),   \
+                                      __initial_values);                       \
+    } while (0)
+
 #define ___dc_dynval_converters_decl(ORIGIN_TYPE)                              \
     usize dc_##ORIGIN_TYPE##_dynarr_to_flat_arr(DCDynArr* arr,                 \
                                                 ORIGIN_TYPE** out_arr)

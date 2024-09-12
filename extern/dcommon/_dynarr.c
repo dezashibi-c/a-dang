@@ -39,7 +39,8 @@ void dc_dynarr_init(DCDynArr* darr)
 }
 
 // Function to initialize the dynamic array with initial values
-void dc_dynarr_init_with_values(DCDynArr* darr, usize count, ...)
+void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
+                                   DCDynValue values[])
 {
     darr->cap = count;
     darr->count = 0;
@@ -51,18 +52,10 @@ void dc_dynarr_init_with_values(DCDynArr* darr, usize count, ...)
         exit(EXIT_FAILURE);
     }
 
-    va_list args;
-    va_start(args, count);
-
-    for (usize i = 0; i < count; i++)
+    for (usize i = 0; i < count; ++i)
     {
-        DCDynValue value = va_arg(args, DCDynValue);
-
-        // Add the type and value to the dynamic array
-        dc_dynarr_add(darr, value);
+        dc_dynarr_add(darr, values[i]);
     }
-
-    va_end(args);
 }
 
 // Function to add an element to the dynamic array
