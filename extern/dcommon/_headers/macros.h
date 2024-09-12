@@ -171,8 +171,8 @@
     } while (0)
 
 #define ___dc_dynval_converters_decl(ORIGIN_TYPE)                              \
-    usize dc_##ORIGIN_TYPE##_dynarr_to_flat_arr(DCDynArr* arr,                 \
-                                                ORIGIN_TYPE** out_arr)
+    usize dc_##ORIGIN_TYPE##_dynarr_to_flat_arr(                               \
+        DCDynArr* arr, ORIGIN_TYPE** out_arr, bool must_fail)
 
 #define ___dc_dynval_converters_impl(ORIGIN_TYPE)                              \
     if (!arr || arr->count == 0 || !out_arr)                                   \
@@ -184,19 +184,25 @@
     {                                                                          \
         return 0;                                                              \
     }                                                                          \
+    usize dest_index = 0;                                                      \
     for (usize i = 0; i < arr->count; ++i)                                     \
     {                                                                          \
         DCDynValue* elem = &arr->elements[i];                                  \
         if (elem->type != dc_value_type(ORIGIN_TYPE))                          \
         {                                                                      \
-            free(*out_arr);                                                    \
-            *out_arr = NULL;                                                   \
-            return 0;                                                          \
+            if (must_fail)                                                     \
+            {                                                                  \
+                free(*out_arr);                                                \
+                *out_arr = NULL;                                               \
+                return 0;                                                      \
+            }                                                                  \
+            continue;                                                          \
         }                                                                      \
-        (*out_arr)[i] = dc_dynval_get((*elem), ORIGIN_TYPE);                   \
+        (*out_arr)[dest_index] = dc_dynval_get((*elem), ORIGIN_TYPE);          \
+        dest_index++;                                                          \
     }                                                                          \
-    (*out_arr)[arr->count] = dc_arr_terminator(ORIGIN_TYPE);                   \
-    return arr->count
+    (*out_arr)[dest_index] = dc_arr_terminator(ORIGIN_TYPE);                   \
+    return dest_index
 
 
 #endif // DC_MACROS_H
