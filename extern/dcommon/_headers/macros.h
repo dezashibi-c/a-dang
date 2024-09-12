@@ -143,8 +143,8 @@
 #define dc_value_type(TYPE) DC_DYN_VAL_TYPE_##TYPE
 
 #define dc_dynval_set(NAME, TYPE, VALUE)                                       \
-    NAME.type = dc_value_type(TYPE);                                           \
-    NAME.value.TYPE##_val = VALUE
+    (NAME).type = dc_value_type(TYPE);                                         \
+    (NAME).value.TYPE##_val = VALUE
 
 #define dc_dynval_lit(TYPE, VALUE)                                             \
     (DCDynValue)                                                               \
@@ -155,11 +155,11 @@
 #define dc_dynval_make(NAME, TYPE, VALUE)                                      \
     DCDynValue NAME = {.type = dc_value_type(TYPE), .value.TYPE##_val = VALUE}
 
-#define dc_dynval_is(NAME, TYPE) (NAME.type == dc_value_type(TYPE))
+#define dc_dynval_is(NAME, TYPE) ((NAME).type == dc_value_type(TYPE))
 
-#define dc_dynval_is_not(NAME, TYPE) (NAME.type != dc_value_type(TYPE))
+#define dc_dynval_is_not(NAME, TYPE) ((NAME).type != dc_value_type(TYPE))
 
-#define dc_dynval_get(NAME, TYPE) (NAME.value.TYPE##_val)
+#define dc_dynval_get(NAME, TYPE) ((NAME).value.TYPE##_val)
 
 // Function to initialize the dynamic array with initial values
 #define dc_dynarr_init_with_values(DYNARRPTR, ...)                             \
@@ -204,5 +204,14 @@
     (*out_arr)[dest_index] = dc_arr_terminator(ORIGIN_TYPE);                   \
     return dest_index
 
+
+// ***************************************************************************************
+// * STRING_VIEW MACROS
+// ***************************************************************************************
+
+#define DC_SV_FMT "%.*s"
+#define dc_sv_fmt_val(SV) (u32)((SV).len), (SV).str
+
+#define dc_sv_cmp(SV, TEXT) strncmp((SV).str, TEXT, (SV).len)
 
 #endif // DC_MACROS_H

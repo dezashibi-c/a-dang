@@ -25,7 +25,9 @@ dc_def_enum(TokenType,
 
             TOK_IDENT, TOK_INT,
 
-            TOK_ASSIGN, TOK_PLUS,
+            TOK_ASSIGN, TOK_PLUS, TOK_MINUS, TOK_BANG, TOK_ASTERISK, TOK_SLASH,
+
+            TOK_LT, TOK_GT,
 
             TOK_COMMA, TOK_SEMICOLON, TOK_NEWLINE,
 
@@ -38,15 +40,13 @@ dc_def_enum(TokenType,
 typedef struct
 {
     TokenType type;
-    string text;
+    DCStringView text;
 } Token;
 
 string tostr_TokenType(TokenType enum_item);
-TokenType is_keyword(string text);
+TokenType is_keyword(DCStringView* text);
 
-Token* token_make(TokenType type);
-Token* token_make_from_char(TokenType type, byte c);
-Token* token_make_from_string(TokenType type, string str);
-Token* token_make_from_string_portion(string str, usize start, usize len);
+Token* token_make(TokenType type, string str, usize start, usize len);
+void token_free(Token* t);
 
 #endif // DANG_TOKEN_H

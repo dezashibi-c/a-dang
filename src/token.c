@@ -27,6 +27,12 @@ string tostr_TokenType(TokenType enum_item)
             tostr_enum_scase(TOK_INT);
             tostr_enum_scase(TOK_ASSIGN);
             tostr_enum_scase(TOK_PLUS);
+            tostr_enum_scase(TOK_MINUS);
+            tostr_enum_scase(TOK_BANG);
+            tostr_enum_scase(TOK_ASTERISK);
+            tostr_enum_scase(TOK_SLASH);
+            tostr_enum_scase(TOK_LT);
+            tostr_enum_scase(TOK_GT);
             tostr_enum_scase(TOK_COMMA);
             tostr_enum_scase(TOK_SEMICOLON);
             tostr_enum_scase(TOK_NEWLINE);
@@ -42,96 +48,34 @@ string tostr_TokenType(TokenType enum_item)
     }
 }
 
-TokenType is_keyword(string text)
+TokenType is_keyword(DCStringView* text)
 {
-    if (strcmp(text, "fn") == 0)
+    if (dc_sv_cmp((*text), "fn") == 0)
         return TOK_FUNCTION;
-    else if (strcmp(text, "let") == 0)
+    else if (dc_sv_cmp((*text), "let") == 0)
         return TOK_LET;
     else
         return TOK_IDENT;
 }
 
-Token* token_make(TokenType type)
+Token* token_make(TokenType type, string str, usize start, usize len)
 {
-    Token* token = malloc(sizeof(Token));
-    token->type = type;
-    token->text = "";
-
-    return token;
-}
-
-
-Token* token_make_from_char(TokenType type, byte c)
-{
-    // Allocate memory for the token
-    Token* token = (Token*)malloc(sizeof(Token));
-    if (!token) return NULL; // Handle memory allocation failure
-
-    // Allocate memory for the text field (2 bytes: 1 char + null terminator)
-    token->text = (char*)malloc(2);
-    if (!token->text)
+    if (type != TOK_EOF && (!str || start >= strlen(str)))
     {
-        free(token); // Free allocated token in case of failure
         return NULL;
-    }
-
-    // Set the character and null-terminate the string
-    token->text[0] = c;
-    token->text[1] = '\0';
-
-    // Set the token type
-    token->type = type;
-
-    return token;
-}
-
-Token* token_make_from_string(TokenType type, string str)
-{
-    // Allocate memory for the token
-    Token* token = (Token*)malloc(sizeof(Token));
-    if (!token) return NULL; // Handle memory allocation failure
-
-    // Allocate memory for the text field based on the length of the input
-    // string
-    size_t length = strlen(str);
-    token->text = (char*)malloc(length + 1); // +1 for the null terminator
-    if (!token->text)
-    {
-        free(token); // Free allocated token in case of failure
-        return NULL;
-    }
-
-    // Copy the input string into the token's text field
-    strcpy(token->text, str);
-
-    // Set the token type
-    token->type = type;
-
-    return token;
-}
-
-Token* token_make_from_string_portion(string str, usize start, usize len)
-{
-    if (!str || start >= strlen(str))
-    {
-        return NULL; // Handle invalid input
     }
 
     // Allocate memory for the token
     Token* token = (Token*)malloc(sizeof(Token));
     if (!token) return NULL; // Handle memory allocation failure
 
-    token->text = (string)malloc(len + 1);
-    if (!token->text)
-    {
-        free(token); // Clean up in case of failure
-        return NULL;
-    }
-
-    strncpy(token->text, str + start, len);
-
-    token->text[len] = '\0';
+    token->text = dc_sv_create(str, start, len);
+    token->type = type;
 
     return token;
+}
+
+void token_free(Token* t)
+{
+    dc_sv_free(&t->text);
 }

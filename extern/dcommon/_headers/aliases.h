@@ -132,4 +132,11 @@ typedef struct
     usize count;
 } DCDynArr;
 
+typedef struct
+{
+    string str;
+    size len;
+    string cstr;
+} DCStringView;
+
 #endif // DC_ALIASES_H

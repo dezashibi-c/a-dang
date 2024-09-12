@@ -145,30 +145,20 @@ DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el)
 }
 
 
-void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(void*))
+void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
 {
+    if (custom_free) custom_free(element);
+
     switch (element->type)
     {
         case DC_DYN_VAL_TYPE_string:
-            if (custom_free)
-            {
-                custom_free(element->value.string_val);
-            }
-            else
-            {
-                free(element->value.string_val);
-            }
+            if (dc_dynval_get(*element, string) != NULL)
+                free(dc_dynval_get(*element, string));
             break;
 
         case DC_DYN_VAL_TYPE_voidptr:
-            if (custom_free)
-            {
-                custom_free(element->value.voidptr_val);
-            }
-            else
-            {
-                free(element->value.voidptr_val);
-            }
+            if (dc_dynval_get(*element, voidptr) != NULL)
+                free(dc_dynval_get(*element, voidptr));
             break;
 
         // Do nothing for literal types (integer, float, etc.)
@@ -179,11 +169,11 @@ void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(void*))
 
 
 // Function to free the dynamic array
-void dc_dynarr_free(DCDynArr* darr)
+void dc_dynarr_free(DCDynArr* darr, void (*custom_free)(DCDynValue*))
 {
     for (usize i = 0; i < darr->count; ++i)
     {
-        dc_dynarr_value_free(&darr->elements[i], NULL);
+        dc_dynarr_value_free(&darr->elements[i], custom_free);
     }
 
     free(darr->elements);
@@ -193,7 +183,8 @@ void dc_dynarr_free(DCDynArr* darr)
     darr->count = 0;
 }
 
-void dc_dynarr_delete(DCDynArr* darr, usize index, void (*custom_free)(void*))
+void dc_dynarr_delete(DCDynArr* darr, usize index,
+                      void (*custom_free)(DCDynValue*))
 {
     if (index >= darr->count)
     {

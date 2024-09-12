@@ -15,15 +15,19 @@ typedef struct
 static bool perform_token_test(TestExpectedResult* expected_token,
                                Token* actual_token, u8 token_index)
 {
+    dc_action_on(actual_token->text.str == NULL || expected_token->text == NULL,
+                 return false, "Null string in Token comparison at index %d",
+                 token_index);
+
     dc_action_on(expected_token->type != actual_token->type, return false,
                  "Bad result on token [%d], expected type='%s' but got='%s'",
                  token_index, tostr_TokenType(expected_token->type),
                  tostr_TokenType(actual_token->type));
 
-    dc_action_on(strcmp(expected_token->text, actual_token->text) != 0,
-                 return false,
-                 "Bad result on token [%d], expected text='%s' but got='%s'",
-                 token_index, expected_token->text, actual_token->text);
+    dc_action_on(
+        dc_sv_cmp(actual_token->text, expected_token->text) != 0, return false,
+        "Bad result on token [%d], expected text='%s' but got='" DC_SV_FMT "'",
+        token_index, expected_token->text, dc_sv_fmt_val(actual_token->text));
 
     return true;
 }
@@ -129,6 +133,26 @@ CLOVE_TEST(more_tokens)
         {.type = TOK_COMMA, .text = ","},
         {.type = TOK_IDENT, .text = "ten"},
         {.type = TOK_RPAREN, .text = ")"},
+
+        {.type = TOK_EOF, .text = ""},
+    };
+
+    CLOVE_IS_TRUE(perform_scanner_test(input, tests));
+}
+
+CLOVE_TEST(remaining_tokens)
+{
+    const string input = "!-/*5\n"
+                         "5 < 10 > 5";
+
+    TestExpectedResult tests[] = {
+        {.type = TOK_BANG, .text = "!"},  {.type = TOK_MINUS, .text = "-"},
+        {.type = TOK_SLASH, .text = "/"}, {.type = TOK_ASTERISK, .text = "*"},
+        {.type = TOK_INT, .text = "5"},   {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_INT, .text = "5"},   {.type = TOK_LT, .text = "<"},
+        {.type = TOK_INT, .text = "10"},  {.type = TOK_GT, .text = ">"},
+        {.type = TOK_INT, .text = "5"},
 
         {.type = TOK_EOF, .text = ""},
     };
