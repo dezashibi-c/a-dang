@@ -12,28 +12,42 @@ typedef struct
     const string text;
 } TestExpectedResult;
 
+static bool perform_token_test(TestExpectedResult* expected_token,
+                               Token* actual_token, u8 token_index)
+{
+    dc_action_on(expected_token->type != actual_token->type, return false,
+                 "Bad result on token [%d], expected type='%s' but got='%s'",
+                 token_index, tostr_TokenType(expected_token->type),
+                 tostr_TokenType(actual_token->type));
+
+    dc_action_on(strcmp(expected_token->text, actual_token->text) != 0,
+                 return false,
+                 "Bad result on token [%d], expected text='%s' but got='%s'",
+                 token_index, expected_token->text, actual_token->text);
+
+    return true;
+}
+
 static bool perform_scanner_test(const string input, TestExpectedResult tests[])
 {
     Scanner s;
     scanner_init(&s, input);
 
+    Token* token;
+
     u8 i = 0;
     dc_sforeach(tests, TestExpectedResult, _it->type != TOK_EOF)
     {
-        Token* token = scanner_next_token(&s);
+        token = scanner_next_token(&s);
 
-        dc_action_on(
-            _it->type != token->type, return false,
-            "Bad result on token [%d], expected type='%s' but got='%s'", i,
-            tostr_TokenType(_it->type), tostr_TokenType(token->type));
-
-        dc_action_on(
-            strcmp(_it->text, token->text) != 0, return false,
-            "Bad result on token [%d], expected text='%s' but got='%s'", i,
-            _it->text, token->text);
+        if (!perform_token_test(_it, token, i)) return false;
 
         ++i;
     }
+
+    token = scanner_next_token(&s);
+    if (!perform_token_test(&tests[i], token, i)) return false;
+    ++i;
 
     dc_action_on(i != s.tokens.count, return false,
                  "Expected %d tokens but got=%zu", i, s.tokens.count);
