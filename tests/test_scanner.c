@@ -12,8 +12,7 @@ typedef struct
     const string text;
 } TestExpectedResult;
 
-static bool perform_scanner_test(const string input, usize number_of_tests,
-                                 TestExpectedResult tests[])
+static bool perform_scanner_test(const string input, TestExpectedResult tests[])
 {
     Scanner s;
     scanner_init(&s, input);
@@ -36,9 +35,8 @@ static bool perform_scanner_test(const string input, usize number_of_tests,
         ++i;
     }
 
-    dc_action_on(number_of_tests != s.tokens.count, return false,
-                 "Expected %zu tokens but got=%zu", number_of_tests,
-                 s.tokens.count);
+    dc_action_on(i != s.tokens.count, return false,
+                 "Expected %d tokens but got=%zu", i, s.tokens.count);
 
     scanner_free(&s);
 
@@ -62,7 +60,7 @@ CLOVE_TEST(basic_signs)
         {.type = TOK_EOF, .text = ""},
     };
 
-    CLOVE_IS_TRUE(perform_scanner_test(input, dc_len(tests), tests));
+    CLOVE_IS_TRUE(perform_scanner_test(input, tests));
 }
 
 CLOVE_TEST(more_tokens)
@@ -121,5 +119,5 @@ CLOVE_TEST(more_tokens)
         {.type = TOK_EOF, .text = ""},
     };
 
-    CLOVE_IS_TRUE(perform_scanner_test(input, dc_len(tests), tests));
+    CLOVE_IS_TRUE(perform_scanner_test(input, tests));
 }
