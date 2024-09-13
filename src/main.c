@@ -22,13 +22,14 @@
 static void repl()
 {
     puts("" dc_colorize_fg(LGREEN, "dang") " REPL");
-    printf("Type '%s' to exit.\n", dc_colorize_bg(RED, DANG_REPL_EXIT));
+    printf("Hi %s! Type '%s' to exit.\n", dc_get_username(),
+           dc_colorize_bg(RED, DANG_REPL_EXIT));
 
     char line[1024];
 
     while (true)
     {
-        printf("%s%s", dc_get_username(), dc_colorize_fg(LGREEN, "> "));
+        printf("%s", dc_colorize_fg(LGREEN, "> "));
 
         if (!fgets(line, sizeof(line), stdin))
         {
