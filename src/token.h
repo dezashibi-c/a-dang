@@ -19,24 +19,44 @@
 
 #include "dcommon/dcommon.h"
 
-dc_def_enum(DangTokenType,
+typedef enum
+{
+    TOK_ILLEGAL,
+    TOK_EOF,
 
-            TOK_ILLEGAL, TOK_EOF,
+    TOK_IDENT,
+    TOK_INT,
 
-            TOK_IDENT, TOK_INT,
+    TOK_ASSIGN,
+    TOK_PLUS,
+    TOK_MINUS,
+    TOK_BANG,
+    TOK_ASTERISK,
+    TOK_SLASH,
 
-            TOK_ASSIGN, TOK_PLUS, TOK_MINUS, TOK_BANG, TOK_ASTERISK, TOK_SLASH,
+    TOK_LT,
+    TOK_GT,
+    TOK_EQ,
+    TOK_NEQ,
 
-            TOK_LT, TOK_GT, TOK_EQ, TOK_NEQ,
+    TOK_COMMA,
+    TOK_SEMICOLON,
+    TOK_NEWLINE,
 
-            TOK_COMMA, TOK_SEMICOLON, TOK_NEWLINE,
+    TOK_LPAREN,
+    TOK_RPAREN,
+    TOK_LBRACE,
+    TOK_RBRACE,
 
-            TOK_LPAREN, TOK_RPAREN, TOK_LBRACE, TOK_RBRACE,
+    TOK_FUNCTION,
+    TOK_LET,
+    TOK_TRUE,
+    TOK_FALSE,
+    TOK_IF,
+    TOK_ELSE,
+    TOK_RET
 
-            TOK_FUNCTION, TOK_LET, TOK_TRUE, TOK_FALSE, TOK_IF, TOK_ELSE,
-            TOK_RET
-
-);
+} DangTokenType;
 
 typedef struct
 {

@@ -47,13 +47,6 @@
         }                                                                      \
     } while (0)
 
-
-#define dc_def_enum(NAME, ...)                                                 \
-    typedef enum                                                               \
-    {                                                                          \
-        __VA_ARGS__                                                            \
-    } NAME
-
 #define tostr_enum_scase(ITEM)                                                 \
     case ITEM:                                                                 \
         return #ITEM
