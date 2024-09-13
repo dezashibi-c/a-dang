@@ -140,6 +140,10 @@
 #define DC_DYNARR_INITIAL_CAP 4
 #endif
 
+#ifndef DC_DYNARR_CAP_MULTIPLIER
+#define DC_DYNARR_CAP_MULTIPLIER 2
+#endif
+
 #define dc_value_type(TYPE) DC_DYN_VAL_TYPE_##TYPE
 
 #define dc_dynval_set(NAME, TYPE, VALUE)                                       \

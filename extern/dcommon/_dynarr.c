@@ -63,8 +63,8 @@ void dc_dynarr_add(DCDynArr* darr, DCDynValue value)
 {
     if (darr->count >= darr->cap)
     {
-        // Resize the array if needed (double the capacity)
-        darr->cap *= 2;
+        // Resize the array if needed (double the capacity by default)
+        darr->cap *= DC_DYNARR_CAP_MULTIPLIER;
         darr->elements =
             realloc(darr->elements, darr->cap * sizeof(DCDynValue));
         if (darr->elements == NULL)
