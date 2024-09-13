@@ -24,9 +24,9 @@
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define ATTRIB(A) __attribute__(A)
+#define __dc_attribute(A) __attribute__(A)
 #else
-#define ATTRIB(A)
+#define __dc_attribute(A)
 #endif
 
 #define dc_action_on(CONDITION, FAILURE_ACTION, ...)                           \
