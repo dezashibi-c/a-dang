@@ -135,7 +135,7 @@ typedef struct
 typedef struct
 {
     string str;
-    size len;
+    usize len;
     string cstr;
 } DCStringView;
 

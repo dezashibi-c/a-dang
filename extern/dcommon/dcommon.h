@@ -53,9 +53,13 @@ ___dc_dynval_converters_decl(usize);
 ___dc_dynval_converters_decl(string);
 ___dc_dynval_converters_decl(voidptr);
 
-DCStringView dc_sv_create(string base, size start, size length);
+DCStringView dc_sv_create(string base, usize start, usize length);
 string dc_sv_as_cstr(DCStringView* sv);
 void dc_sv_free(DCStringView* sv);
+
+int dc_sprintf(string* str, string fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+string dc_strdup(const string in);
 
 // ***************************************************************************************
 // * IMPLEMENTATIONS
@@ -68,6 +72,7 @@ DC_ERROR_MODE dc_error_mode = DC_ERR_MODE_NORMAL;
 
 #include "_dynarr.c"
 #include "_string_view.c"
+#include "_utils.c"
 
 #else
 

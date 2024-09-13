@@ -25,9 +25,11 @@ static bool perform_token_test(TestExpectedResult* expected_token,
                  tostr_TokenType(actual_token->type));
 
     dc_action_on(
-        dc_sv_cmp(actual_token->text, expected_token->text) != 0, return false,
-        "Bad result on token [%d], expected text='%s' but got='" DC_SV_FMT "'",
-        token_index, expected_token->text, dc_sv_fmt_val(actual_token->text));
+        !dc_sv_str_eq(actual_token->text, expected_token->text), return false,
+        "Bad result on token [%d], expected text='%s', len='%zu' but "
+        "got='" DC_SV_FMT "', len='%zu'",
+        token_index, expected_token->text, strlen(expected_token->text),
+        dc_sv_fmt_val(actual_token->text), actual_token->text.len);
 
     return true;
 }

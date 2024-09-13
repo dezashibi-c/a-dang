@@ -1,7 +1,7 @@
 // ***************************************************************************************
 //    Project: dcommon -> https://github.com/dezashibi-c/dcommon
-//    File: _string_view.c
-//    Date: 2024-09-12
+//    File: _utils.c
+//    Date: 2024-09-13
 //    Author: Navid Dezashibi
 //    Contact: navid@dezashibi.com
 //    Website: https://dezashibi.com | https://github.com/dezashibi
@@ -10,6 +10,9 @@
 //     information about the licensing of this work. If you have any questions
 //     or concerns, please feel free to contact me at the email address provided
 //     above.
+//    ATTRIBUTIONS:
+//     dc_sprintf and dc_strdup are based on source codes from the book
+//     "21st-Century C" by Ben Klemens
 // ***************************************************************************************
 // *  Description: private implementation file for definition of common helper
 // *               functions
@@ -18,41 +21,52 @@
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
 #error                                                                         \
-    "You cannot link to this source (_string_view.c) directly, please consider including dcommon.h"
+    "You cannot link to this source (_utils.c) directly, please consider including dcommon.h"
 #endif
 
 #include "_headers/aliases.h"
 #include "_headers/general.h"
 #include "_headers/macros.h"
 
-DCStringView dc_sv_create(string base, usize start, usize length)
+int dc_sprintf(string* str, string fmt, ...)
 {
-    DCStringView view;
-    view.cstr = NULL;
-    view.str = base + start;
-    view.len = length;
+    va_list argp;
+    va_start(argp, fmt);
 
-    return view;
+    byte one_char[1];
+    int len = vsnprintf(one_char, 1, fmt, argp);
+    if (len < 1)
+    {
+        fprintf(
+            stderr,
+            "An encoding error occurred. Setting the input pointer to NULL.\n");
+        *str = NULL;
+        va_end(argp);
+        return len;
+    }
+    va_end(argp);
+
+    *str = malloc(len + 1);
+    if (!str)
+    {
+        fprintf(stderr, "Couldn't allocate %i bytes.\n", len + 1);
+        return -1;
+    }
+
+    va_start(argp, fmt);
+    vsnprintf(*str, len + 1, fmt, argp);
+    va_end(argp);
+
+    return len;
 }
 
-string dc_sv_as_cstr(DCStringView* sv)
+string dc_strdup(const string in)
 {
-    if (sv->cstr != NULL) return sv->cstr;
+    if (!in) return NULL;
 
-    sv->cstr = (string)malloc(sv->len + 1);
-    if (sv->cstr == NULL) return NULL;
+    string out;
 
-    strncpy(sv->cstr, sv->str, sv->len);
+    dc_sprintf(&out, "%s", in);
 
-    sv->cstr[sv->len] = '\0';
-
-    return sv->cstr;
-}
-
-void dc_sv_free(DCStringView* sv)
-{
-    if (sv->cstr == NULL) return;
-
-    free(sv->cstr);
-    sv->cstr = NULL;
+    return out;
 }

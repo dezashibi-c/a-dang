@@ -50,9 +50,9 @@ string tostr_TokenType(TokenType enum_item)
 
 TokenType is_keyword(DCStringView* text)
 {
-    if (dc_sv_cmp((*text), "fn") == 0)
+    if (dc_sv_str_eq((*text), "fn"))
         return TOK_FUNCTION;
-    else if (dc_sv_cmp((*text), "let") == 0)
+    else if (dc_sv_str_eq((*text), "let"))
         return TOK_LET;
     else
         return TOK_IDENT;

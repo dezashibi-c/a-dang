@@ -212,6 +212,11 @@
 #define DC_SV_FMT "%.*s"
 #define dc_sv_fmt_val(SV) (u32)((SV).len), (SV).str
 
-#define dc_sv_cmp(SV, TEXT) strncmp((SV).str, TEXT, (SV).len)
+#define dc_sv_str_eq(SV, STR)                                                  \
+    ((strlen(STR) == (SV).len) && (strncmp((SV).str, STR, (SV).len) == 0))
+
+#define dc_sv_sv_eq(SV1, SV2)                                                  \
+    (((SV1).len == (SV2).len) &&                                               \
+     (strncmp((SV1).str, (SV2).str, (SV1).len) == 0))
 
 #endif // DC_MACROS_H
