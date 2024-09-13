@@ -145,7 +145,8 @@ CLOVE_TEST(more_tokens)
 CLOVE_TEST(remaining_tokens)
 {
     const string input = "!-/*5\n"
-                         "5 < 10 > 5";
+                         "5 < 10 > 5\n"
+                         "5 == 10 != 5";
 
     TestExpectedResult tests[] = {
         {.type = TOK_BANG, .text = "!"},  {.type = TOK_MINUS, .text = "-"},
@@ -154,6 +155,10 @@ CLOVE_TEST(remaining_tokens)
 
         {.type = TOK_INT, .text = "5"},   {.type = TOK_LT, .text = "<"},
         {.type = TOK_INT, .text = "10"},  {.type = TOK_GT, .text = ">"},
+        {.type = TOK_INT, .text = "5"},   {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_INT, .text = "5"},   {.type = TOK_EQ, .text = "=="},
+        {.type = TOK_INT, .text = "10"},  {.type = TOK_NEQ, .text = "!="},
         {.type = TOK_INT, .text = "5"},
 
         {.type = TOK_EOF, .text = ""},

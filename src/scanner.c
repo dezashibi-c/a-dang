@@ -38,6 +38,13 @@ static void read_char(Scanner* s)
     s->read_pos++;
 }
 
+static byte peek(Scanner* s)
+{
+    if (s->read_pos >= strlen(s->input)) return 0;
+
+    return s->input[s->read_pos];
+}
+
 static void skip_whitespace(Scanner* s)
 {
     while (is_whitespace(s->c)) read_char(s);
@@ -111,7 +118,15 @@ Token* scanner_next_token(Scanner* s)
     switch (s->c)
     {
         case '=':
-            token = token_make(TOK_ASSIGN, s->input, s->pos, 1);
+            if (peek(s) == '=')
+            {
+                token = token_make(TOK_EQ, s->input, s->pos, 2);
+                read_char(s);
+            }
+            else
+            {
+                token = token_make(TOK_ASSIGN, s->input, s->pos, 1);
+            }
             break;
 
         case ';':
@@ -139,7 +154,15 @@ Token* scanner_next_token(Scanner* s)
             break;
 
         case '!':
-            token = token_make(TOK_BANG, s->input, s->pos, 1);
+            if (peek(s) == '=')
+            {
+                token = token_make(TOK_NEQ, s->input, s->pos, 2);
+                read_char(s);
+            }
+            else
+            {
+                token = token_make(TOK_BANG, s->input, s->pos, 1);
+            }
             break;
 
         case '/':

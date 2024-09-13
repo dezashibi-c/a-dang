@@ -27,7 +27,7 @@ dc_def_enum(TokenType,
 
             TOK_ASSIGN, TOK_PLUS, TOK_MINUS, TOK_BANG, TOK_ASTERISK, TOK_SLASH,
 
-            TOK_LT, TOK_GT,
+            TOK_LT, TOK_GT, TOK_EQ, TOK_NEQ,
 
             TOK_COMMA, TOK_SEMICOLON, TOK_NEWLINE,
 

@@ -33,6 +33,8 @@ string tostr_TokenType(TokenType enum_item)
             tostr_enum_scase(TOK_SLASH);
             tostr_enum_scase(TOK_LT);
             tostr_enum_scase(TOK_GT);
+            tostr_enum_scase(TOK_EQ);
+            tostr_enum_scase(TOK_NEQ);
             tostr_enum_scase(TOK_COMMA);
             tostr_enum_scase(TOK_SEMICOLON);
             tostr_enum_scase(TOK_NEWLINE);
