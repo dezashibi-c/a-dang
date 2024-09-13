@@ -121,8 +121,8 @@ DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el)
                     return element;
                 break;
 
-            case DC_DYN_VAL_TYPE_byte:
-                if (element->value.byte_val == el->value.byte_val)
+            case DC_DYN_VAL_TYPE_char:
+                if (element->value.char_val == el->value.char_val)
                     return element;
                 break;
 
@@ -244,9 +244,9 @@ ___dc_dynval_converters_decl(uptr)
 {
     ___dc_dynval_converters_impl(uptr);
 }
-___dc_dynval_converters_decl(byte)
+___dc_dynval_converters_decl(char)
 {
-    ___dc_dynval_converters_impl(byte);
+    ___dc_dynval_converters_impl(char);
 }
 ___dc_dynval_converters_decl(size)
 {

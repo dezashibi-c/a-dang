@@ -47,7 +47,7 @@ ___dc_dynval_converters_decl(u64);
 ___dc_dynval_converters_decl(f32);
 ___dc_dynval_converters_decl(f64);
 ___dc_dynval_converters_decl(uptr);
-___dc_dynval_converters_decl(byte);
+___dc_dynval_converters_decl(char);
 ___dc_dynval_converters_decl(size);
 ___dc_dynval_converters_decl(usize);
 ___dc_dynval_converters_decl(string);
@@ -61,6 +61,8 @@ int dc_sprintf(string* str, string fmt, ...) ATTRIB((format(printf, 2, 3)));
 string dc_strdup(const string in);
 void dc_normalize_path_to_posix(string path);
 string dc_replace_file_in_path(const string path, const string new_file);
+string dc_get_home_dir_path();
+string dc_get_username();
 
 // ***************************************************************************************
 // * IMPLEMENTATIONS

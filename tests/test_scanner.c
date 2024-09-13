@@ -8,7 +8,7 @@
 
 typedef struct
 {
-    TokenType type;
+    DangTokenType type;
     const string text;
 } TestExpectedResult;
 
@@ -21,8 +21,8 @@ static bool perform_token_test(TestExpectedResult* expected_token,
 
     dc_action_on(expected_token->type != actual_token->type, return false,
                  "Bad result on token [%d], expected type='%s' but got='%s'",
-                 token_index, tostr_TokenType(expected_token->type),
-                 tostr_TokenType(actual_token->type));
+                 token_index, tostr_DangTokenType(expected_token->type),
+                 tostr_DangTokenType(actual_token->type));
 
     dc_action_on(
         !dc_sv_str_eq(actual_token->text, expected_token->text), return false,

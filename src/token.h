@@ -19,7 +19,7 @@
 
 #include "dcommon/dcommon.h"
 
-dc_def_enum(TokenType,
+dc_def_enum(DangTokenType,
 
             TOK_ILLEGAL, TOK_EOF,
 
@@ -40,14 +40,14 @@ dc_def_enum(TokenType,
 
 typedef struct
 {
-    TokenType type;
+    DangTokenType type;
     DCStringView text;
 } Token;
 
-string tostr_TokenType(TokenType enum_item);
-TokenType is_keyword(DCStringView* text);
+string tostr_DangTokenType(DangTokenType enum_item);
+DangTokenType is_keyword(DCStringView* text);
 
-Token* token_make(TokenType type, string str, usize start, usize len);
+Token* token_make(DangTokenType type, string str, usize start, usize len);
 void token_free(Token* t);
 
 #endif // DANG_TOKEN_H

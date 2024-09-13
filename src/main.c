@@ -14,11 +14,62 @@
 // *  Description:
 // ***************************************************************************************
 
-#include <stdio.h>
+#define DCOMMON_IMPL
+#include "scanner.h"
 
-int main(void)
+#define DANG_REPL_EXIT ":q"
+
+static void repl()
 {
-    puts("Hey There");
+    puts("" dc_colorize_fg(LGREEN, "dang") " REPL");
+    printf("Type '%s' to exit.\n", dc_colorize_bg(RED, DANG_REPL_EXIT));
+
+    char line[1024];
+
+    while (true)
+    {
+        printf("%s%s", dc_get_username(), dc_colorize_fg(LGREEN, "> "));
+
+        if (!fgets(line, sizeof(line), stdin))
+        {
+            puts("");
+            break;
+        }
+
+        if (strncmp(line, DANG_REPL_EXIT, strlen(DANG_REPL_EXIT)) == 0) break;
+
+        Scanner s;
+        scanner_init(&s, line);
+
+        Token* token;
+
+        token = scanner_next_token(&s);
+
+        u8 i = 0;
+        while (token->type != TOK_EOF)
+        {
+            printf("[%d] '" DC_SV_FMT "' (%s)\n", i, dc_sv_fmt_val(token->text),
+                   tostr_DangTokenType(token->type));
+
+            token = scanner_next_token(&s);
+            ++i;
+        }
+    }
+}
+
+int main(int argc, string argv[])
+{
+    if (argc == 1)
+    {
+        repl();
+    }
+    else if (argc == 2)
+    { // file_run(argv[1]);
+    }
+    else
+    {
+        fprintf(stderr, "Usage: dang [path]\n");
+    }
 
     return 0;
 }

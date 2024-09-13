@@ -26,7 +26,7 @@ typedef struct
     string input;
     usize pos;
     usize read_pos;
-    byte c;
+    char c;
     DCDynArr tokens;
 } Scanner;
 

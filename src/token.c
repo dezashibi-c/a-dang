@@ -16,7 +16,7 @@
 
 #include "token.h"
 
-string tostr_TokenType(TokenType enum_item)
+string tostr_DangTokenType(DangTokenType enum_item)
 {
     {
         switch (enum_item)
@@ -55,7 +55,7 @@ string tostr_TokenType(TokenType enum_item)
     }
 }
 
-TokenType is_keyword(DCStringView* text)
+DangTokenType is_keyword(DCStringView* text)
 {
     if (dc_sv_str_eq((*text), "fn"))
         return TOK_FUNCTION;
@@ -75,7 +75,7 @@ TokenType is_keyword(DCStringView* text)
         return TOK_IDENT;
 }
 
-Token* token_make(TokenType type, string str, usize start, usize len)
+Token* token_make(DangTokenType type, string str, usize start, usize len)
 {
     if (type != TOK_EOF && (!str || start >= strlen(str)))
     {

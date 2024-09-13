@@ -38,7 +38,7 @@ static void read_char(Scanner* s)
     s->read_pos++;
 }
 
-static byte peek(Scanner* s)
+static char peek(Scanner* s)
 {
     if (s->read_pos >= strlen(s->input)) return 0;
 

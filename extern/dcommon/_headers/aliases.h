@@ -38,11 +38,10 @@ typedef double f64;
 
 typedef uintptr_t uptr;
 
-typedef char byte;
 typedef ptrdiff_t size;
 typedef size_t usize;
 
-typedef byte* string;
+typedef char* string;
 
 typedef void* voidptr;
 
@@ -64,7 +63,7 @@ typedef enum
 #define DC_ARR_TERMINATOR_string NULL
 #define DC_ARR_TERMINATOR_voidptr NULL
 
-#define DC_ARR_TERMINATOR_byte '\0'
+#define DC_ARR_TERMINATOR_char '\0'
 
 #define DC_ARR_TERMINATOR_size -1
 #define DC_ARR_TERMINATOR_usize SIZE_MAX
@@ -82,7 +81,7 @@ typedef enum
 #define DC_IS_ARR_TERMINATOR_string(EL) (EL == DC_ARR_TERMINATOR_string)
 #define DC_IS_ARR_TERMINATOR_PTR(EL) (EL == DC_ARR_TERMINATOR_voidptr)
 
-#define DC_IS_ARR_TERMINATOR_byte(EL) (EL == DC_ARR_TERMINATOR_byte)
+#define DC_IS_ARR_TERMINATOR_char(EL) (EL == DC_ARR_TERMINATOR_char)
 
 #define DC_IS_ARR_TERMINATOR_size(EL) (EL == DC_ARR_TERMINATOR_size)
 #define DC_IS_ARR_TERMINATOR_usize(EL) (EL == DC_ARR_TERMINATOR_usize)
@@ -98,7 +97,7 @@ typedef enum
     DC_DYN_VAL_TYPE_f32,
     DC_DYN_VAL_TYPE_f64,
     DC_DYN_VAL_TYPE_uptr,
-    DC_DYN_VAL_TYPE_byte,
+    DC_DYN_VAL_TYPE_char,
     DC_DYN_VAL_TYPE_string,
     DC_DYN_VAL_TYPE_voidptr,
     DC_DYN_VAL_TYPE_size,
@@ -117,7 +116,7 @@ typedef struct
         f32 f32_val;
         f64 f64_val;
         uptr uptr_val;
-        byte byte_val;
+        char char_val;
         string string_val;
         void* voidptr_val;
         size size_val;

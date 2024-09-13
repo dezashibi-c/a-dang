@@ -28,12 +28,20 @@
 #include "_headers/general.h"
 #include "_headers/macros.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <Lmcons.h>
+#include <windows.h>
+#else
+#include <pwd.h>
+#include <unistd.h>
+#endif
+
 int dc_sprintf(string* str, string fmt, ...)
 {
     va_list argp;
     va_start(argp, fmt);
 
-    byte one_char[1];
+    char one_char[1];
     int len = vsnprintf(one_char, 1, fmt, argp);
     if (len < 1)
     {
@@ -49,7 +57,7 @@ int dc_sprintf(string* str, string fmt, ...)
     *str = malloc(len + 1);
     if (!str)
     {
-        fprintf(stderr, "Couldn't allocate %i bytes.\n", len + 1);
+        fprintf(stderr, "Couldn't allocate %i chars.\n", len + 1);
         return -1;
     }
 
@@ -81,6 +89,8 @@ void dc_normalize_path_to_posix(string path)
             *p = '/';
         }
     }
+#else
+    (void)path;
 #endif
 }
 
@@ -108,4 +118,39 @@ string dc_replace_file_in_path(string path, const string new_file)
     strcpy(new_path + dir_length, new_file);
 
     return new_path;
+}
+
+string dc_get_home_dir_path()
+{
+#if defined(_WIN32) || defined(_WIN64)
+    static char homeDir[MAX_PATH];
+    if (GetEnvironmentVariable("USERPROFILE", homeDir, MAX_PATH))
+    {
+        return homeDir;
+    }
+    else
+    {
+        return NULL;
+    }
+#else
+    return getenv("HOME");
+#endif
+}
+
+string dc_get_username()
+{
+#if defined(_WIN32) || defined(_WIN64)
+    static char username[UNLEN + 1];
+    DWORD username_len = UNLEN + 1;
+    if (GetUserName(username, &username_len))
+    {
+        return username;
+    }
+    else
+    {
+        return NULL;
+    }
+#else
+    return getenv("USER");
+#endif
 }
