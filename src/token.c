@@ -42,6 +42,11 @@ string tostr_TokenType(TokenType enum_item)
             tostr_enum_scase(TOK_RBRACE);
             tostr_enum_scase(TOK_FUNCTION);
             tostr_enum_scase(TOK_LET);
+            tostr_enum_scase(TOK_TRUE);
+            tostr_enum_scase(TOK_FALSE);
+            tostr_enum_scase(TOK_IF);
+            tostr_enum_scase(TOK_ELSE);
+            tostr_enum_scase(TOK_RET);
         };
 
         return NULL;
@@ -54,6 +59,16 @@ TokenType is_keyword(DCStringView* text)
         return TOK_FUNCTION;
     else if (dc_sv_str_eq((*text), "let"))
         return TOK_LET;
+    else if (dc_sv_str_eq((*text), "true"))
+        return TOK_TRUE;
+    else if (dc_sv_str_eq((*text), "false"))
+        return TOK_FALSE;
+    else if (dc_sv_str_eq((*text), "if"))
+        return TOK_IF;
+    else if (dc_sv_str_eq((*text), "else"))
+        return TOK_ELSE;
+    else if (dc_sv_str_eq((*text), "return"))
+        return TOK_RET;
     else
         return TOK_IDENT;
 }

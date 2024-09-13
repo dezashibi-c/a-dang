@@ -33,7 +33,8 @@ dc_def_enum(TokenType,
 
             TOK_LPAREN, TOK_RPAREN, TOK_LBRACE, TOK_RBRACE,
 
-            TOK_FUNCTION, TOK_LET
+            TOK_FUNCTION, TOK_LET, TOK_TRUE, TOK_FALSE, TOK_IF, TOK_ELSE,
+            TOK_RET
 
 );
 

@@ -161,3 +161,42 @@ CLOVE_TEST(remaining_tokens)
 
     CLOVE_IS_TRUE(perform_scanner_test(input, tests));
 }
+
+CLOVE_TEST(rest_of_keywords)
+{
+    const string input = "if (5 < 10) {\n"
+                         "  return true\n"
+                         "} else {\n"
+                         "  return false\n"
+                         "}";
+
+    TestExpectedResult tests[] = {
+        {.type = TOK_IF, .text = "if"},
+        {.type = TOK_LPAREN, .text = "("},
+        {.type = TOK_INT, .text = "5"},
+        {.type = TOK_LT, .text = "<"},
+        {.type = TOK_INT, .text = "10"},
+        {.type = TOK_RPAREN, .text = ")"},
+        {.type = TOK_LBRACE, .text = "{"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_RET, .text = "return"},
+        {.type = TOK_TRUE, .text = "true"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_RBRACE, .text = "}"},
+        {.type = TOK_ELSE, .text = "else"},
+        {.type = TOK_LBRACE, .text = "{"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_RET, .text = "return"},
+        {.type = TOK_FALSE, .text = "false"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_RBRACE, .text = "}"},
+
+        {.type = TOK_EOF, .text = ""},
+    };
+
+    CLOVE_IS_TRUE(perform_scanner_test(input, tests));
+}
