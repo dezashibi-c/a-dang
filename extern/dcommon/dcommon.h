@@ -57,9 +57,10 @@ DCStringView dc_sv_create(string base, usize start, usize length);
 string dc_sv_as_cstr(DCStringView* sv);
 void dc_sv_free(DCStringView* sv);
 
-int dc_sprintf(string* str, string fmt, ...)
-    __attribute__((format(printf, 2, 3)));
+int dc_sprintf(string* str, string fmt, ...) ATTRIB((format(printf, 2, 3)));
 string dc_strdup(const string in);
+void dc_normalize_path_to_posix(string path);
+string dc_replace_file_in_path(const string path, const string new_file);
 
 // ***************************************************************************************
 // * IMPLEMENTATIONS

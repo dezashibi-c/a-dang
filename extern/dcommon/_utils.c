@@ -70,3 +70,42 @@ string dc_strdup(const string in)
 
     return out;
 }
+
+void dc_normalize_path_to_posix(string path)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    for (string p = path; *p; ++p)
+    {
+        if (*p == '\\')
+        {
+            *p = '/';
+        }
+    }
+#endif
+}
+
+string dc_replace_file_in_path(string path, const string new_file)
+{
+    dc_normalize_path_to_posix(path);
+    const string last_sep = strrchr(path, '/');
+
+    size_t dir_length = (last_sep != NULL) ? (last_sep - path + 1) : 0;
+
+    size_t new_path_length = dir_length + strlen(new_file) + 1;
+    string new_path = (string)malloc(new_path_length);
+
+    if (new_path == NULL)
+    {
+        fprintf(stderr, "Memory allocation failed\n");
+        return NULL;
+    }
+
+    if (dir_length > 0)
+    {
+        strncpy(new_path, path, dir_length);
+    }
+
+    strcpy(new_path + dir_length, new_file);
+
+    return new_path;
+}

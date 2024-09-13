@@ -23,6 +23,12 @@
     "You cannot use this header (macros.h) directly, please consider including dcommon.h"
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define ATTRIB(A) __attribute__(A)
+#else
+#define ATTRIB(A)
+#endif
+
 #define dc_action_on(CONDITION, FAILURE_ACTION, ...)                           \
     do                                                                         \
     {                                                                          \
@@ -52,11 +58,11 @@
     case ITEM:                                                                 \
         return #ITEM
 
-#define dc_arr_terminator(TYPE) (DC_ARR_TERMINATOR_##TYPE)
-
 // ***************************************************************************************
 // * NON-POINTER ARRAY MACROS
 // ***************************************************************************************
+
+#define dc_arr_terminator(TYPE) (DC_ARR_TERMINATOR_##TYPE)
 
 #define dc_arr_lit(TYPE, ...)                                                  \
     (TYPE[])                                                                   \
