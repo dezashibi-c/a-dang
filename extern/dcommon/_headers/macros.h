@@ -229,4 +229,51 @@
     (((SV1).len == (SV2).len) &&                                               \
      (strncmp((SV1).str, (SV2).str, (SV1).len) == 0))
 
+// ***************************************************************************************
+// * COLOR MACROS
+// ***************************************************************************************
+
+#define DC_FG_BLACK "\x1B[30m"
+#define DC_FG_RED "\x1B[31m"
+#define DC_FG_GREEN "\x1B[32m"
+#define DC_FG_YELLOW "\x1B[33m"
+#define DC_FG_BLUE "\x1B[34m"
+#define DC_FG_MAGENTA "\x1B[35m"
+#define DC_FG_CYAN "\x1B[36m"
+#define DC_FG_WHITE "\x1B[37m"
+#define DC_FG_GRAY "\x1B[90m"
+#define DC_FG_LRED "\x1B[91m"
+#define DC_FG_LGREEN "\x1B[92m"
+#define DC_FG_LYELLOW "\x1B[93m"
+#define DC_FG_LBLUE "\x1B[94m"
+#define DC_FG_LMAGENTA "\x1B[95m"
+#define DC_FG_LCYAN "\x1B[96m"
+#define DC_FG_LWHITE "\x1B[97m"
+
+#define DC_BG_BLACK "\x1B[40m"
+#define DC_BG_RED "\x1B[41m"
+#define DC_BG_GREEN "\x1B[42m"
+#define DC_BG_YELLOW "\x1B[43m"
+#define DC_BG_BLUE "\x1B[44m"
+#define DC_BG_MAGENTA "\x1B[45m"
+#define DC_BG_CYAN "\x1B[46m"
+#define DC_BG_WHITE "\x1B[47m"
+#define DC_BG_GRAY "\x1B[100m"
+#define DC_BG_LRED "\x1B[101m"
+#define DC_BG_LGREEN "\x1B[102m"
+#define DC_BG_LYELLOW "\x1B[103m"
+#define DC_BG_LBLUE "\x1B[104m"
+#define DC_BG_LMAGENTA "\x1B[105m"
+#define DC_BG_LCYAN "\x1B[106m"
+#define DC_BG_LWHITE "\x1B[107m"
+
+#define DC_COLOR_RESET "\x1B[0m"
+
+#define dc_colorize(BG_COLOR, FG_COLOR, TEXT)                                  \
+    DC_BG_##BG_COLOR operator DC_FG_##FG_COLOR TEXT operator DC_COLOR_RESET
+
+#define dc_colorize_fg(FG_COLOR, TEXT) DC_FG_##FG_COLOR TEXT DC_COLOR_RESET
+
+#define dc_colorize_bg(BG_COLOR, TEXT) DC_BG_##BG_COLOR TEXT DC_COLOR_RESET
+
 #endif // DC_MACROS_H
