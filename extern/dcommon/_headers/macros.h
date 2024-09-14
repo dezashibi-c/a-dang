@@ -143,12 +143,6 @@
 #define DC_DYNARR_CAP_MULTIPLIER 2
 #endif
 
-#define dc_value_type(TYPE) DC_DYN_VAL_TYPE_##TYPE
-
-#define dc_dynval_set(NAME, TYPE, VALUE)                                       \
-    (NAME).type = dc_value_type(TYPE);                                         \
-    (NAME).value.TYPE##_val = VALUE
-
 #define dc_dynval_lit(TYPE, VALUE)                                             \
     (DCDynValue)                                                               \
     {                                                                          \
@@ -158,11 +152,31 @@
 #define dc_dynval_make(NAME, TYPE, VALUE)                                      \
     DCDynValue NAME = {.type = dc_value_type(TYPE), .value.TYPE##_val = VALUE}
 
+#define dc_value_type(TYPE) DC_DYN_VAL_TYPE_##TYPE
+
+#define dc_dynval_set(NAME, TYPE, VALUE)                                       \
+    (NAME).type = dc_value_type(TYPE);                                         \
+    (NAME).value.TYPE##_val = VALUE
+
 #define dc_dynval_is(NAME, TYPE) ((NAME).type == dc_value_type(TYPE))
 
 #define dc_dynval_is_not(NAME, TYPE) ((NAME).type != dc_value_type(TYPE))
 
 #define dc_dynval_get(NAME, TYPE) ((NAME).value.TYPE##_val)
+
+#define dc_dynarr_get_dynval(DYNARR, INDEX) ((DYNARR).elements[INDEX])
+
+#define dc_dynarr_get(DYNARR, INDEX, TYPE)                                     \
+    dc_dynval_get(dc_dynarr_get_dynval(DYNARR, INDEX), TYPE)
+
+#define dc_dynarr_is(DYNARR, INDEX, TYPE)                                      \
+    dc_dynval_is((DYNARR).elements[INDEX], TYPE)
+
+#define dc_dynarr_is_not(DYNARR, INDEX, TYPE)                                  \
+    dc_dynval_is_not((DYNARR).elements[INDEX], TYPE)
+
+#define dc_dynarr_for(DYNARR)                                                  \
+    for (usize _idx = 0; _idx < (DYNARR).count; _idx++)
 
 // Function to initialize the dynamic array with initial values
 #define dc_dynarr_init_with_values(DYNARRPTR, ...)                             \
