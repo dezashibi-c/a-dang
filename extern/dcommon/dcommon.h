@@ -29,29 +29,40 @@
 // * FUNCTION DECLARATIONS
 // ***************************************************************************************
 
-void dc_dynarr_init(DCDynArr* darr);
+void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func);
 void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
+                                   DCDynValFreeFunc element_free_func,
                                    DCDynValue values[]);
-void dc_dynarr_add(DCDynArr* darr, DCDynValue value);
+void dc_dynarr_grow(DCDynArr* darr);
+void dc_dynarr_push(DCDynArr* darr, DCDynValue value);
+DCDynValue* dc_dynarr_get(DCDynArr* darr, usize index);
 DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el);
-void dc_dynarr_value_free(DCDynValue* element,
-                          void (*custom_free)(DCDynValue*));
-void dc_dynarr_free(DCDynArr* darr, void (*custom_free)(DCDynValue*));
-void dc_dynarr_delete(DCDynArr* darr, usize index,
-                      void (*custom_free)(DCDynValue*));
+void dc_dynval_free(DCDynValue* element, void (*custom_free)(DCDynValue*));
+void dc_dynarr_free(DCDynArr* darr);
+bool dc_dynarr_delete(DCDynArr* darr, usize index);
+void dc_dynarr_insert(DCDynArr* darr, usize index, DCDynValue value);
 
-___dc_dynval_converters_decl(u8);
-___dc_dynval_converters_decl(i32);
-___dc_dynval_converters_decl(u32);
-___dc_dynval_converters_decl(u64);
-___dc_dynval_converters_decl(f32);
-___dc_dynval_converters_decl(f64);
-___dc_dynval_converters_decl(uptr);
-___dc_dynval_converters_decl(char);
-___dc_dynval_converters_decl(size);
-___dc_dynval_converters_decl(usize);
-___dc_dynval_converters_decl(string);
-___dc_dynval_converters_decl(voidptr);
+___dc_dynarr_converters_decl(u8);
+___dc_dynarr_converters_decl(i32);
+___dc_dynarr_converters_decl(u32);
+___dc_dynarr_converters_decl(u64);
+___dc_dynarr_converters_decl(f32);
+___dc_dynarr_converters_decl(f64);
+___dc_dynarr_converters_decl(uptr);
+___dc_dynarr_converters_decl(char);
+___dc_dynarr_converters_decl(size);
+___dc_dynarr_converters_decl(usize);
+___dc_dynarr_converters_decl(string);
+___dc_dynarr_converters_decl(voidptr);
+
+DCHashTable* dc_ht_create(usize capacity, DCHashFunc hash_func,
+                          DCKeyCompFunc key_cmp_func,
+                          DCDynValFreeFunc element_free_func);
+void dc_ht_free(DCHashTable* ht);
+usize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynValue** out_result);
+void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value);
+bool dc_ht_delete(DCHashTable* ht, voidptr key);
+usize dc_ht_keys(DCHashTable* ht, voidptr** out_arr);
 
 DCStringView dc_sv_create(string base, usize start, usize length);
 string dc_sv_as_cstr(DCStringView* sv);
@@ -75,6 +86,7 @@ FILE* dc_error_logs = NULL;
 DC_ERROR_MODE dc_error_mode = DC_ERR_MODE_NORMAL;
 
 #include "_dynarr.c"
+#include "_dynht.c"
 #include "_string_view.c"
 #include "_utils.c"
 

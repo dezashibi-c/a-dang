@@ -26,10 +26,11 @@
 #include "_headers/macros.h"
 
 // Function to initialize the dynamic array
-void dc_dynarr_init(DCDynArr* darr)
+void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
 {
     darr->cap = DC_DYNARR_INITIAL_CAP;
     darr->count = 0;
+    darr->element_free_func = element_free_func;
     darr->elements = malloc(DC_DYNARR_INITIAL_CAP * sizeof(DCDynValue));
     if (darr->elements == NULL)
     {
@@ -40,10 +41,12 @@ void dc_dynarr_init(DCDynArr* darr)
 
 // Function to initialize the dynamic array with initial values
 void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
+                                   DCDynValFreeFunc element_free_func,
                                    DCDynValue values[])
 {
     darr->cap = count;
     darr->count = 0;
+    darr->element_free_func = element_free_func;
     darr->elements = malloc((count == 0 ? DC_DYNARR_INITIAL_CAP : count) *
                             sizeof(DCDynValue));
     if (darr->elements == NULL)
@@ -54,28 +57,42 @@ void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
 
     for (usize i = 0; i < count; ++i)
     {
-        dc_dynarr_add(darr, values[i]);
+        dc_dynarr_push(darr, values[i]);
     }
 }
 
-// Function to add an element to the dynamic array
-void dc_dynarr_add(DCDynArr* darr, DCDynValue value)
+void dc_dynarr_grow(DCDynArr* darr)
 {
-    if (darr->count >= darr->cap)
+    // Resize the array if needed (double the capacity by default)
+    DCDynValue* resized =
+        realloc(darr->elements,
+                darr->cap * DC_DYNARR_CAP_MULTIPLIER * sizeof(DCDynValue));
+    if (resized == NULL)
     {
-        // Resize the array if needed (double the capacity by default)
-        darr->cap *= DC_DYNARR_CAP_MULTIPLIER;
-        darr->elements =
-            realloc(darr->elements, darr->cap * sizeof(DCDynValue));
-        if (darr->elements == NULL)
-        {
-            fprintf(stderr, "Memory reallocation failed\n");
-            exit(EXIT_FAILURE);
-        }
+        fprintf(stderr, "Memory reallocation failed\n");
+
+        exit(EXIT_FAILURE);
     }
+
+    darr->cap *= DC_DYNARR_CAP_MULTIPLIER;
+    darr->elements = resized;
+}
+
+// Function to add an element to the dynamic array
+void dc_dynarr_push(DCDynArr* darr, DCDynValue value)
+{
+    if (darr->count >= darr->cap) dc_dynarr_grow(darr);
+
     // Add the new element with its type and value
     darr->elements[darr->count] = value;
     darr->count++;
+}
+
+DCDynValue* dc_dynarr_get(DCDynArr* darr, usize index)
+{
+    if (index >= darr->count) return NULL;
+
+    return &darr->elements[index];
 }
 
 // Function to find an element in the dynamic array
@@ -144,22 +161,27 @@ DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el)
     return NULL; // Return NULL if not found
 }
 
-
-void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
+void dc_dynval_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
 {
-    if (custom_free) custom_free(element);
-
     switch (element->type)
     {
         case DC_DYN_VAL_TYPE_string:
+        {
+            if (custom_free) custom_free(element);
+
             if (dc_dynval_get(*element, string) != NULL)
                 free(dc_dynval_get(*element, string));
             break;
+        }
 
         case DC_DYN_VAL_TYPE_voidptr:
+        {
+            if (custom_free) custom_free(element);
+
             if (dc_dynval_get(*element, voidptr) != NULL)
                 free(dc_dynval_get(*element, voidptr));
             break;
+        }
 
         // Do nothing for literal types (integer, float, etc.)
         default:
@@ -169,11 +191,11 @@ void dc_dynarr_value_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
 
 
 // Function to free the dynamic array
-void dc_dynarr_free(DCDynArr* darr, void (*custom_free)(DCDynValue*))
+void dc_dynarr_free(DCDynArr* darr)
 {
     for (usize i = 0; i < darr->count; ++i)
     {
-        dc_dynarr_value_free(&darr->elements[i], custom_free);
+        dc_dynval_free(&darr->elements[i], darr->element_free_func);
     }
 
     free(darr->elements);
@@ -183,26 +205,20 @@ void dc_dynarr_free(DCDynArr* darr, void (*custom_free)(DCDynValue*))
     darr->count = 0;
 }
 
-void dc_dynarr_delete(DCDynArr* darr, usize index,
-                      void (*custom_free)(DCDynValue*))
+bool dc_dynarr_delete(DCDynArr* darr, usize index)
 {
-    if (index >= darr->count)
-    {
-        return;
-    }
+    if (index >= darr->count) return false;
 
     // Free the element at the specified index
-    dc_dynarr_value_free(&darr->elements[index], custom_free);
+    dc_dynval_free(&darr->elements[index], darr->element_free_func);
 
     // Shift the elements after the deleted one to fill the gap
-    for (usize i = index; i < darr->count - 1; i++)
-    {
-        darr->elements[i] = darr->elements[i + 1];
-    }
+    memmove(&darr->elements[index], &darr->elements[index + 1],
+            (darr->count - index - 1) * sizeof(DCDynValue));
 
     darr->count--;
 
-    // Optional: shrink the capacity if too much unused space
+    // shrink the capacity if too much unused space
     if (darr->count < darr->cap / 4 && darr->cap > DC_DYNARR_INITIAL_CAP)
     {
         darr->cap /= 2;
@@ -214,53 +230,67 @@ void dc_dynarr_delete(DCDynArr* darr, usize index,
             exit(EXIT_FAILURE);
         }
     }
+
+    return true;
 }
 
-___dc_dynval_converters_decl(u8)
+void dc_dynarr_insert(DCDynArr* darr, usize index, DCDynValue value)
 {
-    ___dc_dynval_converters_impl(u8);
+    if (darr->count >= darr->cap) dc_dynarr_grow(darr);
+
+    memmove(&darr->elements[index + 1], &darr->elements[index],
+            (darr->count - index) * sizeof(DCDynValue));
+
+    // Add the new value at the desired index
+    darr->elements[index] = value;
+    darr->count++;
 }
-___dc_dynval_converters_decl(i32)
+
+___dc_dynarr_converters_decl(u8)
 {
-    ___dc_dynval_converters_impl(i32);
+    ___dc_dynarr_converters_impl(u8);
 }
-___dc_dynval_converters_decl(u32)
+___dc_dynarr_converters_decl(i32)
 {
-    ___dc_dynval_converters_impl(u32);
+    ___dc_dynarr_converters_impl(i32);
 }
-___dc_dynval_converters_decl(u64)
+___dc_dynarr_converters_decl(u32)
 {
-    ___dc_dynval_converters_impl(u64);
+    ___dc_dynarr_converters_impl(u32);
 }
-___dc_dynval_converters_decl(f32)
+___dc_dynarr_converters_decl(u64)
 {
-    ___dc_dynval_converters_impl(f32);
+    ___dc_dynarr_converters_impl(u64);
 }
-___dc_dynval_converters_decl(f64)
+___dc_dynarr_converters_decl(f32)
 {
-    ___dc_dynval_converters_impl(f64);
+    ___dc_dynarr_converters_impl(f32);
 }
-___dc_dynval_converters_decl(uptr)
+___dc_dynarr_converters_decl(f64)
 {
-    ___dc_dynval_converters_impl(uptr);
+    ___dc_dynarr_converters_impl(f64);
 }
-___dc_dynval_converters_decl(char)
+___dc_dynarr_converters_decl(uptr)
 {
-    ___dc_dynval_converters_impl(char);
+    ___dc_dynarr_converters_impl(uptr);
 }
-___dc_dynval_converters_decl(size)
+___dc_dynarr_converters_decl(char)
 {
-    ___dc_dynval_converters_impl(size);
+    ___dc_dynarr_converters_impl(char);
 }
-___dc_dynval_converters_decl(usize)
+___dc_dynarr_converters_decl(size)
 {
-    ___dc_dynval_converters_impl(usize);
+    ___dc_dynarr_converters_impl(size);
 }
-___dc_dynval_converters_decl(string)
+___dc_dynarr_converters_decl(usize)
 {
-    ___dc_dynval_converters_impl(string);
+    ___dc_dynarr_converters_impl(usize);
 }
-___dc_dynval_converters_decl(voidptr)
+___dc_dynarr_converters_decl(string)
 {
-    ___dc_dynval_converters_impl(voidptr);
+    ___dc_dynarr_converters_impl(string);
+}
+___dc_dynarr_converters_decl(voidptr)
+{
+    ___dc_dynarr_converters_impl(voidptr);
 }

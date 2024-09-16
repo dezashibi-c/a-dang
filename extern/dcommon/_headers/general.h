@@ -23,6 +23,7 @@
     "You cannot use this header (general.h) directly, please consider including dcommon.h"
 #endif
 
+#include <assert.h>
 #include <limits.h>
 #include <math.h>
 #include <memory.h>

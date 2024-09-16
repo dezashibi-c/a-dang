@@ -124,11 +124,15 @@ typedef struct
     } value;
 } DCDynValue;
 
+typedef void (*DCDynValFreeFunc)(DCDynValue*);
+
 typedef struct
 {
     DCDynValue* elements;
     usize cap;
     usize count;
+
+    DCDynValFreeFunc element_free_func;
 } DCDynArr;
 
 typedef struct
@@ -137,5 +141,25 @@ typedef struct
     usize len;
     string cstr;
 } DCStringView;
+
+typedef struct
+{
+    voidptr key;
+    DCDynValue value;
+} DCHashEntry;
+
+typedef u32 (*DCHashFunc)(voidptr);
+typedef bool (*DCKeyCompFunc)(voidptr, voidptr);
+
+typedef struct
+{
+    DCDynArr* elements;
+    usize cap;
+    usize key_count;
+
+    DCHashFunc hash_func;
+    DCKeyCompFunc key_cmp_func;
+    DCDynValFreeFunc element_free_func;
+} DCHashTable;
 
 #endif // DC_ALIASES_H

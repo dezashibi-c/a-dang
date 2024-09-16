@@ -47,7 +47,7 @@
         }                                                                      \
     } while (0)
 
-#define tostr_enum_scase(ITEM)                                                 \
+#define dc_str_case(ITEM)                                                      \
     case ITEM:                                                                 \
         return #ITEM
 
@@ -164,10 +164,8 @@
 
 #define dc_dynval_get(NAME, TYPE) ((NAME).value.TYPE##_val)
 
-#define dc_dynarr_get_dynval(DYNARR, INDEX) ((DYNARR).elements[INDEX])
-
-#define dc_dynarr_get(DYNARR, INDEX, TYPE)                                     \
-    dc_dynval_get(dc_dynarr_get_dynval(DYNARR, INDEX), TYPE)
+#define dc_dynarr_get_as(DYNARR, INDEX, TYPE)                                  \
+    dc_dynval_get(*dc_dynarr_get(DYNARR, INDEX), TYPE)
 
 #define dc_dynarr_is(DYNARR, INDEX, TYPE)                                      \
     dc_dynval_is((DYNARR).elements[INDEX], TYPE)
@@ -179,19 +177,19 @@
     for (usize _idx = 0; _idx < (DYNARR).count; _idx++)
 
 // Function to initialize the dynamic array with initial values
-#define dc_dynarr_init_with_values(DYNARRPTR, ...)                             \
+#define dc_dynarr_init_with_values(DYNARRPTR, FREE_FUNC, ...)                  \
     do                                                                         \
     {                                                                          \
         dc_sarray(__initial_values, DCDynValue, __VA_ARGS__);                  \
         ___dc_dynarr_init_with_values(DYNARRPTR, dc_count(__initial_values),   \
-                                      __initial_values);                       \
+                                      FREE_FUNC, __initial_values);            \
     } while (0)
 
-#define ___dc_dynval_converters_decl(ORIGIN_TYPE)                              \
+#define ___dc_dynarr_converters_decl(ORIGIN_TYPE)                              \
     usize dc_##ORIGIN_TYPE##_dynarr_to_flat_arr(                               \
         DCDynArr* arr, ORIGIN_TYPE** out_arr, bool must_fail)
 
-#define ___dc_dynval_converters_impl(ORIGIN_TYPE)                              \
+#define ___dc_dynarr_converters_impl(ORIGIN_TYPE)                              \
     if (!arr || arr->count == 0 || !out_arr)                                   \
     {                                                                          \
         return 0;                                                              \
@@ -221,9 +219,18 @@
     (*out_arr)[dest_index] = dc_arr_terminator(ORIGIN_TYPE);                   \
     return dest_index
 
+// ***************************************************************************************
+// * HASH TABLE MACROS
+// ***************************************************************************************
+
+#define dc_ht_get_hash(VAR_NAME, HT, KEY)                                      \
+    u32 VAR_NAME = (HT).hash_func((KEY)) % (HT).cap
+
+#define dc_ht_get_element(VAR_NAME, HT, HASH)                                  \
+    DCDynArr* VAR_NAME = &((HT).elements[HASH])
 
 // ***************************************************************************************
-// * STRING_VIEW MACROS
+// * STRING VIEW MACROS
 // ***************************************************************************************
 
 #define DC_SV_FMT "%.*s"
