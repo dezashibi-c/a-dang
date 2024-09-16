@@ -30,6 +30,7 @@
 // ***************************************************************************************
 
 void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func);
+DCDynArr* dc_dynarr_create(DCDynValFreeFunc element_free_func);
 void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
                                    DCDynValFreeFunc element_free_func,
                                    DCDynValue values[]);
@@ -55,6 +56,8 @@ ___dc_dynarr_converters_decl(usize);
 ___dc_dynarr_converters_decl(string);
 ___dc_dynarr_converters_decl(voidptr);
 
+void dc_ht_init(DCHashTable* ht, usize capacity, DCHashFunc hash_func,
+                DCKeyCompFunc key_cmp_func, DCDynValFreeFunc element_free_func);
 DCHashTable* dc_ht_create(usize capacity, DCHashFunc hash_func,
                           DCKeyCompFunc key_cmp_func,
                           DCDynValFreeFunc element_free_func);

@@ -23,12 +23,9 @@
 
 #include "dcommon.h"
 
-DCHashTable* dc_ht_create(usize capacity, DCHashFunc hash_func,
-                          DCKeyCompFunc key_cmp_func,
-                          DCDynValFreeFunc element_free_func)
+void dc_ht_init(DCHashTable* ht, usize capacity, DCHashFunc hash_func,
+                DCKeyCompFunc key_cmp_func, DCDynValFreeFunc element_free_func)
 {
-    DCHashTable* ht = (DCHashTable*)malloc(sizeof(DCHashTable));
-
     ht->elements = (DCDynArr*)calloc(capacity, sizeof(DCDynArr));
 
     ht->cap = capacity;
@@ -37,6 +34,15 @@ DCHashTable* dc_ht_create(usize capacity, DCHashFunc hash_func,
     ht->hash_func = hash_func;
     ht->key_cmp_func = key_cmp_func;
     ht->element_free_func = element_free_func;
+}
+
+DCHashTable* dc_ht_create(usize capacity, DCHashFunc hash_func,
+                          DCKeyCompFunc key_cmp_func,
+                          DCDynValFreeFunc element_free_func)
+{
+    DCHashTable* ht = (DCHashTable*)malloc(sizeof(DCHashTable));
+
+    dc_ht_init(ht, capacity, hash_func, key_cmp_func, element_free_func);
 
     return ht;
 }

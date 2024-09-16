@@ -59,7 +59,23 @@ static Token* extract_identifier(Scanner* s)
     usize len = s->pos - start;
 
     Token* t = token_make(TOK_IDENT, s->input, start, len);
-    t->type = is_keyword(&t->text);
+
+    switch (s->input[start])
+    {
+        case 'f':
+        case 'l':
+        case 't':
+        case 'i':
+        case 'e':
+        case 'r':
+            t->type = is_keyword(&t->text);
+            break;
+
+        default:
+            t->type = TOK_IDENT;
+            break;
+    }
+
 
     return t;
 }
@@ -77,20 +93,6 @@ static Token* extract_number(Scanner* s)
     return t;
 }
 
-// ***************************************************************************************
-// * PUBLIC FUNCTIONS
-// ***************************************************************************************
-
-void scanner_init(Scanner* s, const string input)
-{
-    s->pos = 0;
-    s->read_pos = 0;
-    s->input = input;
-    dc_dynarr_init(&s->tokens);
-
-    read_char(s);
-}
-
 static void custom_token_free(DCDynValue* item)
 {
     switch (item->type)
@@ -104,9 +106,23 @@ static void custom_token_free(DCDynValue* item)
     }
 }
 
+// ***************************************************************************************
+// * PUBLIC FUNCTIONS
+// ***************************************************************************************
+
+void scanner_init(Scanner* s, const string input)
+{
+    s->pos = 0;
+    s->read_pos = 0;
+    s->input = input;
+    dc_dynarr_init(&s->tokens, custom_token_free);
+
+    read_char(s);
+}
+
 void scanner_free(Scanner* s)
 {
-    dc_dynarr_free(&s->tokens, custom_token_free);
+    dc_dynarr_free(&s->tokens);
 }
 
 Token* scanner_next_token(Scanner* s)
@@ -202,13 +218,15 @@ Token* scanner_next_token(Scanner* s)
             if (is_letter(s->c))
             {
                 token = extract_identifier(s);
-                dc_dynarr_add(&s->tokens, dc_dynval_lit(voidptr, (void*)token));
+                dc_dynarr_push(&s->tokens,
+                               dc_dynval_lit(voidptr, (void*)token));
                 return token;
             }
             else if (is_digit(s->c))
             {
                 token = extract_number(s);
-                dc_dynarr_add(&s->tokens, dc_dynval_lit(voidptr, (void*)token));
+                dc_dynarr_push(&s->tokens,
+                               dc_dynval_lit(voidptr, (void*)token));
                 return token;
             }
             else
@@ -219,6 +237,6 @@ Token* scanner_next_token(Scanner* s)
 
     read_char(s);
 
-    dc_dynarr_add(&s->tokens, dc_dynval_lit(voidptr, (void*)token));
+    dc_dynarr_push(&s->tokens, dc_dynval_lit(voidptr, (void*)token));
     return token;
 }

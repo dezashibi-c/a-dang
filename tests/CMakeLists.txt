@@ -22,3 +22,4 @@ add_custom_target(all_tests)
 ###############################################################################
 
 add_clove_test(test_scanner "" ../src/scanner.c ../src/token.c)
+add_clove_test(test_parser "" ../src/scanner.c ../src/token.c ../src/parser.c ../src/ast.c)

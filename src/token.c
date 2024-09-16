@@ -16,61 +16,66 @@
 
 #include "token.h"
 
-string tostr_DangTokenType(DangTokenType enum_item)
+string tostr_DangTokenType(DangTokenType dtt)
 {
+    switch (dtt)
     {
-        switch (enum_item)
-        {
-            tostr_enum_scase(TOK_ILLEGAL);
-            tostr_enum_scase(TOK_EOF);
-            tostr_enum_scase(TOK_IDENT);
-            tostr_enum_scase(TOK_INT);
-            tostr_enum_scase(TOK_ASSIGN);
-            tostr_enum_scase(TOK_PLUS);
-            tostr_enum_scase(TOK_MINUS);
-            tostr_enum_scase(TOK_BANG);
-            tostr_enum_scase(TOK_ASTERISK);
-            tostr_enum_scase(TOK_SLASH);
-            tostr_enum_scase(TOK_LT);
-            tostr_enum_scase(TOK_GT);
-            tostr_enum_scase(TOK_EQ);
-            tostr_enum_scase(TOK_NEQ);
-            tostr_enum_scase(TOK_COMMA);
-            tostr_enum_scase(TOK_SEMICOLON);
-            tostr_enum_scase(TOK_NEWLINE);
-            tostr_enum_scase(TOK_LPAREN);
-            tostr_enum_scase(TOK_RPAREN);
-            tostr_enum_scase(TOK_LBRACE);
-            tostr_enum_scase(TOK_RBRACE);
-            tostr_enum_scase(TOK_FUNCTION);
-            tostr_enum_scase(TOK_LET);
-            tostr_enum_scase(TOK_TRUE);
-            tostr_enum_scase(TOK_FALSE);
-            tostr_enum_scase(TOK_IF);
-            tostr_enum_scase(TOK_ELSE);
-            tostr_enum_scase(TOK_RET);
-        };
+        dc_str_case(TOK_ILLEGAL);
+        dc_str_case(TOK_EOF);
+        dc_str_case(TOK_IDENT);
+        dc_str_case(TOK_INT);
+        dc_str_case(TOK_ASSIGN);
+        dc_str_case(TOK_PLUS);
+        dc_str_case(TOK_MINUS);
+        dc_str_case(TOK_BANG);
+        dc_str_case(TOK_ASTERISK);
+        dc_str_case(TOK_SLASH);
+        dc_str_case(TOK_LT);
+        dc_str_case(TOK_GT);
+        dc_str_case(TOK_EQ);
+        dc_str_case(TOK_NEQ);
+        dc_str_case(TOK_COMMA);
+        dc_str_case(TOK_SEMICOLON);
+        dc_str_case(TOK_NEWLINE);
+        dc_str_case(TOK_LPAREN);
+        dc_str_case(TOK_RPAREN);
+        dc_str_case(TOK_LBRACE);
+        dc_str_case(TOK_RBRACE);
+        dc_str_case(TOK_FUNCTION);
+        dc_str_case(TOK_LET);
+        dc_str_case(TOK_TRUE);
+        dc_str_case(TOK_FALSE);
+        dc_str_case(TOK_IF);
+        dc_str_case(TOK_ELSE);
+        dc_str_case(TOK_RET);
+    };
 
-        return NULL;
-    }
+    return NULL;
 }
 
 DangTokenType is_keyword(DCStringView* text)
 {
     if (dc_sv_str_eq((*text), "fn"))
         return TOK_FUNCTION;
+
     else if (dc_sv_str_eq((*text), "let"))
         return TOK_LET;
+
     else if (dc_sv_str_eq((*text), "true"))
         return TOK_TRUE;
+
     else if (dc_sv_str_eq((*text), "false"))
         return TOK_FALSE;
+
     else if (dc_sv_str_eq((*text), "if"))
         return TOK_IF;
+
     else if (dc_sv_str_eq((*text), "else"))
         return TOK_ELSE;
+
     else if (dc_sv_str_eq((*text), "return"))
         return TOK_RET;
+
     else
         return TOK_IDENT;
 }

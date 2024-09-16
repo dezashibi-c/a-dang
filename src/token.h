@@ -64,7 +64,7 @@ typedef struct
     DCStringView text;
 } Token;
 
-string tostr_DangTokenType(DangTokenType enum_item);
+string tostr_DangTokenType(DangTokenType dtt);
 DangTokenType is_keyword(DCStringView* text);
 
 Token* token_make(DangTokenType type, string str, usize start, usize len);

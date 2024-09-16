@@ -39,6 +39,20 @@ void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
     }
 }
 
+DCDynArr* dc_dynarr_create(DCDynValFreeFunc element_free_func)
+{
+    DCDynArr* darr = malloc(sizeof(DCDynArr));
+    if (darr == NULL)
+    {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    dc_dynarr_init(darr, element_free_func);
+
+    return darr;
+}
+
 // Function to initialize the dynamic array with initial values
 void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
                                    DCDynValFreeFunc element_free_func,
