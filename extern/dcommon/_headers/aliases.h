@@ -153,7 +153,7 @@ typedef bool (*DCKeyCompFunc)(voidptr, voidptr);
 
 typedef struct
 {
-    DCDynArr* elements;
+    DCDynArr* container;
     usize cap;
     usize key_count;
 

@@ -26,7 +26,7 @@
 void dc_ht_init(DCHashTable* ht, usize capacity, DCHashFunc hash_func,
                 DCKeyCompFunc key_cmp_func, DCDynValFreeFunc element_free_func)
 {
-    ht->elements = (DCDynArr*)calloc(capacity, sizeof(DCDynArr));
+    ht->container = (DCDynArr*)calloc(capacity, sizeof(DCDynArr));
 
     ht->cap = capacity;
     ht->key_count = 0;
@@ -56,8 +56,13 @@ void dc_ht_free(DCHashTable* ht)
         dc_dynarr_free(darr);
     }
 
-    free(ht->elements);
-    free(ht);
+    free(ht->container);
+
+    ht->cap = 0;
+    ht->key_count = 0;
+    ht->hash_func = NULL;
+    ht->key_cmp_func = NULL;
+    ht->element_free_func = NULL;
 }
 
 usize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynValue** out_result)
@@ -126,6 +131,30 @@ void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
 
     dc_dynarr_push(current, dc_dynval_lit(voidptr, new_entry));
     ht->key_count++;
+}
+
+void ___dc_ht_set_multiple(DCHashTable* ht, usize count, DCHashEntry entries[])
+{
+    for (usize i = 0; i < count; ++i)
+    {
+        dc_ht_set(ht, entries[i].key, entries[i].value);
+    }
+}
+
+void dc_ht_merge(DCHashTable* ht, DCHashTable* from)
+{
+    for (usize i = 0; i < from->cap; ++i)
+    {
+        if (from->container[i].cap == 0) continue;
+
+        for (usize j = 0; j < from->container[i].count; ++j)
+        {
+            DCHashEntry* entry =
+                dc_dynarr_get_as(&from->container[i], j, voidptr);
+
+            dc_ht_set(ht, entry->key, entry->value);
+        }
+    }
 }
 
 bool dc_ht_delete(DCHashTable* ht, voidptr key)
