@@ -69,137 +69,16 @@ typedef enum
      dnode_group_is_expression(NODE_TYPE) &&                                   \
      dnode_group_is_statement(NODE_TYPE) && dnode_group_is_literal(NODE_TYPE))
 
-#define __NODE_TYPE_DEFAULT_FIELDS                                             \
-    DangNodeType type;                                                         \
+typedef struct
+{
+    DangNodeType type;
     Token* token;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
+    DCDynArr children;
 } DNode;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DCDynArr statements;
-} DNodeProgram;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DNode name;
-    DNode value;
-} DNodeLetStatement;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DNode return_value_expr;
-} DNodeReturnStatement;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DNode expression;
-} DNodeExpressionStatement;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DCDynValue value;
-} DNodeLiteral;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DNode right;
-} DNodePrefixExpression;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DNode left;
-    DNode right;
-} DNodeInfixExpression;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DCDynArr statements;
-} DNodeBlockStatement;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DNode condition;
-    DNodeBlockStatement consequence;
-    DNodeBlockStatement alternative;
-} DNodeIfExpression;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DNode condition;
-    DNodeBlockStatement body;
-} DNodeWhileExpression;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DCDynArr identifiers;
-    DNodeBlockStatement body;
-} DNodeFunctionLiteral;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DNode function;
-    DCDynArr expressions;
-} DNodeCallExpression;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DCDynArr expressions;
-} DNodeArrayLiteral;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DCHashTable expression_pairs;
-} DNodeHashLiteral;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DNode left;
-    DNode index;
-} DNodeIndexExpression;
-
-typedef struct
-{
-    __NODE_TYPE_DEFAULT_FIELDS
-
-    DCDynArr identifiers;
-    DNodeBlockStatement body;
-} DNodeMacroLiteral;
 
 string tostr_DangNodeType(DangNodeType dnt);
 DCStringView* dnode_get_token_text(DNode* dn);
+
+DNode* node_create(DangNodeType type, Token* token, bool has_children);
 
 #endif // DANG_AST_H

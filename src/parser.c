@@ -20,10 +20,57 @@
 // * PRIVATE FUNCTIONS
 // ***************************************************************************************
 
+#define current_token_is(P, TYPE) ((P)->current_token->type == TYPE)
+#define current_token_is_not(P, TYPE) ((P)->current_token->type != TYPE)
+
+#define peek_token_is(P, TYPE) ((P)->peek_token->type == TYPE)
+#define peek_token_is_not(P, TYPE) ((P)->peek_token->type != TYPE)
+
 static void next_token(Parser* p)
 {
     p->current_token = p->peek_token;
     p->peek_token = scanner_next_token(p->scanner);
+}
+
+static bool move_if_peek_token_is(Parser* p, DangTokenType type)
+{
+    if (peek_token_is(p, type))
+    {
+        next_token(p);
+        return true;
+    }
+
+    return false;
+}
+
+static DNode* parser_parse_let_statement(Parser* p)
+{
+    DNode* stmt = node_create(DN_LET_STATEMENT, p->current_token, true);
+
+    if (!move_if_peek_token_is(p, TOK_IDENT)) return NULL;
+
+    DNode* name = node_create(DN_IDENTIFIER, p->current_token, false);
+    dc_dynarr_push(&stmt->children, dc_dynval_lit(voidptr, name));
+
+    if (!move_if_peek_token_is(p, TOK_ASSIGN)) return NULL;
+
+    while (current_token_is(p, TOK_SEMICOLON) &&
+           current_token_is(p, TOK_NEWLINE))
+        next_token(p);
+
+    return stmt;
+}
+
+static DNode* parser_parse_statement(Parser* p)
+{
+    switch (p->current_token->type)
+    {
+        case TOK_LET:
+            return parser_parse_let_statement(p);
+
+        default:
+            return NULL;
+    }
 }
 
 // ***************************************************************************************
@@ -41,8 +88,20 @@ void parser_init(Parser* p, Scanner* s)
     next_token(p);
 }
 
-DNodeProgram parser_parse_program(Parser* p)
+DNode* parser_parse_program(Parser* p)
 {
+    (void)p;
 
-    return (DNodeProgram){.type = DN__UNKNOWN};
+    DNode* program = node_create(DN_PROGRAM, NULL, true);
+
+    while (p->current_token->type != TOK_EOF)
+    {
+        DNode* stmt = parser_parse_statement(p);
+        if (stmt != NULL)
+            dc_dynarr_push(&program->children, dc_dynval_lit(voidptr, stmt));
+
+        next_token(p);
+    }
+
+    return program;
 }

@@ -29,6 +29,6 @@ typedef struct
 } Parser;
 
 void parser_init(Parser* p, Scanner* s);
-DNodeProgram parser_parse_program(Parser* p);
+DNode* parser_parse_program(Parser* p);
 
 #endif // DANG_PARSER_H

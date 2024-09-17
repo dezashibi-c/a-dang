@@ -86,3 +86,22 @@ DCStringView* dnode_get_token_text(DNode* dn)
 
     // return NULL; // unreachable
 }
+
+DNode* node_create(DangNodeType type, Token* token, bool has_children)
+{
+    DNode* node = malloc(sizeof(DNode));
+
+    if (node == NULL)
+    {
+        printf("Memory allocation failed\n");
+
+        return NULL;
+    }
+
+    node->type = type;
+    node->token = token;
+
+    if (has_children) dc_dynarr_init(&node->children, NULL);
+
+    return node;
+}
