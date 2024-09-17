@@ -30,15 +30,15 @@ bool test_DNodeLetStatement(DNode* stmt, string* name)
 
     DNode* stmt_name = dc_dynarr_get_as(&stmt->children, 0, voidptr);
 
-    dc_action_on(
-        stmt_name->type != DN_IDENTIFIER, return false,
-        "---- Wrong name node type, expected type='%s' but got = '%s' ",
-        tostr_DangNodeType(DN_IDENTIFIER), tostr_DangNodeType(stmt_name->type));
+    dc_action_on(stmt_name->type != DN_IDENTIFIER, return false,
+                 "---- Wrong name node type, expected type='%s' but got = '%s'",
+                 tostr_DangNodeType(DN_IDENTIFIER),
+                 tostr_DangNodeType(stmt_name->type));
 
     dc_action_on(!dc_sv_str_eq(stmt_name->token->text, *name), return false,
                  " ---- Wrong text for statement's name token text, expected "
                  "text = '%s' but "
-                 " got = '" DC_SV_FMT "' ",
+                 "got = '" DC_SV_FMT "' ",
                  *name, dc_sv_fmt_val(stmt_name->token->text));
 
     return true;
