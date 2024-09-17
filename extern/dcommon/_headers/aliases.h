@@ -131,6 +131,7 @@ typedef struct
     DCDynValue* elements;
     usize cap;
     usize count;
+    usize multiplier;
 
     DCDynValFreeFunc element_free_func;
 } DCDynArr;

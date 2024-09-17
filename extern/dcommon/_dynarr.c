@@ -30,7 +30,10 @@ void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
 {
     darr->cap = DC_DYNARR_INITIAL_CAP;
     darr->count = 0;
+    darr->multiplier = DC_DYNARR_CAP_MULTIPLIER;
+
     darr->element_free_func = element_free_func;
+
     darr->elements = malloc(DC_DYNARR_INITIAL_CAP * sizeof(DCDynValue));
     if (darr->elements == NULL)
     {
@@ -38,6 +41,25 @@ void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
         exit(EXIT_FAILURE);
     }
 }
+
+void dc_dynarr_init_custom(DCDynArr* darr, usize capacity,
+                           usize capacity_grow_multiplier,
+                           DCDynValFreeFunc element_free_func)
+{
+    darr->cap = capacity;
+    darr->count = 0;
+    darr->multiplier = capacity_grow_multiplier;
+
+    darr->element_free_func = element_free_func;
+
+    darr->elements = malloc(capacity * sizeof(DCDynValue));
+    if (darr->elements == NULL)
+    {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 DCDynArr* dc_dynarr_create(DCDynValFreeFunc element_free_func)
 {
@@ -53,6 +75,23 @@ DCDynArr* dc_dynarr_create(DCDynValFreeFunc element_free_func)
     return darr;
 }
 
+DCDynArr* dc_dynarr_create_custom(usize capacity,
+                                  usize capacity_grow_multiplier,
+                                  DCDynValFreeFunc element_free_func)
+{
+    DCDynArr* darr = malloc(sizeof(DCDynArr));
+    if (darr == NULL)
+    {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    dc_dynarr_init_custom(darr, capacity, capacity_grow_multiplier,
+                          element_free_func);
+
+    return darr;
+}
+
 // Function to initialize the dynamic array with initial values
 void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
                                    DCDynValFreeFunc element_free_func,
@@ -60,6 +99,8 @@ void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
 {
     darr->cap = count;
     darr->count = 0;
+    darr->multiplier = DC_DYNARR_CAP_MULTIPLIER;
+
     darr->element_free_func = element_free_func;
 
     darr->elements = malloc((count == 0 ? DC_DYNARR_INITIAL_CAP : count) *
@@ -95,7 +136,7 @@ void dc_dynarr_append(DCDynArr* darr, DCDynArr* from)
 
 void dc_dynarr_grow(DCDynArr* darr)
 {
-    if (darr->cap > (SIZE_MAX / DC_DYNARR_CAP_MULTIPLIER) / sizeof(DCDynValue))
+    if (darr->cap > (SIZE_MAX / darr->multiplier) / sizeof(DCDynValue))
     {
         fprintf(stderr, "Array size too large, cannot allocate more memory\n");
 
@@ -105,9 +146,8 @@ void dc_dynarr_grow(DCDynArr* darr)
     }
 
     // Resize the array if needed (double the capacity by default)
-    DCDynValue* resized =
-        realloc(darr->elements,
-                darr->cap * DC_DYNARR_CAP_MULTIPLIER * sizeof(DCDynValue));
+    DCDynValue* resized = realloc(darr->elements, darr->cap * darr->multiplier *
+                                                      sizeof(DCDynValue));
 
     if (resized == NULL)
     {
@@ -119,7 +159,7 @@ void dc_dynarr_grow(DCDynArr* darr)
     }
 
     darr->elements = resized;
-    darr->cap *= DC_DYNARR_CAP_MULTIPLIER;
+    darr->cap *= darr->multiplier;
 }
 
 void dc_dynarr_grow_by(DCDynArr* darr, usize amount)
