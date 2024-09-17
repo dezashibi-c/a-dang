@@ -38,7 +38,8 @@ void dc_dynarr_grow(DCDynArr* darr);
 void dc_dynarr_grow_by(DCDynArr* darr, usize amount);
 void dc_dynarr_grow_to(DCDynArr* darr, usize amount);
 void dc_dynarr_trunc(DCDynArr* darr);
-void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped);
+void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
+                   bool truncate);
 void dc_dynarr_push(DCDynArr* darr, DCDynValue value);
 void ___dc_dynarr_append_values(DCDynArr* darr, usize count,
                                 DCDynValue values[]);

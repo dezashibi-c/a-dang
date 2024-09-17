@@ -178,7 +178,8 @@ void dc_dynarr_trunc(DCDynArr* darr)
     }
 }
 
-void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped)
+void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
+                   bool truncate)
 {
     if (count > darr->count)
     {
@@ -216,7 +217,7 @@ void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped)
         darr->count--;
     }
 
-    dc_dynarr_trunc(darr);
+    if (truncate) dc_dynarr_trunc(darr);
 }
 
 // Function to add an element to the dynamic array
