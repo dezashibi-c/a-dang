@@ -23,19 +23,29 @@
     "You cannot use this header (macros.h) directly, please consider including dcommon.h"
 #endif
 
+// ***************************************************************************************
+// * UTILITY MACROS
+// ***************************************************************************************
+
 #if defined(__GNUC__) || defined(__clang__)
 #define __dc_attribute(A) __attribute__(A)
 #else
 #define __dc_attribute(A)
 #endif
 
+#define dc_log(...)                                                            \
+    do                                                                         \
+    {                                                                          \
+        fprintf(dc_error_logs ? dc_error_logs : stderr, __VA_ARGS__);          \
+        fprintf(dc_error_logs ? dc_error_logs : stderr, "\n");                 \
+    } while (0)
+
 #define dc_action_on(CONDITION, FAILURE_ACTION, ...)                           \
     do                                                                         \
     {                                                                          \
         if (CONDITION)                                                         \
         {                                                                      \
-            fprintf(dc_error_logs ? dc_error_logs : stderr, __VA_ARGS__);      \
-            fprintf(dc_error_logs ? dc_error_logs : stderr, "\n");             \
+            dc_log(__VA_ARGS__);                                               \
             if (dc_error_mode == DC_ERR_MODE_ABORT)                            \
             {                                                                  \
                 abort();                                                       \
@@ -50,6 +60,30 @@
 #define dc_str_case(ITEM)                                                      \
     case ITEM:                                                                 \
         return #ITEM
+
+#ifdef DC_DEBUG
+
+#define dc_dbg_log(...) dc_log(__VA_ARGS__)
+
+#define dc_dbg_log_if(CONDITION, FAILURE_ACTION, ...)                          \
+    dc_action_on(CONDITION, FAILURE_ACTION, __VA_ARGS__)
+
+#else
+
+#define dc_dbg_log(...)
+
+#define dc_dbg_log_if(CONDITION, FAILURE_ACTION, ...)
+
+#endif
+
+#define dc_system(OUT_VAL, ...)                                                \
+    do                                                                         \
+    {                                                                          \
+        string __cmd_string;                                                   \
+        dc_sprintf(&__cmd_string, __VA_ARGS__);                                \
+        OUT_VAL = system(__cmd_string);                                        \
+        free(__cmd_string);                                                    \
+    } while (0)
 
 // ***************************************************************************************
 // * NON-POINTER ARRAY MACROS
