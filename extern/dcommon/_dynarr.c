@@ -37,7 +37,7 @@ void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
     darr->elements = malloc(DC_DYNARR_INITIAL_CAP * sizeof(DCDynValue));
     if (darr->elements == NULL)
     {
-        fprintf(stderr, "Memory allocation failed\n");
+        dc_log("Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -55,7 +55,7 @@ void dc_dynarr_init_custom(DCDynArr* darr, usize capacity,
     darr->elements = malloc(capacity * sizeof(DCDynValue));
     if (darr->elements == NULL)
     {
-        fprintf(stderr, "Memory allocation failed\n");
+        dc_log("Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -66,7 +66,7 @@ DCDynArr* dc_dynarr_create(DCDynValFreeFunc element_free_func)
     DCDynArr* darr = malloc(sizeof(DCDynArr));
     if (darr == NULL)
     {
-        fprintf(stderr, "Memory allocation failed\n");
+        dc_log("Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
 
@@ -82,7 +82,7 @@ DCDynArr* dc_dynarr_create_custom(usize capacity,
     DCDynArr* darr = malloc(sizeof(DCDynArr));
     if (darr == NULL)
     {
-        fprintf(stderr, "Memory allocation failed\n");
+        dc_log("Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
 
@@ -107,7 +107,7 @@ void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
                             sizeof(DCDynValue));
     if (darr->elements == NULL)
     {
-        fprintf(stderr, "Memory allocation failed\n");
+        dc_log("Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
 
@@ -138,7 +138,7 @@ void dc_dynarr_grow(DCDynArr* darr)
 {
     if (darr->cap > (SIZE_MAX / darr->multiplier) / sizeof(DCDynValue))
     {
-        fprintf(stderr, "Array size too large, cannot allocate more memory\n");
+        dc_log("Array size too large, cannot allocate more memory\n");
 
         dc_dynarr_free(darr);
 
@@ -151,7 +151,7 @@ void dc_dynarr_grow(DCDynArr* darr)
 
     if (resized == NULL)
     {
-        fprintf(stderr, "Memory reallocation failed\n");
+        dc_log("Memory reallocation failed\n");
 
         dc_dynarr_free(darr);
 
@@ -169,7 +169,7 @@ void dc_dynarr_grow_by(DCDynArr* darr, usize amount)
 
     if (resized == NULL)
     {
-        fprintf(stderr, "Memory reallocation failed\n");
+        dc_log("Memory reallocation failed\n");
 
         dc_dynarr_free(darr);
 
@@ -186,7 +186,7 @@ void dc_dynarr_grow_to(DCDynArr* darr, usize amount)
 
     if (resized == NULL)
     {
-        fprintf(stderr, "Memory reallocation failed\n");
+        dc_log("Memory reallocation failed\n");
 
         dc_dynarr_free(darr);
 
@@ -206,7 +206,7 @@ void dc_dynarr_trunc(DCDynArr* darr)
 
         if (resized == NULL)
         {
-            fprintf(stderr, "Memory reallocation failed\n");
+            dc_log("Memory reallocation failed\n");
 
             dc_dynarr_free(darr);
 
@@ -223,8 +223,7 @@ void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
 {
     if (count > darr->count)
     {
-        fprintf(stderr,
-                "Try to pop elements more than actual number of elements\n");
+        dc_log("Try to pop elements more than actual number of elements\n");
 
         dc_dynarr_free(darr);
 
@@ -237,7 +236,7 @@ void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
 
         if (!out_popped)
         {
-            fprintf(stderr, "Memory allocation failed\n");
+            dc_log("Memory allocation failed\n");
 
             dc_dynarr_free(darr);
 
@@ -371,6 +370,10 @@ void dc_dynval_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
     }
 }
 
+void dc_dynval_free__(voidptr item)
+{
+    dc_dynval_free((DCDynValue*)item, NULL);
+}
 
 // Function to free the dynamic array
 void dc_dynarr_free(DCDynArr* darr)
@@ -385,6 +388,11 @@ void dc_dynarr_free(DCDynArr* darr)
     darr->elements = NULL;
     darr->cap = 0;
     darr->count = 0;
+}
+
+void dc_dynarr_free__(voidptr darr)
+{
+    dc_dynarr_free((DCDynArr*)darr);
 }
 
 bool dc_dynarr_delete(DCDynArr* darr, usize index)
@@ -407,7 +415,7 @@ void dc_dynarr_insert(DCDynArr* darr, usize index, DCDynValue value)
 {
     if (index > darr->count)
     {
-        fprintf(stderr, "Index out of bound\n");
+        dc_log("Index out of bound\n");
 
         dc_dynarr_free(darr);
 
@@ -434,7 +442,7 @@ void ___dc_dynarr_insert_values(DCDynArr* darr, usize start_index, usize count,
 {
     if (start_index > darr->count)
     {
-        fprintf(stderr, "Index out of bound\n");
+        dc_log("Index out of bound\n");
 
         dc_dynarr_free(darr);
 

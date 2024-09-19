@@ -28,6 +28,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// ***************************************************************************************
+// * GENERAL DECLARATIONS
+// ***************************************************************************************
+
+typedef enum
+{
+    DC_ERR_MODE_NORMAL,
+    DC_ERR_MODE_ABORT,
+} DC_ERROR_MODE;
+
+// ***************************************************************************************
+// * PRIMITIVE TYPES DECLARATIONS
+// ***************************************************************************************
+
 typedef uint8_t u8;
 typedef int32_t i32;
 typedef uint32_t u32;
@@ -45,48 +59,9 @@ typedef char* string;
 
 typedef void* voidptr;
 
-typedef enum
-{
-    DC_ERR_MODE_NORMAL,
-    DC_ERR_MODE_ABORT,
-} DC_ERROR_MODE;
-
-#define DC_ARR_TERMINATOR_u8 UINT8_MAX   // 255
-#define DC_ARR_TERMINATOR_i32 INT32_MAX  // 2147483647
-#define DC_ARR_TERMINATOR_u32 UINT32_MAX // 4294967295
-#define DC_ARR_TERMINATOR_u64 UINT64_MAX // 18446744073709551615
-
-#define DC_ARR_TERMINATOR_f32 NAN
-#define DC_ARR_TERMINATOR_f64 NAN
-
-#define DC_ARR_TERMINATOR_uptr (uptr) NULL
-#define DC_ARR_TERMINATOR_string NULL
-#define DC_ARR_TERMINATOR_voidptr NULL
-
-#define DC_ARR_TERMINATOR_char '\0'
-
-#define DC_ARR_TERMINATOR_size -1
-#define DC_ARR_TERMINATOR_usize SIZE_MAX
-
-// Terminator checks for each type
-#define DC_IS_ARR_TERMINATOR_u8(EL) (EL == DC_ARR_TERMINATOR_u8)
-#define DC_IS_ARR_TERMINATOR_i32(EL) (EL == DC_ARR_TERMINATOR_i32)
-#define DC_IS_ARR_TERMINATOR_u32(EL) (EL == DC_ARR_TERMINATOR_u32)
-#define DC_IS_ARR_TERMINATOR_u64(EL) (EL == DC_ARR_TERMINATOR_u64)
-
-#define DC_IS_ARR_TERMINATOR_f32(EL) (isnan(EL))
-#define DC_IS_ARR_TERMINATOR_f64(EL) (isnan(EL))
-
-#define DC_IS_ARR_TERMINATOR_uptr(EL) (EL == DC_ARR_TERMINATOR_uptr)
-#define DC_IS_ARR_TERMINATOR_string(EL) (EL == DC_ARR_TERMINATOR_string)
-#define DC_IS_ARR_TERMINATOR_PTR(EL) (EL == DC_ARR_TERMINATOR_voidptr)
-
-#define DC_IS_ARR_TERMINATOR_char(EL) (EL == DC_ARR_TERMINATOR_char)
-
-#define DC_IS_ARR_TERMINATOR_size(EL) (EL == DC_ARR_TERMINATOR_size)
-#define DC_IS_ARR_TERMINATOR_usize(EL) (EL == DC_ARR_TERMINATOR_usize)
-
-// Dynamic Array
+// ***************************************************************************************
+// * DYNAMIC ARRAY TYPE DECLARATIONS
+// ***************************************************************************************
 
 typedef enum
 {
@@ -136,12 +111,20 @@ typedef struct
     DCDynValFreeFunc element_free_func;
 } DCDynArr;
 
+// ***************************************************************************************
+// * STRING VIEW TYPE DECLARATION
+// ***************************************************************************************
+
 typedef struct
 {
     string str;
     usize len;
     string cstr;
 } DCStringView;
+
+// ***************************************************************************************
+// * HASH TABLE TYPE DECLARATIONS
+// ***************************************************************************************
 
 typedef struct
 {
@@ -162,5 +145,19 @@ typedef struct
     DCKeyCompFunc key_cmp_func;
     DCDynValFreeFunc element_free_func;
 } DCHashTable;
+
+// ***************************************************************************************
+// * MEMORY CLEANUP TYPE DECLARATIONS
+// ***************************************************************************************
+
+typedef DCDynArr DCCleanups;
+
+typedef void (*DCCleanupFunc)(voidptr);
+
+typedef struct
+{
+    voidptr element;
+    DCCleanupFunc cleanup_func;
+} DCCleanupEntry;
 
 #endif // DC_ALIASES_H

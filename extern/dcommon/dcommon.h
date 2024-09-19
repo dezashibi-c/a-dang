@@ -47,7 +47,9 @@ void dc_dynarr_append(DCDynArr* darr, DCDynArr* from);
 DCDynValue* dc_dynarr_get(DCDynArr* darr, usize index);
 DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el);
 void dc_dynval_free(DCDynValue* element, void (*custom_free)(DCDynValue*));
+void dc_dynval_free__(voidptr item);
 void dc_dynarr_free(DCDynArr* darr);
+void dc_dynarr_free__(voidptr darr);
 bool dc_dynarr_delete(DCDynArr* darr, usize index);
 void dc_dynarr_insert(DCDynArr* darr, usize index, DCDynValue value);
 void ___dc_dynarr_insert_values(DCDynArr* darr, usize start_index, usize count,
@@ -73,6 +75,7 @@ DCHashTable* dc_ht_create(usize capacity, DCHashFunc hash_func,
                           DCKeyCompFunc key_cmp_func,
                           DCDynValFreeFunc element_free_func);
 void dc_ht_free(DCHashTable* ht);
+void dc_ht_free__(voidptr ht);
 usize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynValue** out_result);
 void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value);
 void ___dc_ht_set_multiple(DCHashTable* ht, usize count, DCHashEntry entries[]);
@@ -92,6 +95,12 @@ string dc_replace_file_in_path(const string path, const string new_file);
 string dc_get_home_dir_path();
 string dc_get_username();
 
+void ___dc_handle_signal(int sig);
+void ___dc_perform_cleanup(DCCleanups* cleanups_arr);
+void ___dc_perform_global_cleanup(void);
+void ____dc_cleanups_custom_push(DCCleanups* cleanup_arr, voidptr element,
+                                 DCCleanupFunc cleanup_func);
+
 // ***************************************************************************************
 // * IMPLEMENTATIONS
 // ***************************************************************************************
@@ -100,6 +109,7 @@ string dc_get_username();
 
 FILE* dc_error_logs = NULL;
 DC_ERROR_MODE dc_error_mode = DC_ERR_MODE_NORMAL;
+DCCleanups dc_cleanups = {0};
 
 #include "_dynarr.c"
 #include "_dynht.c"
@@ -110,6 +120,7 @@ DC_ERROR_MODE dc_error_mode = DC_ERR_MODE_NORMAL;
 
 extern FILE* dc_error_logs;
 extern DC_ERROR_MODE dc_error_mode;
+extern DCCleanups dc_cleanups;
 
 #endif
 

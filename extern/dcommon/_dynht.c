@@ -49,9 +49,13 @@ DCHashTable* dc_ht_create(usize capacity, DCHashFunc hash_func,
 
 void dc_ht_free(DCHashTable* ht)
 {
+    dc_dbg_log("dc_ht_free, capacity: %zu", ht->cap);
+
+    if (ht && ht->cap == 0) return;
+
     for (usize i = 0; i < ht->cap; ++i)
     {
-        dc_ht_get_element(darr, *ht, i);
+        dc_ht_get_container_row(darr, *ht, i);
 
         dc_dynarr_free(darr);
     }
@@ -65,18 +69,26 @@ void dc_ht_free(DCHashTable* ht)
     ht->element_free_func = NULL;
 }
 
+void dc_ht_free__(voidptr ht)
+{
+    dc_dbg_log("dc_ht_free__ for address: %p", ht);
+    dc_action_on(ht == NULL, return, "got null pointer");
+
+    dc_ht_free((DCHashTable*)ht);
+}
+
 usize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynValue** out_result)
 {
     dc_ht_get_hash(_index, *ht, key);
 
-    dc_ht_get_element(darr, *ht, _index);
+    dc_ht_get_container_row(darr, *ht, _index);
 
     dc_dynarr_for(*darr)
     {
         DCDynValue* element = &darr->elements[_idx];
         if (element->type != dc_value_type(voidptr))
         {
-            fprintf(stderr, "Wrong type other than voidptr\n");
+            dc_log("Wrong type other than voidptr\n");
             exit(EXIT_FAILURE);
         }
 
@@ -99,14 +111,14 @@ void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
     DCHashEntry* new_entry = (DCHashEntry*)malloc(sizeof(DCHashEntry));
     if (new_entry == NULL)
     {
-        fprintf(stderr, "Memory allocation failed\n");
+        dc_log("Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
 
     new_entry->key = key;
     new_entry->value = value;
 
-    dc_ht_get_element(current, *ht, _index);
+    dc_ht_get_container_row(current, *ht, _index);
 
     if (current->cap == 0)
     {
@@ -161,7 +173,7 @@ bool dc_ht_delete(DCHashTable* ht, voidptr key)
 {
     dc_ht_get_hash(_index, *ht, key);
 
-    dc_ht_get_element(current, *ht, _index);
+    dc_ht_get_container_row(current, *ht, _index);
 
     if (current->count == 0) return false;
 
@@ -192,7 +204,7 @@ usize dc_ht_keys(DCHashTable* ht, voidptr** out_arr)
     usize key_count = 0;
     for (usize i = 0; i < ht->cap; ++i)
     {
-        dc_ht_get_element(darr, *ht, i);
+        dc_ht_get_container_row(darr, *ht, i);
 
         if (darr->cap == 0) continue;
 
@@ -201,8 +213,6 @@ usize dc_ht_keys(DCHashTable* ht, voidptr** out_arr)
             DCDynValue* elem = &darr->elements[_idx];
             if (elem->type != DC_DYN_VAL_TYPE_voidptr)
             {
-                puts("here!!!!!!");
-
                 free(*out_arr);
                 *out_arr = ((void*)0);
                 return 0;

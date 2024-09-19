@@ -24,6 +24,45 @@
 #endif
 
 // ***************************************************************************************
+// * PRIMITIVE TYPES MACROS
+// ***************************************************************************************
+
+#define DC_ARR_TERMINATOR_u8 UINT8_MAX   // 255
+#define DC_ARR_TERMINATOR_i32 INT32_MAX  // 2147483647
+#define DC_ARR_TERMINATOR_u32 UINT32_MAX // 4294967295
+#define DC_ARR_TERMINATOR_u64 UINT64_MAX // 18446744073709551615
+
+#define DC_ARR_TERMINATOR_f32 NAN
+#define DC_ARR_TERMINATOR_f64 NAN
+
+#define DC_ARR_TERMINATOR_uptr (uptr) NULL
+#define DC_ARR_TERMINATOR_string NULL
+#define DC_ARR_TERMINATOR_voidptr NULL
+
+#define DC_ARR_TERMINATOR_char '\0'
+
+#define DC_ARR_TERMINATOR_size -1
+#define DC_ARR_TERMINATOR_usize SIZE_MAX
+
+// Terminator checks for each type
+#define DC_IS_ARR_TERMINATOR_u8(EL) (EL == DC_ARR_TERMINATOR_u8)
+#define DC_IS_ARR_TERMINATOR_i32(EL) (EL == DC_ARR_TERMINATOR_i32)
+#define DC_IS_ARR_TERMINATOR_u32(EL) (EL == DC_ARR_TERMINATOR_u32)
+#define DC_IS_ARR_TERMINATOR_u64(EL) (EL == DC_ARR_TERMINATOR_u64)
+
+#define DC_IS_ARR_TERMINATOR_f32(EL) (isnan(EL))
+#define DC_IS_ARR_TERMINATOR_f64(EL) (isnan(EL))
+
+#define DC_IS_ARR_TERMINATOR_uptr(EL) (EL == DC_ARR_TERMINATOR_uptr)
+#define DC_IS_ARR_TERMINATOR_string(EL) (EL == DC_ARR_TERMINATOR_string)
+#define DC_IS_ARR_TERMINATOR_voidptr(EL) (EL == DC_ARR_TERMINATOR_voidptr)
+
+#define DC_IS_ARR_TERMINATOR_char(EL) (EL == DC_ARR_TERMINATOR_char)
+
+#define DC_IS_ARR_TERMINATOR_size(EL) (EL == DC_ARR_TERMINATOR_size)
+#define DC_IS_ARR_TERMINATOR_usize(EL) (EL == DC_ARR_TERMINATOR_usize)
+
+// ***************************************************************************************
 // * UTILITY MACROS
 // ***************************************************************************************
 
@@ -33,19 +72,47 @@
 #define __dc_attribute(A)
 #endif
 
-#define dc_log(...)                                                            \
+#define dc_system(OUT_VAL, ...)                                                \
     do                                                                         \
     {                                                                          \
+        string __cmd_string;                                                   \
+        dc_sprintf(&__cmd_string, __VA_ARGS__);                                \
+        OUT_VAL = system(__cmd_string);                                        \
+        free(__cmd_string);                                                    \
+    } while (0)
+
+#define dc_str_case(ITEM)                                                      \
+    case ITEM:                                                                 \
+        return #ITEM
+
+// ***************************************************************************************
+// * INTERNAL LOG MACROS MACROS
+// ***************************************************************************************
+
+#define ____dc_log(CAT, ...)                                                   \
+    do                                                                         \
+    {                                                                          \
+        fprintf(dc_error_logs ? dc_error_logs : stderr, "[%s] %s:%d: ", CAT,   \
+                __FILE__, __LINE__);                                           \
         fprintf(dc_error_logs ? dc_error_logs : stderr, __VA_ARGS__);          \
         fprintf(dc_error_logs ? dc_error_logs : stderr, "\n");                 \
     } while (0)
 
-#define dc_action_on(CONDITION, FAILURE_ACTION, ...)                           \
+#define ____dc_log_if(CAT, CONDITION, ...)                                     \
     do                                                                         \
     {                                                                          \
         if (CONDITION)                                                         \
         {                                                                      \
-            dc_log(__VA_ARGS__);                                               \
+            ____dc_log(CAT, __VA_ARGS__);                                      \
+        }                                                                      \
+    } while (0)
+
+#define ____dc_action_on(CAT, CONDITION, FAILURE_ACTION, ...)                  \
+    do                                                                         \
+    {                                                                          \
+        if (CONDITION)                                                         \
+        {                                                                      \
+            ____dc_log(CAT, __VA_ARGS__);                                      \
             if (dc_error_mode == DC_ERR_MODE_ABORT)                            \
             {                                                                  \
                 abort();                                                       \
@@ -57,33 +124,38 @@
         }                                                                      \
     } while (0)
 
-#define dc_str_case(ITEM)                                                      \
-    case ITEM:                                                                 \
-        return #ITEM
+
+// ***************************************************************************************
+// * LOG MACROS
+// ***************************************************************************************
+
+#define dc_log(...) ____dc_log("LOG", __VA_ARGS__)
+
+#define dc_log_if(CONDITION, ...) ____dc_log_if("LOG", CONDITION, __VA_ARGS__)
+
+#define dc_action_on(CONDITION, FAILURE_ACTION, ...)                           \
+    ____dc_action_on("LOG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
+
 
 #ifdef DC_DEBUG
 
-#define dc_dbg_log(...) dc_log(__VA_ARGS__)
+#define dc_dbg_log(...) ____dc_log("DEBUG", __VA_ARGS__)
 
-#define dc_dbg_log_if(CONDITION, FAILURE_ACTION, ...)                          \
-    dc_action_on(CONDITION, FAILURE_ACTION, __VA_ARGS__)
+#define dc_dbg_log_if(CONDITION, ...)                                          \
+    ____dc_log_if("DEBUG", CONDITION, __VA_ARGS__)
+
+#define dc_dbg_action_on(CONDITION, FAILURE_ACTION, ...)                       \
+    ____dc_action_on("DEBUG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
 
 #else
 
 #define dc_dbg_log(...)
 
-#define dc_dbg_log_if(CONDITION, FAILURE_ACTION, ...)
+#define dc_dbg_log_if(CONDITION, ...)
+
+#define dc_dbg_action_on(CONDITION, FAILURE_ACTION, ...)
 
 #endif
-
-#define dc_system(OUT_VAL, ...)                                                \
-    do                                                                         \
-    {                                                                          \
-        string __cmd_string;                                                   \
-        dc_sprintf(&__cmd_string, __VA_ARGS__);                                \
-        OUT_VAL = system(__cmd_string);                                        \
-        free(__cmd_string);                                                    \
-    } while (0)
 
 // ***************************************************************************************
 // * NON-POINTER ARRAY MACROS
@@ -130,13 +202,13 @@
 #define dc_parray(NAME, TYPE, ...) TYPE** NAME = dc_parr_lit(TYPE*, __VA_ARGS__)
 
 #define dc_pforeach(ARR, TYPE)                                                 \
-    for (TYPE** _it = ARR; !DC_IS_ARR_TERMINATOR_PTR(*_it); ++_it)
+    for (TYPE** _it = ARR; !DC_IS_ARR_TERMINATOR_voidptr(*_it); ++_it)
 
 #define dc_poneach(ARR, TYPE, FN) dc_pforeach(ARR, TYPE) FN(_it)
 
 #define dc_pforeach_lit(TYPE, ...)                                             \
     for (TYPE* _it = dc_parr_lit(TYPE, __VA_ARGS__);                           \
-         !DC_IS_ARR_TERMINATOR_PTR(*_it); ++_it)
+         !DC_IS_ARR_TERMINATOR_voidptr(*_it); ++_it)
 
 #define dc_poneach_lit(TYPE, FN, ...)                                          \
     dc_pforeach_lit(TYPE*, __VA_ARGS__) FN(*_it)
@@ -176,6 +248,8 @@
 #ifndef DC_DYNARR_CAP_MULTIPLIER
 #define DC_DYNARR_CAP_MULTIPLIER 2
 #endif
+
+#define dc_dynval_free_func_decl(NAME) void NAME(DCDynValue* _value)
 
 #define dc_dynval_lit(TYPE, VALUE)                                             \
     (DCDynValue)                                                               \
@@ -273,10 +347,13 @@
 // * HASH TABLE MACROS
 // ***************************************************************************************
 
+#define dc_ht_hash_func_decl(NAME) u32 NAME(voidptr _key)
+#define dc_ht_key_comp_func_decl(NAME) bool NAME(voidptr _key1, voidptr _key2)
+
 #define dc_ht_get_hash(VAR_NAME, HT, KEY)                                      \
     u32 VAR_NAME = (HT).hash_func((KEY)) % (HT).cap
 
-#define dc_ht_get_element(VAR_NAME, HT, HASH)                                  \
+#define dc_ht_get_container_row(VAR_NAME, HT, HASH)                            \
     DCDynArr* VAR_NAME = &((HT).container[HASH])
 
 #define dc_ht_entry(KEY, VAL)                                                  \
@@ -353,5 +430,65 @@
 #define dc_colorize_fg(FG_COLOR, TEXT) DC_FG_##FG_COLOR TEXT DC_COLOR_RESET
 
 #define dc_colorize_bg(BG_COLOR, TEXT) DC_BG_##BG_COLOR TEXT DC_COLOR_RESET
+
+// ***************************************************************************************
+// * CLEANUP MACROS
+// ***************************************************************************************
+
+#define dc_cleanups_func_decl(NAME) void NAME(voidptr _value)
+
+#define dc_cleanup_do(ENTRY) (ENTRY).cleanup_func(((ENTRY).element))
+
+#define ___dc_cleanups_arr_init(CLEANUPS, CAPACITY)                            \
+    if ((CLEANUPS).cap == 0)                                                   \
+    dc_dynarr_init_custom(&(CLEANUPS), CAPACITY, 3, NULL)
+
+#define dc_global_cleanups_init(CAPACITY)                                      \
+    do                                                                         \
+    {                                                                          \
+        ___dc_cleanups_arr_init(dc_cleanups, CAPACITY);                        \
+        atexit(___dc_perform_global_cleanup);                                  \
+        signal(SIGINT, ___dc_handle_signal);                                   \
+    } while (0)
+
+#define dc_local_cleanup_decl(RETVAL_TYPE, RETVAL_INIT, CAPACITY)              \
+    RETVAL_TYPE ___dc_ret_val = RETVAL_INIT;                                   \
+    DCCleanups ____dc_local_cleanups = {0};                                    \
+    dc_dynarr_init_custom(&____dc_local_cleanups, CAPACITY, 3, NULL)
+
+#define dc_cleanups_push(ELEMENT, CLEAN_FUNC)                                  \
+    dc_dbg_log("global cleanup push: %p", (voidptr)ELEMENT);                   \
+    ____dc_cleanups_custom_push(&dc_cleanups, ELEMENT, CLEAN_FUNC)
+
+#define dc_local_cleanup_push(ELEMENT, CLEAN_FUNC)                             \
+    dc_dbg_log("local cleanup push: %p", (voidptr)ELEMENT);                    \
+    ____dc_cleanups_custom_push(&____dc_local_cleanups, ELEMENT, CLEAN_FUNC)
+
+#define dc_perform_local_cleanups()                                            \
+    dc_dbg_log("performing local cleanups");                                   \
+    ___dc_perform_cleanup(&____dc_local_cleanups)
+
+#define dc_cleanups_push_ht(ELEMENT) dc_cleanups_push(ELEMENT, dc_ht_free__)
+#define dc_local_cleanups_push_ht(ELEMENT)                                     \
+    dc_local_cleanup_push(ELEMENT, dc_ht_free__)
+
+#define dc_cleanups_push_dynarr(ELEMENT)                                       \
+    dc_cleanups_push(ELEMENT, dc_dynarr_free__)
+#define dc_local_cleanups_push_dynarr(ELEMENT)                                 \
+    dc_local_cleanup_push(ELEMENT, dc_dynarr_free__)
+
+#define dc_cleanups_push_dynval(ELEMENT)                                       \
+    dc_cleanups_push(ELEMENT, dc_dynval_free__)
+#define dc_local_cleanups_push_dynval(ELEMENT)                                 \
+    dc_local_cleanup_push(ELEMENT, dc_dynval_free__)
+
+#define dc_def_local_cleanups_label()                                          \
+    ___dc_perform_local_cleanups_label:                                        \
+    dc_perform_local_cleanups();                                               \
+    return ___dc_ret_val;
+
+#define dc_return(RETVAL)                                                      \
+    ___dc_ret_val = RETVAL;                                                    \
+    goto ___dc_perform_local_cleanups_label
 
 #endif // DC_MACROS_H

@@ -24,9 +24,7 @@
     "You cannot link to this source (_utils.c) directly, please consider including dcommon.h"
 #endif
 
-#include "_headers/aliases.h"
-#include "_headers/general.h"
-#include "_headers/macros.h"
+#include "dcommon.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <Lmcons.h>
@@ -35,6 +33,10 @@
 #include <pwd.h>
 #include <unistd.h>
 #endif
+
+// ***************************************************************************************
+// * STRINGS AND PATHS
+// ***************************************************************************************
 
 int dc_sprintf(string* str, string fmt, ...)
 {
@@ -45,8 +47,7 @@ int dc_sprintf(string* str, string fmt, ...)
     int len = vsnprintf(one_char, 1, fmt, argp);
     if (len < 1)
     {
-        fprintf(
-            stderr,
+        dc_log(
             "An encoding error occurred. Setting the input pointer to NULL.\n");
         *str = NULL;
         va_end(argp);
@@ -57,7 +58,7 @@ int dc_sprintf(string* str, string fmt, ...)
     *str = malloc(len + 1);
     if (!str)
     {
-        fprintf(stderr, "Couldn't allocate %i chars.\n", len + 1);
+        dc_log("Couldn't allocate %i chars.\n", len + 1);
         return -1;
     }
 
@@ -106,7 +107,7 @@ string dc_replace_file_in_path(string path, const string new_file)
 
     if (new_path == NULL)
     {
-        fprintf(stderr, "Memory allocation failed\n");
+        dc_log("Memory allocation failed\n");
         return NULL;
     }
 
@@ -153,4 +154,72 @@ string dc_get_username()
 #else
     return getenv("USER");
 #endif
+}
+
+// ***************************************************************************************
+// * CLEANUP
+// ***************************************************************************************
+
+void ___dc_handle_signal(int sig)
+{
+    dc_dbg_log("caught signal %d.", sig);
+    exit(sig);
+}
+
+void ___dc_perform_cleanup(DCCleanups* cleanups_arr)
+{
+    dc_dbg_log_if(cleanups_arr->cap == 0 || cleanups_arr->count == 0,
+                  "cleanups_arr is not initialized or has no "
+                  "elements registered, exiting now...");
+
+    if (cleanups_arr->cap == 0 || cleanups_arr->count == 0) return;
+
+    dc_dbg_log("cleaning up %zu elements", cleanups_arr->count);
+
+    // run cleanup of each item
+    dc_dynarr_for(*cleanups_arr)
+    {
+        DCCleanupEntry* entry = dc_dynarr_get_as(cleanups_arr, _idx, voidptr);
+
+        dc_dbg_log("cleaning index: %zu, cleanup perform: %p", _idx,
+                   (*entry).element);
+
+        dc_cleanup_do(*entry);
+    }
+
+    // clean up the dc_cleanup itself
+    dc_dynarr_free(cleanups_arr);
+}
+
+void ___dc_perform_global_cleanup(void)
+{
+    dc_dbg_log("performing global cleanups");
+    ___dc_perform_cleanup(&dc_cleanups);
+}
+
+void ____dc_cleanups_custom_push(DCCleanups* cleanup_arr, voidptr element,
+                                 DCCleanupFunc cleanup_func)
+{
+    if (!element || !cleanup_func)
+    {
+        dc_log("got null element or cleanup_func");
+
+        exit(1);
+    }
+
+    ___dc_cleanups_arr_init(*cleanup_arr, 10);
+
+    DCCleanupEntry* item = malloc(sizeof(DCCleanupEntry));
+    if (!item)
+    {
+        dc_log("Memory allocation failed");
+        exit(1);
+    }
+
+    dc_dbg_log("cleanup push: %p", element);
+
+    item->element = element;
+    item->cleanup_func = cleanup_func;
+
+    dc_dynarr_push(cleanup_arr, dc_dynval_lit(voidptr, item));
 }
