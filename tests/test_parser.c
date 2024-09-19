@@ -13,7 +13,15 @@ typedef struct
     const string text;
 } TestExpectedResult;
 
-bool test_DNodeLetStatement(DNode* stmt, string* name)
+static bool parser_has_no_error(Parser* p)
+{
+    dc_action_on(p->errors.count != 0, parser_log_errors(p);
+                 return false, "parser has %zu errors", p->errors.count);
+
+    return true;
+}
+
+static bool test_DNodeLetStatement(DNode* stmt, string* name)
 {
     dc_action_on(!dc_sv_str_eq(stmt->token->text, "let"), return false,
                  "---- Token text must be 'let', got='" DC_SV_FMT "'",
@@ -46,8 +54,8 @@ bool test_DNodeLetStatement(DNode* stmt, string* name)
 
 CLOVE_TEST(let_statements)
 {
-    const string input = "let x = 5; let y = 10\n"
-                         "let foobar = 838383";
+    const string input = "let x 5; let y 10\n"
+                         "let foobar 838383";
 
     Scanner s;
     scanner_init(&s, input);
@@ -56,6 +64,8 @@ CLOVE_TEST(let_statements)
     parser_init(&p, &s);
 
     DNode* program = parser_parse_program(&p);
+
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
     dc_action_on(program->type != DN_PROGRAM, CLOVE_FAIL(),
                  "Wrong program node type, expected type='%s' but got='%s'",

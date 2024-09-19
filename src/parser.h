@@ -26,9 +26,12 @@ typedef struct
 
     Token* current_token;
     Token* peek_token;
+
+    DCDynArr errors;
 } Parser;
 
 void parser_init(Parser* p, Scanner* s);
 DNode* parser_parse_program(Parser* p);
+void parser_log_errors(Parser* p);
 
 #endif // DANG_PARSER_H

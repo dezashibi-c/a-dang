@@ -32,6 +32,15 @@ static void next_token(Parser* p)
     p->peek_token = scanner_next_token(p->scanner);
 }
 
+static void parser_add_token_type_error(Parser* p, DangTokenType type)
+{
+    string err;
+    dc_sprintf(&err, "expected next token to be %s, got %s instead.",
+               tostr_DangTokenType(type),
+               tostr_DangTokenType(p->peek_token->type));
+    dc_dynarr_push(&(p->errors), dc_dynval_lit(string, err));
+}
+
 static bool move_if_peek_token_is(Parser* p, DangTokenType type)
 {
     if (peek_token_is(p, type))
@@ -40,6 +49,7 @@ static bool move_if_peek_token_is(Parser* p, DangTokenType type)
         return true;
     }
 
+    parser_add_token_type_error(p, type);
     return false;
 }
 
@@ -52,7 +62,8 @@ static DNode* parser_parse_let_statement(Parser* p)
     DNode* name = node_create(DN_IDENTIFIER, p->current_token, false);
     dc_dynarr_push(&stmt->children, dc_dynval_lit(voidptr, name));
 
-    if (!move_if_peek_token_is(p, TOK_ASSIGN)) return NULL;
+    // todo:: should I remove '=' sign for declaration?
+    // if (!move_if_peek_token_is(p, TOK_ASSIGN)) return NULL;
 
     while (current_token_is(p, TOK_SEMICOLON) &&
            current_token_is(p, TOK_NEWLINE))
@@ -84,6 +95,8 @@ void parser_init(Parser* p, Scanner* s)
     p->current_token = NULL;
     p->peek_token = NULL;
 
+    dc_dynarr_init(&(p->errors), NULL);
+
     next_token(p);
     next_token(p);
 }
@@ -104,4 +117,13 @@ DNode* parser_parse_program(Parser* p)
     }
 
     return program;
+}
+
+void parser_log_errors(Parser* p)
+{
+    dc_dynarr_for(p->errors)
+    {
+        string error = dc_dynarr_get_as(&(p->errors), _idx, string);
+        dc_log("%s", error);
+    }
 }
