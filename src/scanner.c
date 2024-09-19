@@ -98,7 +98,7 @@ static void custom_token_free(DCDynValue* item)
     switch (item->type)
     {
         case dc_value_type(voidptr):
-            token_free((Token*)(dc_dynval_get(*item, voidptr)));
+            token_free((Token*)(dc_dv_get(*item, voidptr)));
             break;
 
         default:
@@ -115,14 +115,14 @@ void scanner_init(Scanner* s, const string input)
     s->pos = 0;
     s->read_pos = 0;
     s->input = input;
-    dc_dynarr_init(&s->tokens, custom_token_free);
+    dc_da_init(&s->tokens, custom_token_free);
 
     read_char(s);
 }
 
 void scanner_free(Scanner* s)
 {
-    dc_dynarr_free(&s->tokens);
+    dc_da_free(&s->tokens);
 }
 
 Token* scanner_next_token(Scanner* s)
@@ -218,15 +218,13 @@ Token* scanner_next_token(Scanner* s)
             if (is_letter(s->c))
             {
                 token = extract_identifier(s);
-                dc_dynarr_push(&s->tokens,
-                               dc_dynval_lit(voidptr, (void*)token));
+                dc_da_push(&s->tokens, dc_dv(voidptr, (void*)token));
                 return token;
             }
             else if (is_digit(s->c))
             {
                 token = extract_number(s);
-                dc_dynarr_push(&s->tokens,
-                               dc_dynval_lit(voidptr, (void*)token));
+                dc_da_push(&s->tokens, dc_dv(voidptr, (void*)token));
                 return token;
             }
             else
@@ -237,6 +235,6 @@ Token* scanner_next_token(Scanner* s)
 
     read_char(s);
 
-    dc_dynarr_push(&s->tokens, dc_dynval_lit(voidptr, (void*)token));
+    dc_da_push(&s->tokens, dc_dv(voidptr, (void*)token));
     return token;
 }

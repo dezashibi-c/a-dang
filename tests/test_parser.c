@@ -36,7 +36,7 @@ static bool test_DNodeLetStatement(DNode* stmt, string* name)
                  "---- Wrong number of children expected '1' but got='%zu'",
                  stmt->children.count);
 
-    DNode* stmt_name = dc_dynarr_get_as(&stmt->children, 0, voidptr);
+    DNode* stmt_name = dc_da_get_as(&stmt->children, 0, voidptr);
 
     dc_action_on(stmt_name->type != DN_IDENTIFIER, return false,
                  "---- Wrong name node type, expected type='%s' but got = '%s'",
@@ -80,7 +80,7 @@ CLOVE_TEST(let_statements)
 
     for (usize i = 0; i < dc_count(expected_identifiers); ++i)
     {
-        DNode* stmt = dc_dynarr_get_as(&program->children, i, voidptr);
+        DNode* stmt = dc_da_get_as(&program->children, i, voidptr);
 
         dc_action_on(!test_DNodeLetStatement(stmt, &expected_identifiers[i]),
                      CLOVE_FAIL(),

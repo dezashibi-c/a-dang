@@ -57,7 +57,7 @@ void dc_ht_free(DCHashTable* ht)
     {
         dc_ht_get_container_row(darr, *ht, i);
 
-        dc_dynarr_free(darr);
+        dc_da_free(darr);
     }
 
     free(ht->container);
@@ -83,7 +83,7 @@ usize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynValue** out_result)
 
     dc_ht_get_container_row(darr, *ht, _index);
 
-    dc_dynarr_for(*darr)
+    dc_da_for(*darr)
     {
         DCDynValue* element = &darr->elements[_idx];
         if (element->type != dc_value_type(voidptr))
@@ -122,8 +122,8 @@ void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
 
     if (current->cap == 0)
     {
-        dc_dynarr_init(current, ht->element_free_func);
-        dc_dynarr_push(current, dc_dynval_lit(voidptr, new_entry));
+        dc_da_init(current, ht->element_free_func);
+        dc_da_push(current, dc_dv(voidptr, new_entry));
         ht->key_count++;
 
         return;
@@ -134,14 +134,13 @@ void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
 
     if (existed != NULL)
     {
-        dc_dynval_free(&current->elements[existed_index],
-                       ht->element_free_func);
-        current->elements[existed_index] = dc_dynval_lit(voidptr, new_entry);
+        dc_dv_free(&current->elements[existed_index], ht->element_free_func);
+        current->elements[existed_index] = dc_dv(voidptr, new_entry);
 
         return;
     }
 
-    dc_dynarr_push(current, dc_dynval_lit(voidptr, new_entry));
+    dc_da_push(current, dc_dv(voidptr, new_entry));
     ht->key_count++;
 }
 
@@ -161,8 +160,7 @@ void dc_ht_merge(DCHashTable* ht, DCHashTable* from)
 
         for (usize j = 0; j < from->container[i].count; ++j)
         {
-            DCHashEntry* entry =
-                dc_dynarr_get_as(&from->container[i], j, voidptr);
+            DCHashEntry* entry = dc_da_get_as(&from->container[i], j, voidptr);
 
             dc_ht_set(ht, entry->key, entry->value);
         }
@@ -182,7 +180,7 @@ bool dc_ht_delete(DCHashTable* ht, voidptr key)
 
     if (existed == NULL) return false;
 
-    dc_dynarr_delete(current, existed_index);
+    dc_da_delete(current, existed_index);
     ht->key_count--;
 
     return true;
@@ -208,7 +206,7 @@ usize dc_ht_keys(DCHashTable* ht, voidptr** out_arr)
 
         if (darr->cap == 0) continue;
 
-        dc_dynarr_for(*darr)
+        dc_da_for(*darr)
         {
             DCDynValue* elem = &darr->elements[_idx];
             if (elem->type != DC_DYN_VAL_TYPE_voidptr)

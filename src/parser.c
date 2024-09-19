@@ -32,13 +32,13 @@ static void next_token(Parser* p)
     p->peek_token = scanner_next_token(p->scanner);
 }
 
-static void parser_add_token_type_error(Parser* p, DangTokenType type)
+static void add_token_error(Parser* p, DangTokenType type)
 {
     string err;
     dc_sprintf(&err, "expected next token to be %s, got %s instead.",
                tostr_DangTokenType(type),
                tostr_DangTokenType(p->peek_token->type));
-    dc_dynarr_push(&(p->errors), dc_dynval_lit(string, err));
+    dc_da_push(&(p->errors), dc_dv(string, err));
 }
 
 static bool move_if_peek_token_is(Parser* p, DangTokenType type)
@@ -49,7 +49,7 @@ static bool move_if_peek_token_is(Parser* p, DangTokenType type)
         return true;
     }
 
-    parser_add_token_type_error(p, type);
+    add_token_error(p, type);
     return false;
 }
 
@@ -60,10 +60,7 @@ static DNode* parser_parse_let_statement(Parser* p)
     if (!move_if_peek_token_is(p, TOK_IDENT)) return NULL;
 
     DNode* name = node_create(DN_IDENTIFIER, p->current_token, false);
-    dc_dynarr_push(&stmt->children, dc_dynval_lit(voidptr, name));
-
-    // todo:: should I remove '=' sign for declaration?
-    // if (!move_if_peek_token_is(p, TOK_ASSIGN)) return NULL;
+    dc_da_push(&stmt->children, dc_dv(voidptr, name));
 
     while (current_token_is(p, TOK_SEMICOLON) &&
            current_token_is(p, TOK_NEWLINE))
@@ -95,7 +92,7 @@ void parser_init(Parser* p, Scanner* s)
     p->current_token = NULL;
     p->peek_token = NULL;
 
-    dc_dynarr_init(&(p->errors), NULL);
+    dc_da_init(&(p->errors), NULL);
 
     next_token(p);
     next_token(p);
@@ -110,8 +107,7 @@ DNode* parser_parse_program(Parser* p)
     while (p->current_token->type != TOK_EOF)
     {
         DNode* stmt = parser_parse_statement(p);
-        if (stmt != NULL)
-            dc_dynarr_push(&program->children, dc_dynval_lit(voidptr, stmt));
+        if (stmt != NULL) dc_da_push(&program->children, dc_dv(voidptr, stmt));
 
         next_token(p);
     }
@@ -121,9 +117,9 @@ DNode* parser_parse_program(Parser* p)
 
 void parser_log_errors(Parser* p)
 {
-    dc_dynarr_for(p->errors)
+    dc_da_for(p->errors)
     {
-        string error = dc_dynarr_get_as(&(p->errors), _idx, string);
+        string error = dc_da_get_as(&(p->errors), _idx, string);
         dc_log("%s", error);
     }
 }

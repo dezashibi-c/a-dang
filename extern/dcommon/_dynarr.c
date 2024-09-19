@@ -1,6 +1,6 @@
 // ***************************************************************************************
 //    Project: dcommon -> https://github.com/dezashibi-c/dcommon
-//    File: _dynarr.c
+//    File: _da.c
 //    Date: 2024-09-10
 //    Author: Navid Dezashibi
 //    Contact: navid@dezashibi.com
@@ -18,7 +18,7 @@
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
 #error                                                                         \
-    "You cannot link to this source (_dynarr.c) directly, please consider including dcommon.h"
+    "You cannot link to this source (_da.c) directly, please consider including dcommon.h"
 #endif
 
 #include "_headers/aliases.h"
@@ -26,7 +26,7 @@
 #include "_headers/macros.h"
 
 // Function to initialize the dynamic array
-void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
+void dc_da_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
 {
     darr->cap = DC_DYNARR_INITIAL_CAP;
     darr->count = 0;
@@ -42,9 +42,9 @@ void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
     }
 }
 
-void dc_dynarr_init_custom(DCDynArr* darr, usize capacity,
-                           usize capacity_grow_multiplier,
-                           DCDynValFreeFunc element_free_func)
+void dc_da_init_custom(DCDynArr* darr, usize capacity,
+                       usize capacity_grow_multiplier,
+                       DCDynValFreeFunc element_free_func)
 {
     darr->cap = capacity;
     darr->count = 0;
@@ -61,7 +61,7 @@ void dc_dynarr_init_custom(DCDynArr* darr, usize capacity,
 }
 
 
-DCDynArr* dc_dynarr_create(DCDynValFreeFunc element_free_func)
+DCDynArr* dc_da_create(DCDynValFreeFunc element_free_func)
 {
     DCDynArr* darr = malloc(sizeof(DCDynArr));
     if (darr == NULL)
@@ -70,14 +70,13 @@ DCDynArr* dc_dynarr_create(DCDynValFreeFunc element_free_func)
         exit(EXIT_FAILURE);
     }
 
-    dc_dynarr_init(darr, element_free_func);
+    dc_da_init(darr, element_free_func);
 
     return darr;
 }
 
-DCDynArr* dc_dynarr_create_custom(usize capacity,
-                                  usize capacity_grow_multiplier,
-                                  DCDynValFreeFunc element_free_func)
+DCDynArr* dc_da_create_custom(usize capacity, usize capacity_grow_multiplier,
+                              DCDynValFreeFunc element_free_func)
 {
     DCDynArr* darr = malloc(sizeof(DCDynArr));
     if (darr == NULL)
@@ -86,16 +85,16 @@ DCDynArr* dc_dynarr_create_custom(usize capacity,
         exit(EXIT_FAILURE);
     }
 
-    dc_dynarr_init_custom(darr, capacity, capacity_grow_multiplier,
-                          element_free_func);
+    dc_da_init_custom(darr, capacity, capacity_grow_multiplier,
+                      element_free_func);
 
     return darr;
 }
 
 // Function to initialize the dynamic array with initial values
-void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
-                                   DCDynValFreeFunc element_free_func,
-                                   DCDynValue values[])
+void ___dc_da_init_with_values(DCDynArr* darr, usize count,
+                               DCDynValFreeFunc element_free_func,
+                               DCDynValue values[])
 {
     darr->cap = count;
     darr->count = 0;
@@ -113,34 +112,33 @@ void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
 
     for (usize i = 0; i < count; ++i)
     {
-        dc_dynarr_push(darr, values[i]);
+        dc_da_push(darr, values[i]);
     }
 }
 
-void ___dc_dynarr_append_values(DCDynArr* darr, usize count,
-                                DCDynValue values[])
+void ___dc_da_append_values(DCDynArr* darr, usize count, DCDynValue values[])
 {
     if ((count + darr->count) > darr->cap)
-        dc_dynarr_grow_to(darr, count + darr->count);
+        dc_da_grow_to(darr, count + darr->count);
 
     for (usize i = 0; i < count; ++i)
     {
-        dc_dynarr_push(darr, values[i]);
+        dc_da_push(darr, values[i]);
     }
 }
 
-void dc_dynarr_append(DCDynArr* darr, DCDynArr* from)
+void dc_da_append(DCDynArr* darr, DCDynArr* from)
 {
-    ___dc_dynarr_append_values(darr, from->count, from->elements);
+    ___dc_da_append_values(darr, from->count, from->elements);
 }
 
-void dc_dynarr_grow(DCDynArr* darr)
+void dc_da_grow(DCDynArr* darr)
 {
     if (darr->cap > (SIZE_MAX / darr->multiplier) / sizeof(DCDynValue))
     {
         dc_log("Array size too large, cannot allocate more memory\n");
 
-        dc_dynarr_free(darr);
+        dc_da_free(darr);
 
         exit(EXIT_FAILURE);
     }
@@ -153,7 +151,7 @@ void dc_dynarr_grow(DCDynArr* darr)
     {
         dc_log("Memory reallocation failed\n");
 
-        dc_dynarr_free(darr);
+        dc_da_free(darr);
 
         exit(EXIT_FAILURE);
     }
@@ -162,7 +160,7 @@ void dc_dynarr_grow(DCDynArr* darr)
     darr->cap *= darr->multiplier;
 }
 
-void dc_dynarr_grow_by(DCDynArr* darr, usize amount)
+void dc_da_grow_by(DCDynArr* darr, usize amount)
 {
     DCDynValue* resized =
         realloc(darr->elements, (darr->cap + amount) * sizeof(DCDynValue));
@@ -171,7 +169,7 @@ void dc_dynarr_grow_by(DCDynArr* darr, usize amount)
     {
         dc_log("Memory reallocation failed\n");
 
-        dc_dynarr_free(darr);
+        dc_da_free(darr);
 
         exit(EXIT_FAILURE);
     }
@@ -180,7 +178,7 @@ void dc_dynarr_grow_by(DCDynArr* darr, usize amount)
     darr->elements = resized;
 }
 
-void dc_dynarr_grow_to(DCDynArr* darr, usize amount)
+void dc_da_grow_to(DCDynArr* darr, usize amount)
 {
     DCDynValue* resized = realloc(darr->elements, amount * sizeof(DCDynValue));
 
@@ -188,7 +186,7 @@ void dc_dynarr_grow_to(DCDynArr* darr, usize amount)
     {
         dc_log("Memory reallocation failed\n");
 
-        dc_dynarr_free(darr);
+        dc_da_free(darr);
 
         exit(EXIT_FAILURE);
     }
@@ -197,7 +195,7 @@ void dc_dynarr_grow_to(DCDynArr* darr, usize amount)
     darr->elements = resized;
 }
 
-void dc_dynarr_trunc(DCDynArr* darr)
+void dc_da_trunc(DCDynArr* darr)
 {
     if (darr->count < darr->cap)
     {
@@ -208,7 +206,7 @@ void dc_dynarr_trunc(DCDynArr* darr)
         {
             dc_log("Memory reallocation failed\n");
 
-            dc_dynarr_free(darr);
+            dc_da_free(darr);
 
             exit(EXIT_FAILURE);
         }
@@ -218,14 +216,14 @@ void dc_dynarr_trunc(DCDynArr* darr)
     }
 }
 
-void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
-                   bool truncate)
+void dc_da_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
+               bool truncate)
 {
     if (count > darr->count)
     {
         dc_log("Try to pop elements more than actual number of elements\n");
 
-        dc_dynarr_free(darr);
+        dc_da_free(darr);
 
         exit(EXIT_FAILURE);
     }
@@ -238,7 +236,7 @@ void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
         {
             dc_log("Memory allocation failed\n");
 
-            dc_dynarr_free(darr);
+            dc_da_free(darr);
 
             exit(EXIT_FAILURE);
         }
@@ -250,26 +248,26 @@ void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
     {
         if (out_popped) (*out_popped)[i] = darr->elements[last_item_index - i];
 
-        dc_dynval_free(&darr->elements[last_item_index - i],
-                       darr->element_free_func);
+        dc_dv_free(&darr->elements[last_item_index - i],
+                   darr->element_free_func);
 
         darr->count--;
     }
 
-    if (truncate) dc_dynarr_trunc(darr);
+    if (truncate) dc_da_trunc(darr);
 }
 
 // Function to add an element to the dynamic array
-void dc_dynarr_push(DCDynArr* darr, DCDynValue value)
+void dc_da_push(DCDynArr* darr, DCDynValue value)
 {
-    if (darr->count >= darr->cap) dc_dynarr_grow(darr);
+    if (darr->count >= darr->cap) dc_da_grow(darr);
 
     // Add the new element with its type and value
     darr->elements[darr->count] = value;
     darr->count++;
 }
 
-DCDynValue* dc_dynarr_get(DCDynArr* darr, usize index)
+DCDynValue* dc_da_get(DCDynArr* darr, usize index)
 {
     if (index >= darr->count) return NULL;
 
@@ -277,7 +275,7 @@ DCDynValue* dc_dynarr_get(DCDynArr* darr, usize index)
 }
 
 // Function to find an element in the dynamic array
-DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el)
+DCDynValue* dc_da_find(DCDynArr* darr, DCDynValue* el)
 {
     for (usize i = 0; i < darr->count; i++)
     {
@@ -342,7 +340,7 @@ DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el)
     return NULL; // Return NULL if not found
 }
 
-void dc_dynval_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
+void dc_dv_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
 {
     switch (element->type)
     {
@@ -350,8 +348,8 @@ void dc_dynval_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
         {
             if (custom_free) custom_free(element);
 
-            if (dc_dynval_get(*element, string) != NULL)
-                free(dc_dynval_get(*element, string));
+            if (dc_dv_get(*element, string) != NULL)
+                free(dc_dv_get(*element, string));
             break;
         }
 
@@ -359,8 +357,8 @@ void dc_dynval_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
         {
             if (custom_free) custom_free(element);
 
-            if (dc_dynval_get(*element, voidptr) != NULL)
-                free(dc_dynval_get(*element, voidptr));
+            if (dc_dv_get(*element, voidptr) != NULL)
+                free(dc_dv_get(*element, voidptr));
             break;
         }
 
@@ -370,17 +368,17 @@ void dc_dynval_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
     }
 }
 
-void dc_dynval_free__(voidptr item)
+void dc_dv_free__(voidptr item)
 {
-    dc_dynval_free((DCDynValue*)item, NULL);
+    dc_dv_free((DCDynValue*)item, NULL);
 }
 
 // Function to free the dynamic array
-void dc_dynarr_free(DCDynArr* darr)
+void dc_da_free(DCDynArr* darr)
 {
     for (usize i = 0; i < darr->count; ++i)
     {
-        dc_dynval_free(&darr->elements[i], darr->element_free_func);
+        dc_dv_free(&darr->elements[i], darr->element_free_func);
     }
 
     free(darr->elements);
@@ -390,17 +388,17 @@ void dc_dynarr_free(DCDynArr* darr)
     darr->count = 0;
 }
 
-void dc_dynarr_free__(voidptr darr)
+void dc_da_free__(voidptr darr)
 {
-    dc_dynarr_free((DCDynArr*)darr);
+    dc_da_free((DCDynArr*)darr);
 }
 
-bool dc_dynarr_delete(DCDynArr* darr, usize index)
+bool dc_da_delete(DCDynArr* darr, usize index)
 {
     if (index >= darr->count) return false;
 
     // Free the element at the specified index
-    dc_dynval_free(&darr->elements[index], darr->element_free_func);
+    dc_dv_free(&darr->elements[index], darr->element_free_func);
 
     // Shift the elements after the deleted one to fill the gap
     memmove(&darr->elements[index], &darr->elements[index + 1],
@@ -411,18 +409,18 @@ bool dc_dynarr_delete(DCDynArr* darr, usize index)
     return true;
 }
 
-void dc_dynarr_insert(DCDynArr* darr, usize index, DCDynValue value)
+void dc_da_insert(DCDynArr* darr, usize index, DCDynValue value)
 {
     if (index > darr->count)
     {
         dc_log("Index out of bound\n");
 
-        dc_dynarr_free(darr);
+        dc_da_free(darr);
 
         exit(EXIT_FAILURE);
     }
 
-    if (darr->count >= darr->cap) dc_dynarr_grow(darr);
+    if (darr->count >= darr->cap) dc_da_grow(darr);
 
     // No need to memmove if inserting at the end
     if (index < darr->count)
@@ -437,20 +435,20 @@ void dc_dynarr_insert(DCDynArr* darr, usize index, DCDynValue value)
     darr->count++;
 }
 
-void ___dc_dynarr_insert_values(DCDynArr* darr, usize start_index, usize count,
-                                DCDynValue values[])
+void ___dc_da_insert_values(DCDynArr* darr, usize start_index, usize count,
+                            DCDynValue values[])
 {
     if (start_index > darr->count)
     {
         dc_log("Index out of bound\n");
 
-        dc_dynarr_free(darr);
+        dc_da_free(darr);
 
         exit(EXIT_FAILURE);
     }
 
     if ((count + darr->count) > darr->cap)
-        dc_dynarr_grow_to(darr, count + darr->count);
+        dc_da_grow_to(darr, count + darr->count);
 
     // No need to memmove if inserting at the end
     if (start_index < darr->count)
@@ -469,56 +467,56 @@ void ___dc_dynarr_insert_values(DCDynArr* darr, usize start_index, usize count,
     darr->count += count;
 }
 
-void dc_dynarr_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from)
+void dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from)
 {
-    ___dc_dynarr_insert_values(darr, start_index, from->count, from->elements);
+    ___dc_da_insert_values(darr, start_index, from->count, from->elements);
 }
 
-___dc_dynarr_converters_decl(u8)
+___dc_da_converters_decl(u8)
 {
-    ___dc_dynarr_converters_impl(u8);
+    ___dc_da_converters_impl(u8);
 }
-___dc_dynarr_converters_decl(i32)
+___dc_da_converters_decl(i32)
 {
-    ___dc_dynarr_converters_impl(i32);
+    ___dc_da_converters_impl(i32);
 }
-___dc_dynarr_converters_decl(u32)
+___dc_da_converters_decl(u32)
 {
-    ___dc_dynarr_converters_impl(u32);
+    ___dc_da_converters_impl(u32);
 }
-___dc_dynarr_converters_decl(u64)
+___dc_da_converters_decl(u64)
 {
-    ___dc_dynarr_converters_impl(u64);
+    ___dc_da_converters_impl(u64);
 }
-___dc_dynarr_converters_decl(f32)
+___dc_da_converters_decl(f32)
 {
-    ___dc_dynarr_converters_impl(f32);
+    ___dc_da_converters_impl(f32);
 }
-___dc_dynarr_converters_decl(f64)
+___dc_da_converters_decl(f64)
 {
-    ___dc_dynarr_converters_impl(f64);
+    ___dc_da_converters_impl(f64);
 }
-___dc_dynarr_converters_decl(uptr)
+___dc_da_converters_decl(uptr)
 {
-    ___dc_dynarr_converters_impl(uptr);
+    ___dc_da_converters_impl(uptr);
 }
-___dc_dynarr_converters_decl(char)
+___dc_da_converters_decl(char)
 {
-    ___dc_dynarr_converters_impl(char);
+    ___dc_da_converters_impl(char);
 }
-___dc_dynarr_converters_decl(size)
+___dc_da_converters_decl(size)
 {
-    ___dc_dynarr_converters_impl(size);
+    ___dc_da_converters_impl(size);
 }
-___dc_dynarr_converters_decl(usize)
+___dc_da_converters_decl(usize)
 {
-    ___dc_dynarr_converters_impl(usize);
+    ___dc_da_converters_impl(usize);
 }
-___dc_dynarr_converters_decl(string)
+___dc_da_converters_decl(string)
 {
-    ___dc_dynarr_converters_impl(string);
+    ___dc_da_converters_impl(string);
 }
-___dc_dynarr_converters_decl(voidptr)
+___dc_da_converters_decl(voidptr)
 {
-    ___dc_dynarr_converters_impl(voidptr);
+    ___dc_da_converters_impl(voidptr);
 }

@@ -29,45 +29,44 @@
 // * FUNCTION DECLARATIONS
 // ***************************************************************************************
 
-void dc_dynarr_init(DCDynArr* darr, DCDynValFreeFunc element_free_func);
-DCDynArr* dc_dynarr_create(DCDynValFreeFunc element_free_func);
-void ___dc_dynarr_init_with_values(DCDynArr* darr, usize count,
-                                   DCDynValFreeFunc element_free_func,
-                                   DCDynValue values[]);
-void dc_dynarr_grow(DCDynArr* darr);
-void dc_dynarr_grow_by(DCDynArr* darr, usize amount);
-void dc_dynarr_grow_to(DCDynArr* darr, usize amount);
-void dc_dynarr_trunc(DCDynArr* darr);
-void dc_dynarr_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
-                   bool truncate);
-void dc_dynarr_push(DCDynArr* darr, DCDynValue value);
-void ___dc_dynarr_append_values(DCDynArr* darr, usize count,
-                                DCDynValue values[]);
-void dc_dynarr_append(DCDynArr* darr, DCDynArr* from);
-DCDynValue* dc_dynarr_get(DCDynArr* darr, usize index);
-DCDynValue* dc_dynarr_find(DCDynArr* darr, DCDynValue* el);
-void dc_dynval_free(DCDynValue* element, void (*custom_free)(DCDynValue*));
-void dc_dynval_free__(voidptr item);
-void dc_dynarr_free(DCDynArr* darr);
-void dc_dynarr_free__(voidptr darr);
-bool dc_dynarr_delete(DCDynArr* darr, usize index);
-void dc_dynarr_insert(DCDynArr* darr, usize index, DCDynValue value);
-void ___dc_dynarr_insert_values(DCDynArr* darr, usize start_index, usize count,
-                                DCDynValue values[]);
-void dc_dynarr_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from);
+void dc_da_init(DCDynArr* darr, DCDynValFreeFunc element_free_func);
+DCDynArr* dc_da_create(DCDynValFreeFunc element_free_func);
+void ___dc_da_init_with_values(DCDynArr* darr, usize count,
+                               DCDynValFreeFunc element_free_func,
+                               DCDynValue values[]);
+void dc_da_grow(DCDynArr* darr);
+void dc_da_grow_by(DCDynArr* darr, usize amount);
+void dc_da_grow_to(DCDynArr* darr, usize amount);
+void dc_da_trunc(DCDynArr* darr);
+void dc_da_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
+               bool truncate);
+void dc_da_push(DCDynArr* darr, DCDynValue value);
+void ___dc_da_append_values(DCDynArr* darr, usize count, DCDynValue values[]);
+void dc_da_append(DCDynArr* darr, DCDynArr* from);
+DCDynValue* dc_da_get(DCDynArr* darr, usize index);
+DCDynValue* dc_da_find(DCDynArr* darr, DCDynValue* el);
+void dc_dv_free(DCDynValue* element, void (*custom_free)(DCDynValue*));
+void dc_dv_free__(voidptr item);
+void dc_da_free(DCDynArr* darr);
+void dc_da_free__(voidptr darr);
+bool dc_da_delete(DCDynArr* darr, usize index);
+void dc_da_insert(DCDynArr* darr, usize index, DCDynValue value);
+void ___dc_da_insert_values(DCDynArr* darr, usize start_index, usize count,
+                            DCDynValue values[]);
+void dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from);
 
-___dc_dynarr_converters_decl(u8);
-___dc_dynarr_converters_decl(i32);
-___dc_dynarr_converters_decl(u32);
-___dc_dynarr_converters_decl(u64);
-___dc_dynarr_converters_decl(f32);
-___dc_dynarr_converters_decl(f64);
-___dc_dynarr_converters_decl(uptr);
-___dc_dynarr_converters_decl(char);
-___dc_dynarr_converters_decl(size);
-___dc_dynarr_converters_decl(usize);
-___dc_dynarr_converters_decl(string);
-___dc_dynarr_converters_decl(voidptr);
+___dc_da_converters_decl(u8);
+___dc_da_converters_decl(i32);
+___dc_da_converters_decl(u32);
+___dc_da_converters_decl(u64);
+___dc_da_converters_decl(f32);
+___dc_da_converters_decl(f64);
+___dc_da_converters_decl(uptr);
+___dc_da_converters_decl(char);
+___dc_da_converters_decl(size);
+___dc_da_converters_decl(usize);
+___dc_da_converters_decl(string);
+___dc_da_converters_decl(voidptr);
 
 void dc_ht_init(DCHashTable* ht, usize capacity, DCHashFunc hash_func,
                 DCKeyCompFunc key_cmp_func, DCDynValFreeFunc element_free_func);

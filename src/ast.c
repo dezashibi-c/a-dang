@@ -101,7 +101,7 @@ DNode* node_create(DangNodeType type, Token* token, bool has_children)
     node->type = type;
     node->token = token;
 
-    if (has_children) dc_dynarr_init(&node->children, NULL);
+    if (has_children) dc_da_init(&node->children, NULL);
 
     return node;
 }

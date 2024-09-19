@@ -249,71 +249,69 @@
 #define DC_DYNARR_CAP_MULTIPLIER 2
 #endif
 
-#define dc_dynval_free_func_decl(NAME) void NAME(DCDynValue* _value)
+#define dc_dv_free_func_decl(NAME) void NAME(DCDynValue* _value)
 
-#define dc_dynval_lit(TYPE, VALUE)                                             \
+#define dc_dv(TYPE, VALUE)                                                     \
     (DCDynValue)                                                               \
     {                                                                          \
         .type = dc_value_type(TYPE), .value.TYPE##_val = VALUE                 \
     }
 
-#define dc_dynval_make(NAME, TYPE, VALUE)                                      \
+#define dc_dv_make(NAME, TYPE, VALUE)                                          \
     DCDynValue NAME = {.type = dc_value_type(TYPE), .value.TYPE##_val = VALUE}
 
 #define dc_value_type(TYPE) DC_DYN_VAL_TYPE_##TYPE
 
-#define dc_dynval_set(NAME, TYPE, VALUE)                                       \
+#define dc_dv_set(NAME, TYPE, VALUE)                                           \
     (NAME).type = dc_value_type(TYPE);                                         \
     (NAME).value.TYPE##_val = VALUE
 
-#define dc_dynval_is(NAME, TYPE) ((NAME).type == dc_value_type(TYPE))
+#define dc_dv_is(NAME, TYPE) ((NAME).type == dc_value_type(TYPE))
 
-#define dc_dynval_is_not(NAME, TYPE) ((NAME).type != dc_value_type(TYPE))
+#define dc_dv_is_not(NAME, TYPE) ((NAME).type != dc_value_type(TYPE))
 
-#define dc_dynval_get(NAME, TYPE) ((NAME).value.TYPE##_val)
+#define dc_dv_get(NAME, TYPE) ((NAME).value.TYPE##_val)
 
-#define dc_dynarr_get_as(DYNARR, INDEX, TYPE)                                  \
-    dc_dynval_get(*dc_dynarr_get(DYNARR, INDEX), TYPE)
+#define dc_da_get_as(DYNARR, INDEX, TYPE)                                      \
+    dc_dv_get(*dc_da_get(DYNARR, INDEX), TYPE)
 
-#define dc_dynarr_is(DYNARR, INDEX, TYPE)                                      \
-    dc_dynval_is((DYNARR).elements[INDEX], TYPE)
+#define dc_da_is(DYNARR, INDEX, TYPE) dc_dv_is((DYNARR).elements[INDEX], TYPE)
 
-#define dc_dynarr_is_not(DYNARR, INDEX, TYPE)                                  \
-    dc_dynval_is_not((DYNARR).elements[INDEX], TYPE)
+#define dc_da_is_not(DYNARR, INDEX, TYPE)                                      \
+    dc_dv_is_not((DYNARR).elements[INDEX], TYPE)
 
-#define dc_dynarr_for(DYNARR)                                                  \
-    for (usize _idx = 0; _idx < (DYNARR).count; _idx++)
+#define dc_da_for(DYNARR) for (usize _idx = 0; _idx < (DYNARR).count; _idx++)
 
 // Function to initialize the dynamic array with initial values
-#define dc_dynarr_init_with_values(DYNARRPTR, FREE_FUNC, ...)                  \
+#define dc_da_init_with_values(DYNARRPTR, FREE_FUNC, ...)                      \
     do                                                                         \
     {                                                                          \
         dc_sarray(__initial_values, DCDynValue, __VA_ARGS__);                  \
-        ___dc_dynarr_init_with_values(DYNARRPTR, dc_count(__initial_values),   \
-                                      FREE_FUNC, __initial_values);            \
+        ___dc_da_init_with_values(DYNARRPTR, dc_count(__initial_values),       \
+                                  FREE_FUNC, __initial_values);                \
     } while (0)
 
-#define dc_dynarr_append_values(DYNARRPTR, ...)                                \
+#define dc_da_append_values(DYNARRPTR, ...)                                    \
     do                                                                         \
     {                                                                          \
         dc_sarray(__initial_values, DCDynValue, __VA_ARGS__);                  \
-        ___dc_dynarr_append_values(DYNARRPTR, dc_count(__initial_values),      \
-                                   __initial_values);                          \
+        ___dc_da_append_values(DYNARRPTR, dc_count(__initial_values),          \
+                               __initial_values);                              \
     } while (0)
 
-#define dc_dynarr_insert_values(DYNARRPTR, INDEX, ...)                         \
+#define dc_da_insert_values(DYNARRPTR, INDEX, ...)                             \
     do                                                                         \
     {                                                                          \
         dc_sarray(__initial_values, DCDynValue, __VA_ARGS__);                  \
-        ___dc_dynarr_insert_values(                                            \
-            DYNARRPTR, INDEX, dc_count(__initial_values), __initial_values);   \
+        ___dc_da_insert_values(DYNARRPTR, INDEX, dc_count(__initial_values),   \
+                               __initial_values);                              \
     } while (0)
 
-#define ___dc_dynarr_converters_decl(ORIGIN_TYPE)                              \
-    usize dc_##ORIGIN_TYPE##_dynarr_to_flat_arr(                               \
+#define ___dc_da_converters_decl(ORIGIN_TYPE)                                  \
+    usize dc_##ORIGIN_TYPE##_da_to_flat_arr(                                   \
         DCDynArr* arr, ORIGIN_TYPE** out_arr, bool must_fail)
 
-#define ___dc_dynarr_converters_impl(ORIGIN_TYPE)                              \
+#define ___dc_da_converters_impl(ORIGIN_TYPE)                                  \
     if (!arr || arr->count == 0 || !out_arr)                                   \
     {                                                                          \
         return 0;                                                              \
@@ -337,7 +335,7 @@
             }                                                                  \
             continue;                                                          \
         }                                                                      \
-        (*out_arr)[dest_index] = dc_dynval_get((*elem), ORIGIN_TYPE);          \
+        (*out_arr)[dest_index] = dc_dv_get((*elem), ORIGIN_TYPE);              \
         dest_index++;                                                          \
     }                                                                          \
     (*out_arr)[dest_index] = dc_arr_terminator(ORIGIN_TYPE);                   \
@@ -440,8 +438,7 @@
 #define dc_cleanup_do(ENTRY) (ENTRY).cleanup_func(((ENTRY).element))
 
 #define ___dc_cleanups_arr_init(CLEANUPS, CAPACITY)                            \
-    if ((CLEANUPS).cap == 0)                                                   \
-    dc_dynarr_init_custom(&(CLEANUPS), CAPACITY, 3, NULL)
+    if ((CLEANUPS).cap == 0) dc_da_init_custom(&(CLEANUPS), CAPACITY, 3, NULL)
 
 #define dc_global_cleanups_init(CAPACITY)                                      \
     do                                                                         \
@@ -454,7 +451,7 @@
 #define dc_local_cleanup_decl(RETVAL_TYPE, RETVAL_INIT, CAPACITY)              \
     RETVAL_TYPE ___dc_ret_val = RETVAL_INIT;                                   \
     DCCleanups ____dc_local_cleanups = {0};                                    \
-    dc_dynarr_init_custom(&____dc_local_cleanups, CAPACITY, 3, NULL)
+    dc_da_init_custom(&____dc_local_cleanups, CAPACITY, 3, NULL)
 
 #define dc_cleanups_push(ELEMENT, CLEAN_FUNC)                                  \
     dc_dbg_log("global cleanup push: %p", (voidptr)ELEMENT);                   \
@@ -472,15 +469,13 @@
 #define dc_local_cleanups_push_ht(ELEMENT)                                     \
     dc_local_cleanup_push(ELEMENT, dc_ht_free__)
 
-#define dc_cleanups_push_dynarr(ELEMENT)                                       \
-    dc_cleanups_push(ELEMENT, dc_dynarr_free__)
-#define dc_local_cleanups_push_dynarr(ELEMENT)                                 \
-    dc_local_cleanup_push(ELEMENT, dc_dynarr_free__)
+#define dc_cleanups_push_da(ELEMENT) dc_cleanups_push(ELEMENT, dc_da_free__)
+#define dc_local_cleanups_push_da(ELEMENT)                                     \
+    dc_local_cleanup_push(ELEMENT, dc_da_free__)
 
-#define dc_cleanups_push_dynval(ELEMENT)                                       \
-    dc_cleanups_push(ELEMENT, dc_dynval_free__)
-#define dc_local_cleanups_push_dynval(ELEMENT)                                 \
-    dc_local_cleanup_push(ELEMENT, dc_dynval_free__)
+#define dc_cleanups_push_dv(ELEMENT) dc_cleanups_push(ELEMENT, dc_dv_free__)
+#define dc_local_cleanups_push_dv(ELEMENT)                                     \
+    dc_local_cleanup_push(ELEMENT, dc_dv_free__)
 
 #define dc_def_local_cleanups_label()                                          \
     ___dc_perform_local_cleanups_label:                                        \
