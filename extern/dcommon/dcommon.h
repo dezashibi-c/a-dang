@@ -93,6 +93,8 @@ void dc_normalize_path_to_posix(string path);
 string dc_replace_file_in_path(const string path, const string new_file);
 string dc_get_home_dir_path();
 string dc_get_username();
+string dc_get_os();
+string dc_get_arch();
 
 void ___dc_handle_signal(int sig);
 void ___dc_perform_cleanup(DCCleanups* cleanups_arr);

@@ -26,7 +26,7 @@
 
 #include "dcommon.h"
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(DC_WINDOWS)
 #include <Lmcons.h>
 #include <windows.h>
 #else
@@ -82,7 +82,7 @@ string dc_strdup(const string in)
 
 void dc_normalize_path_to_posix(string path)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(DC_WINDOWS)
     for (string p = path; *p; ++p)
     {
         if (*p == '\\')
@@ -123,7 +123,7 @@ string dc_replace_file_in_path(string path, const string new_file)
 
 string dc_get_home_dir_path()
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(DC_WINDOWS)
     static char homeDir[MAX_PATH];
     if (GetEnvironmentVariable("USERPROFILE", homeDir, MAX_PATH))
     {
@@ -140,7 +140,7 @@ string dc_get_home_dir_path()
 
 string dc_get_username()
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(DC_WINDOWS)
     static char username[UNLEN + 1];
     DWORD username_len = UNLEN + 1;
     if (GetUserName(username, &username_len))
@@ -154,6 +154,70 @@ string dc_get_username()
 #else
     return getenv("USER");
 #endif
+}
+
+string dc_get_os()
+{
+    string os = "unknown";
+
+#ifdef DC_WINDOWS
+    os = "windows";
+#elif defined(DC_LINUX)
+    os = "linux";
+#elif defined(DC_ANDROID)
+    os = "android";
+#elif defined(DC_MACOS)
+    os = "macos";
+#elif defined(DC_UNIX)
+    os = "unix";
+#endif
+
+    return os;
+}
+
+string dc_get_arch()
+{
+    string arch = "unknown";
+
+#ifdef DC_WINDOWS_X64
+    arch = "x64";
+#elif defined(DC_WINDOWS_ARM64)
+    arch = "arm64";
+#elif defined(DC_WINDOWS_ARM)
+    arch = "arm";
+#elif defined(DC_WINDOWS_X86)
+    arch = "x86";
+#elif defined(DC_LINUX_X64)
+    arch = "x64";
+#elif defined(DC_LINUX_ARM64)
+    arch = "arm64";
+#elif defined(DC_LINUX_ARM)
+    arch = "arm";
+#elif defined(DC_LINUX_X86)
+    arch = "x86";
+#elif defined(DC_ANDROID_X64)
+    arch = "x64";
+#elif defined(DC_ANDROID_ARM64)
+    arch = "arm64";
+#elif defined(DC_ANDROID_ARM)
+    arch = "arm";
+#elif defined(DC_ANDROID_X86)
+    arch = "x86";
+#elif defined(DC_MACOS_X64)
+    arch = "x64";
+#elif defined(DC_MACOS_X86)
+    arch = "x86";
+#elif defined(DC_UNIX_X64)
+    arch = "x64";
+#elif defined(DC_UNIX_ARM64)
+    arch = "arm64";
+#elif defined(DC_UNIX_ARM)
+    arch = "arm";
+#elif defined(DC_UNIX_X86)
+    arch = "x86";
+#endif
+
+    return arch;
 }
 
 // ***************************************************************************************
