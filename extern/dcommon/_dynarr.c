@@ -348,7 +348,8 @@ void dc_dv_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
         {
             if (custom_free) custom_free(element);
 
-            if (dc_dv_as(*element, string) != NULL)
+            if (dc_dv_is_allocated(*element) &&
+                dc_dv_as(*element, string) != NULL)
                 free(dc_dv_as(*element, string));
             break;
         }
@@ -357,7 +358,8 @@ void dc_dv_free(DCDynValue* element, void (*custom_free)(DCDynValue*))
         {
             if (custom_free) custom_free(element);
 
-            if (dc_dv_as(*element, voidptr) != NULL)
+            if (dc_dv_is_allocated(*element) &&
+                dc_dv_as(*element, voidptr) != NULL)
                 free(dc_dv_as(*element, voidptr));
             break;
         }

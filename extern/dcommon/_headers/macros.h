@@ -317,21 +317,36 @@
 #define dc_dv(TYPE, VALUE)                                                     \
     (DCDynValue)                                                               \
     {                                                                          \
-        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE                        \
+        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE, .allocated = false    \
     }
 
-#define dc_dv_make(NAME, TYPE, VALUE)                                          \
-    DCDynValue NAME = {.type = dc_dvt(TYPE), .value.TYPE##_val = VALUE}
+#define dc_dva(TYPE, VALUE)                                                    \
+    (DCDynValue)                                                               \
+    {                                                                          \
+        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE, .allocated = true     \
+    }
+
+#define dc_dv_def(NAME, TYPE, VALUE, ALLOC)                                    \
+    DCDynValue NAME = {                                                        \
+        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE, .allocated = ALLOC}
 
 #define dc_dv_set(NAME, TYPE, VALUE)                                           \
     (NAME).type = dc_dvt(TYPE);                                                \
     (NAME).value.TYPE##_val = VALUE
+
+#define dc_dv_mark_alloc(NAME) (NAME).allocated = true
+
+#define dc_dv_seta(NAME, TYPE, VALUE)                                          \
+    dc_dv_set(NAME, TYPE, VALUE);                                              \
+    dc_dv_mark_alloc(NAME)
 
 #define dc_dv_is(NAME, TYPE) ((NAME).type == dc_dvt(TYPE))
 
 #define dc_dv_is_not(NAME, TYPE) ((NAME).type != dc_dvt(TYPE))
 
 #define dc_dv_as(NAME, TYPE) ((NAME).value.TYPE##_val)
+
+#define dc_dv_is_allocated(NAME) ((NAME).allocated)
 
 #define dc_da_get_as(DYNARR, INDEX, TYPE)                                      \
     dc_dv_as(*dc_da_get(DYNARR, INDEX), TYPE)

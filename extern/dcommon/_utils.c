@@ -329,5 +329,5 @@ void ____dc_cleanups_custom_push(DCCleanups* cleanup_arr, voidptr element,
     item->element = element;
     item->cleanup_func = cleanup_func;
 
-    dc_da_push(cleanup_arr, dc_dv(voidptr, item));
+    dc_da_push(cleanup_arr, dc_dva(voidptr, item));
 }

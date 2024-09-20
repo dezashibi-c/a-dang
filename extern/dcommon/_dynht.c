@@ -123,7 +123,7 @@ void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
     if (current->cap == 0)
     {
         dc_da_init(current, ht->element_free_func);
-        dc_da_push(current, dc_dv(voidptr, new_entry));
+        dc_da_push(current, dc_dva(voidptr, new_entry));
         ht->key_count++;
 
         return;
@@ -135,12 +135,12 @@ void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
     if (existed != NULL)
     {
         dc_dv_free(&current->elements[existed_index], ht->element_free_func);
-        current->elements[existed_index] = dc_dv(voidptr, new_entry);
+        current->elements[existed_index] = dc_dva(voidptr, new_entry);
 
         return;
     }
 
-    dc_da_push(current, dc_dv(voidptr, new_entry));
+    dc_da_push(current, dc_dva(voidptr, new_entry));
     ht->key_count++;
 }
 

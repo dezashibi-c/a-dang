@@ -82,6 +82,7 @@ typedef enum
 typedef struct
 {
     DCDynValueType type;
+    bool allocated;
     union
     {
         u8 u8_val;
