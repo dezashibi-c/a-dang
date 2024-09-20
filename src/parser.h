@@ -20,7 +20,23 @@
 #include "ast.h"
 #include "scanner.h"
 
-typedef struct
+typedef struct Parser Parser;
+
+typedef DNode* (*ParsePrefixFn)(Parser*);
+typedef DNode* (*ParseInfixFn)(Parser*, DNode*);
+
+typedef enum
+{
+    PREC_LOWEST,
+    PREC_EQUALS,
+    PREC_CMP,
+    PREC_SUM,
+    PREC_PROD,
+    PREC_PREFIX,
+    PREC_CALL
+} Precedence;
+
+typedef struct Parser
 {
     Scanner* scanner;
 
@@ -28,9 +44,13 @@ typedef struct
     Token* peek_token;
 
     DCDynArr errors;
+
+    ParsePrefixFn parse_prefix_fns[DN__MAX];
+    ParseInfixFn parse_infix_fns[DN__MAX];
 } Parser;
 
 void parser_init(Parser* p, Scanner* s);
+void parser_free(Parser* p);
 DNode* parser_parse_program(Parser* p);
 void parser_log_errors(Parser* p);
 

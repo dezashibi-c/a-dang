@@ -15,6 +15,27 @@ static bool parser_has_no_error(Parser* p)
     return true;
 }
 
+static bool node_is_valid(DNode* node, DangNodeType dnt,
+                          usize number_of_expected_statements)
+{
+    dc_action_on(node->type != dnt, return false,
+                 "Wrong node node type, expected type='%s' but got='%s'",
+                 tostr_DangNodeType(dnt), tostr_DangNodeType(node->type));
+
+    dc_action_on(node->children.count != number_of_expected_statements,
+                 return false,
+                 "Wrong number of statements, expected='%zu' but got='%zu'",
+                 number_of_expected_statements, node->children.count);
+
+    return true;
+}
+
+static bool program_is_valid(DNode* program,
+                             usize number_of_expected_statements)
+{
+    return node_is_valid(program, DN_PROGRAM, number_of_expected_statements);
+}
+
 static bool test_DNodeLetStatement(DNode* stmt, string* name)
 {
     dc_action_on(!dc_sv_str_eq(stmt->token->text, "let"), return false,
@@ -61,14 +82,8 @@ CLOVE_TEST(let_statements)
 
     dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
-    dc_action_on(program->type != DN_PROGRAM, CLOVE_FAIL(),
-                 "Wrong program node type, expected type='%s' but got='%s'",
-                 tostr_DangNodeType(DN_PROGRAM),
-                 tostr_DangNodeType(program->type));
-
-    dc_action_on(program->children.count != 3, CLOVE_FAIL(),
-                 "Wrong number of statements, expected='%d' but got='%zu'", 3,
-                 program->children.count);
+    dc_action_on(!program_is_valid(program, 3), CLOVE_FAIL(),
+                 "program is not valid");
 
     string expected_identifiers[] = {"1", "some long variable name", "foobar"};
 
@@ -80,6 +95,9 @@ CLOVE_TEST(let_statements)
                      CLOVE_FAIL(),
                      "Test failed on item #%zu check reasons above", i);
     }
+
+    dnode_program_free(program);
+    parser_free(&p);
 
     CLOVE_PASS();
 }
@@ -99,14 +117,8 @@ CLOVE_TEST(return_statement)
 
     dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
-    dc_action_on(program->type != DN_PROGRAM, CLOVE_FAIL(),
-                 "Wrong program node type, expected type='%s' but got='%s'",
-                 tostr_DangNodeType(DN_PROGRAM),
-                 tostr_DangNodeType(program->type));
-
-    dc_action_on(program->children.count != 3, CLOVE_FAIL(),
-                 "Wrong number of statements, expected='%d' but got='%zu'", 3,
-                 program->children.count);
+    dc_action_on(!program_is_valid(program, 3), CLOVE_FAIL(),
+                 "program is not valid");
 
     for (usize i = 0; i < program->children.count; ++i)
     {
@@ -122,6 +134,48 @@ CLOVE_TEST(return_statement)
             tostr_DangNodeType(DN_RETURN_STATEMENT),
             tostr_DangNodeType(stmt->type));
     }
+
+    dnode_program_free(program);
+    parser_free(&p);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(identifier)
+{
+    const string input = "foobar";
+
+    Scanner s;
+    scanner_init(&s, input);
+
+    Parser p;
+    parser_init(&p, &s);
+
+    DNode* program = parser_parse_program(&p);
+
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
+                 "program is not valid");
+
+    DNode* statement1 = dn_child(program, 0);
+    dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1),
+                 CLOVE_FAIL(), "statement is not valid");
+
+    DNode* expression = dn_child(statement1, 0);
+    dc_action_on(!node_is_valid(expression, DN_IDENTIFIER, 1), CLOVE_FAIL(),
+                 "statement is not valid");
+
+    string value = dn_child_as(expression, 0, string);
+    dc_action_on(strcmp(value, "foobar") != 0, CLOVE_FAIL(),
+                 "identifier value is not '%s', got='%s'", "foobar", value);
+
+    dc_action_on(!dc_sv_str_eq(expression->token->text, "foobar"), CLOVE_FAIL(),
+                 "identifier value is not '%s', got='" DC_SV_FMT "'", "foobar",
+                 dc_sv_fmt_val(expression->token->text));
+
+    dnode_program_free(program);
+    parser_free(&p);
 
     CLOVE_PASS();
 }

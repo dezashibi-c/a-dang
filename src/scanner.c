@@ -264,13 +264,13 @@ Token* scanner_next_token(Scanner* s)
             if (is_letter(s->c))
             {
                 token = extract_identifier(s);
-                dc_da_push(&s->tokens, dc_dv(voidptr, token));
+                dc_da_push(&s->tokens, dc_dva(voidptr, token));
                 return token;
             }
             else if (is_digit(s->c))
             {
                 token = extract_number(s);
-                dc_da_push(&s->tokens, dc_dv(voidptr, token));
+                dc_da_push(&s->tokens, dc_dva(voidptr, token));
                 return token;
             }
             else
@@ -281,6 +281,6 @@ Token* scanner_next_token(Scanner* s)
 
     read_char(s);
 
-    dc_da_push(&s->tokens, dc_dv(voidptr, token));
+    dc_da_push(&s->tokens, dc_dva(voidptr, token));
     return token;
 }

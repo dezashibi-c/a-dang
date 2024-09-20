@@ -30,6 +30,20 @@
 #define peek_token_is(P, TYPE) ((P)->peek_token->type == TYPE)
 #define peek_token_is_not(P, TYPE) ((P)->peek_token->type != TYPE)
 
+#define peek_token_is_end_of_stmt(P)                                           \
+    (peek_token_is(P, TOK_SEMICOLON) || peek_token_is(P, TOK_NEWLINE) ||       \
+     peek_token_is(P, TOK_EOF))
+
+static void register_prefix_fn(Parser* p, DangTokenType tt, ParsePrefixFn fn)
+{
+    p->parse_prefix_fns[tt] = fn;
+}
+
+static void register_infix_fn(Parser* p, DangTokenType tt, ParseInfixFn fn)
+{
+    p->parse_infix_fns[tt] = fn;
+}
+
 static void next_token(Parser* p)
 {
     p->current_token = p->peek_token;
@@ -42,7 +56,7 @@ static void add_token_error(Parser* p, DangTokenType type)
     dc_sprintf(&err, "expected next token to be %s, got %s instead.",
                tostr_DangTokenType(type),
                tostr_DangTokenType(p->peek_token->type));
-    dc_da_push(&(p->errors), dc_dv(string, err));
+    dc_da_push(&(p->errors), dc_dva(string, err));
 }
 
 static bool move_if_peek_token_is(Parser* p, DangTokenType type)
@@ -57,6 +71,18 @@ static bool move_if_peek_token_is(Parser* p, DangTokenType type)
     return false;
 }
 
+static DNode* parse_identifier(Parser* p)
+{
+    DNode* identifier = dnode_create(DN_IDENTIFIER, p->current_token, true);
+
+    string value;
+    dc_sprintf(&value, DC_SV_FMT, dc_sv_fmt_val(p->current_token->text));
+
+    dc_da_push(&identifier->children, dc_dva(string, value));
+
+    return identifier;
+}
+
 static DNode* parse_let_statement(Parser* p)
 {
     DNode* stmt = dnode_create(DN_LET_STATEMENT, p->current_token, true);
@@ -64,7 +90,7 @@ static DNode* parse_let_statement(Parser* p)
     if (!move_if_peek_token_is(p, TOK_IDENT)) return NULL;
 
     DNode* name = dnode_create(DN_IDENTIFIER, p->current_token, false);
-    dc_da_push(&stmt->children, dc_dv(voidptr, name));
+    dc_da_push(&stmt->children, dc_dva(voidptr, name));
 
     while (!current_token_is_end_of_stmt(p)) next_token(p);
 
@@ -82,6 +108,30 @@ static DNode* parse_return_statement(Parser* p)
     return stmt;
 }
 
+static DNode* parse_expression(Parser* p, Precedence precedence)
+{
+    ParsePrefixFn prefix = p->parse_prefix_fns[p->current_token->type];
+
+    if (prefix == NULL) return NULL;
+
+    DNode* left_exp = prefix(p);
+
+    return left_exp;
+}
+
+static DNode* parse_expression_statement(Parser* p)
+{
+    DNode* stmt = dnode_create(DN_EXPRESSION_STATEMENT, p->current_token, true);
+
+    DNode* expression = parse_expression(p, PREC_LOWEST);
+
+    dc_da_push(&stmt->children, dc_dva(voidptr, expression));
+
+    if (peek_token_is_end_of_stmt(p)) next_token(p);
+
+    return stmt;
+}
+
 static DNode* parse_statement(Parser* p)
 {
     switch (p->current_token->type)
@@ -93,7 +143,7 @@ static DNode* parse_statement(Parser* p)
             return parse_return_statement(p);
 
         default:
-            return NULL;
+            return parse_expression_statement(p);
     }
 }
 
@@ -110,8 +160,17 @@ void parser_init(Parser* p, Scanner* s)
 
     dc_da_init(&(p->errors), NULL);
 
+    register_prefix_fn(p, TOK_IDENT, parse_identifier);
+
     next_token(p);
     next_token(p);
+}
+
+void parser_free(Parser* p)
+{
+    dc_da_free(&p->errors);
+
+    scanner_free(p->scanner);
 }
 
 DNode* parser_parse_program(Parser* p)
@@ -123,7 +182,7 @@ DNode* parser_parse_program(Parser* p)
     while (p->current_token->type != TOK_EOF)
     {
         DNode* stmt = parse_statement(p);
-        if (stmt != NULL) dc_da_push(&program->children, dc_dv(voidptr, stmt));
+        if (stmt != NULL) dc_da_push(&program->children, dc_dva(voidptr, stmt));
 
         next_token(p);
     }
