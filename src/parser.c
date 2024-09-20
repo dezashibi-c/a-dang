@@ -82,7 +82,7 @@ static DNode* parse_return_statement(Parser* p)
     return stmt;
 }
 
-static DNode* parser_parse_statement(Parser* p)
+static DNode* parse_statement(Parser* p)
 {
     switch (p->current_token->type)
     {
@@ -122,7 +122,7 @@ DNode* parser_parse_program(Parser* p)
 
     while (p->current_token->type != TOK_EOF)
     {
-        DNode* stmt = parser_parse_statement(p);
+        DNode* stmt = parse_statement(p);
         if (stmt != NULL) dc_da_push(&program->children, dc_dv(voidptr, stmt));
 
         next_token(p);
