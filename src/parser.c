@@ -59,11 +59,11 @@ static bool move_if_peek_token_is(Parser* p, DangTokenType type)
 
 static DNode* parse_let_statement(Parser* p)
 {
-    DNode* stmt = node_create(DN_LET_STATEMENT, p->current_token, true);
+    DNode* stmt = dnode_create(DN_LET_STATEMENT, p->current_token, true);
 
     if (!move_if_peek_token_is(p, TOK_IDENT)) return NULL;
 
-    DNode* name = node_create(DN_IDENTIFIER, p->current_token, false);
+    DNode* name = dnode_create(DN_IDENTIFIER, p->current_token, false);
     dc_da_push(&stmt->children, dc_dv(voidptr, name));
 
     while (!current_token_is_end_of_stmt(p)) next_token(p);
@@ -73,7 +73,7 @@ static DNode* parse_let_statement(Parser* p)
 
 static DNode* parse_return_statement(Parser* p)
 {
-    DNode* stmt = node_create(DN_RETURN_STATEMENT, p->current_token, false);
+    DNode* stmt = dnode_create(DN_RETURN_STATEMENT, p->current_token, false);
 
     next_token(p);
 
@@ -118,7 +118,7 @@ DNode* parser_parse_program(Parser* p)
 {
     (void)p;
 
-    DNode* program = node_create(DN_PROGRAM, NULL, true);
+    DNode* program = dnode_create(DN_PROGRAM, NULL, true);
 
     while (p->current_token->type != TOK_EOF)
     {

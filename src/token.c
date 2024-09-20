@@ -30,6 +30,7 @@ string tostr_DangTokenType(DangTokenType dtt)
         dc_str_case(TOK_BANG);
         dc_str_case(TOK_ASTERISK);
         dc_str_case(TOK_SLASH);
+        dc_str_case(TOK_DOLLAR);
         dc_str_case(TOK_LT);
         dc_str_case(TOK_GT);
         dc_str_case(TOK_EQ);
@@ -80,7 +81,7 @@ DangTokenType is_keyword(DCStringView* text)
         return TOK_IDENT;
 }
 
-Token* token_make(DangTokenType type, string str, usize start, usize len)
+Token* token_create(DangTokenType type, string str, usize start, usize len)
 {
     if (type != TOK_EOF && (!str || start >= strlen(str)))
     {

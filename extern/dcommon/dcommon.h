@@ -88,6 +88,8 @@ void dc_sv_free(DCStringView* sv);
 
 int dc_sprintf(string* str, string fmt, ...)
     __dc_attribute((format(printf, 2, 3)));
+int dc_sappend(string* str, const string fmt, ...)
+    __dc_attribute((format(printf, 2, 3)));
 string dc_strdup(const string in);
 void dc_normalize_path_to_posix(string path);
 string dc_replace_file_in_path(const string path, const string new_file);

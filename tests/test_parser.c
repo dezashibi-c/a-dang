@@ -7,12 +7,6 @@
 #include "parser.h"
 #include "scanner.h"
 
-typedef struct
-{
-    DangTokenType type;
-    const string text;
-} TestExpectedResult;
-
 static bool parser_has_no_error(Parser* p)
 {
     dc_action_on(p->errors.count != 0, parser_log_errors(p);
@@ -54,7 +48,7 @@ static bool test_DNodeLetStatement(DNode* stmt, string* name)
 
 CLOVE_TEST(let_statements)
 {
-    const string input = "let x 5; let y 10\n"
+    const string input = "let $1 5; let $\"some long variable name\" 10\n"
                          "let foobar 838383";
 
     Scanner s;
@@ -76,7 +70,7 @@ CLOVE_TEST(let_statements)
                  "Wrong number of statements, expected='%d' but got='%zu'", 3,
                  program->children.count);
 
-    string expected_identifiers[] = {"x", "y", "foobar"};
+    string expected_identifiers[] = {"1", "some long variable name", "foobar"};
 
     for (usize i = 0; i < dc_count(expected_identifiers); ++i)
     {

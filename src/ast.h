@@ -65,20 +65,27 @@ typedef enum
     __dnode_group_is(NODE_TYPE, EXPRESSION)
 #define dnode_group_is_literal(NODE_TYPE) __dnode_group_is(NODE_TYPE, LITERAL)
 #define dnode_type_is_valid(NODE_TYPE)                                         \
-    ((NODE_TYPE) > DN__UNKNOWN && (NODE_TYPE) < DN__MAX &&                     \
-     dnode_group_is_expression(NODE_TYPE) &&                                   \
-     dnode_group_is_statement(NODE_TYPE) && dnode_group_is_literal(NODE_TYPE))
+    ((NODE_TYPE) == DN_PROGRAM || dnode_group_is_expression(NODE_TYPE) ||      \
+     dnode_group_is_statement(NODE_TYPE) || dnode_group_is_literal(NODE_TYPE))
+
+#define dn_child(NODE, INDEX)                                                  \
+    ((DNode*)dc_da_get_as(&((NODE)->children), INDEX, voidptr))
+
+#define dn_child_count(NODE) ((NODE)->children.count)
+
+#define dn_text(NODE) (NODE)->token->text
 
 typedef struct
 {
     DangNodeType type;
     Token* token;
+    string text;
     DCDynArr children;
 } DNode;
 
 string tostr_DangNodeType(DangNodeType dnt);
-DCStringView* dnode_get_token_text(DNode* dn);
+void dnode_string_init(DNode* dn);
 
-DNode* node_create(DangNodeType type, Token* token, bool has_children);
+DNode* dnode_create(DangNodeType type, Token* token, bool has_children);
 
 #endif // DANG_AST_H

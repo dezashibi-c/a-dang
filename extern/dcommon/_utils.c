@@ -69,6 +69,50 @@ int dc_sprintf(string* str, string fmt, ...)
     return len;
 }
 
+int dc_sappend(string* str, const string fmt, ...)
+{
+    if (!str)
+    {
+        dc_log("Invalid input pointer.\n");
+        return -1;
+    }
+
+    va_list argp;
+    va_start(argp, fmt);
+
+    // Calculate the length of the formatted string
+    char one_char[1];
+    int len = vsnprintf(one_char, 1, fmt, argp);
+    if (len < 0)
+    {
+        dc_log("An encoding error occurred.\n");
+        va_end(argp);
+        return len;
+    }
+    va_end(argp);
+
+    // Calculate the current length of the existing string
+    size_t current_len = *str ? strlen(*str) : 0;
+
+    // Allocate memory for the new string (old length + new formatted part)
+    char* new_str = realloc(*str, current_len + len + 1);
+    if (!new_str)
+    {
+        dc_log("Couldn't allocate memory for string extension.\n");
+        return -1;
+    }
+
+    // Update the string pointer
+    *str = new_str;
+
+    // Append the new formatted string to the existing string
+    va_start(argp, fmt);
+    vsnprintf(*str + current_len, len + 1, fmt, argp);
+    va_end(argp);
+
+    return current_len + len;
+}
+
 string dc_strdup(const string in)
 {
     if (!in) return NULL;

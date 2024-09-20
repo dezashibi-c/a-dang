@@ -173,7 +173,8 @@ CLOVE_TEST(rest_of_keywords)
                          "  return true\n"
                          "} else {\n"
                          "  return false\n"
-                         "}";
+                         "}\n"
+                         "$\"hey there\" test $12";
 
     TestExpectedResult tests[] = {
         {.type = TOK_IF, .text = "if"},
@@ -199,6 +200,12 @@ CLOVE_TEST(rest_of_keywords)
         {.type = TOK_NEWLINE, .text = "\n"},
 
         {.type = TOK_RBRACE, .text = "}"},
+        {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_IDENT, .text = "hey there"},
+        {.type = TOK_IDENT, .text = "test"},
+        {.type = TOK_IDENT, .text = "12"},
+
 
         {.type = TOK_EOF, .text = ""},
     };

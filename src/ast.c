@@ -52,42 +52,91 @@ string tostr_DangNodeType(DangNodeType dnt)
     return NULL;
 }
 
-DCStringView* dnode_get_token_text(DNode* dn)
+void dnode_string_init(DNode* dn)
 {
     dc_action_on(!dnode_type_is_valid(dn->type), exit(1),
                  "got wrong node type: %s", tostr_DangNodeType(dn->type));
 
-    return &dn->token->text;
+    if (dn->text != NULL) return;
 
-    // switch (dn->type)
-    // {
-    //     case DN_PROGRAM:
-    //         break;
+    switch (dn->type)
+    {
+        case DN_PROGRAM:
+            dc_da_for(dn->children)
+            {
+                dnode_string_init(dn_child(dn, _idx));
+                dc_sappend(&dn->text, "%s\n", dn_child(dn, _idx)->text);
+            }
 
-    //         // DN_LET_STATEMENT
-    //         // DN_RETURN_STATEMENT
-    //         // DN_EXPRESSION_STATEMENT
-    //         // DN_BLOCK_STATEMENT
-    //         // DN_IDENTIFIER
-    //         // DN_PREFIX_EXPRESSION
-    //         // DN_INFIX_EXPRESSION
-    //         // DN_IF_EXPRESSION
-    //         // DN_WHILE_EXPRESSION
-    //         // DN_CALL_EXPRESSION
-    //         // DN_INDEX_EXPRESSION
-    //         // DN_FUNCTION_LITERAL
-    //         // DN_ARRAY_LITERAL
-    //         // DN_HASH_LITERAL
-    //         // DN_MACRO_LITERAL
-    //         // DN_BOOLEAN_LITERAL
-    //         // DN_STRING_LITERAL
-    //         // DN_INTEGER_LITERAL
-    // }
+            break;
 
-    // return NULL; // unreachable
+        case DN_LET_STATEMENT:
+        {
+            dnode_string_init(dn_child(dn, 0));
+            string value = NULL;
+            if (dn_child_count(dn) > 1)
+            {
+                dnode_string_init(dn_child(dn, 1));
+                value = dn_child(dn, 1)->text;
+            }
+
+            dc_sprintf(&dn->text, DC_SV_FMT " %s %s",
+                       dc_sv_fmt_val(dn_text(dn)), dn_child(dn, 0)->text,
+                       (value == NULL ? "" : value));
+
+            break;
+        }
+
+        case DN_RETURN_STATEMENT:
+        {
+            string value = NULL;
+            if (dn_child_count(dn) > 0)
+            {
+                dnode_string_init(dn_child(dn, 0));
+                value = dn_child(dn, 0)->text;
+            }
+            dc_sprintf(&dn->text, DC_SV_FMT " %s", dc_sv_fmt_val(dn_text(dn)),
+                       (value == NULL ? "" : value));
+            break;
+        }
+
+        case DN_EXPRESSION_STATEMENT:
+        {
+            string value = NULL;
+            if (dn_child_count(dn) > 0)
+            {
+                dnode_string_init(dn_child(dn, 0));
+                value = dn_child(dn, 0)->text;
+            }
+            dc_sprintf(&dn->text, "%s", (value == NULL ? "" : value));
+            break;
+        }
+
+        default:
+            dc_sprintf(&dn->text, DC_SV_FMT, dc_sv_fmt_val(dn_text(dn)));
+            break;
+
+            // DN_BLOCK_STATEMENT,
+
+            // DN_IDENTIFIER,
+            // DN_PREFIX_EXPRESSION,
+            // DN_INFIX_EXPRESSION,
+            // DN_IF_EXPRESSION,
+            // DN_WHILE_EXPRESSION,
+            // DN_CALL_EXPRESSION,
+            // DN_INDEX_EXPRESSION,
+
+            // DN_FUNCTION_LITERAL,
+            // DN_ARRAY_LITERAL,
+            // DN_HASH_LITERAL,
+            // DN_MACRO_LITERAL,
+            // DN_BOOLEAN_LITERAL,
+            // DN_STRING_LITERAL,
+            // DN_INTEGER_LITERAL,
+    };
 }
 
-DNode* node_create(DangNodeType type, Token* token, bool has_children)
+DNode* dnode_create(DangNodeType type, Token* token, bool has_children)
 {
     DNode* node = malloc(sizeof(DNode));
 
@@ -100,6 +149,7 @@ DNode* node_create(DangNodeType type, Token* token, bool has_children)
 
     node->type = type;
     node->token = token;
+    node->text = NULL;
 
     if (has_children) dc_da_init(&node->children, NULL);
 

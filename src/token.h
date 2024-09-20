@@ -33,6 +33,7 @@ typedef enum
     TOK_BANG,
     TOK_ASTERISK,
     TOK_SLASH,
+    TOK_DOLLAR,
 
     TOK_LT,
     TOK_GT,
@@ -67,7 +68,7 @@ typedef struct
 string tostr_DangTokenType(DangTokenType dtt);
 DangTokenType is_keyword(DCStringView* text);
 
-Token* token_make(DangTokenType type, string str, usize start, usize len);
+Token* token_create(DangTokenType type, string str, usize start, usize len);
 void token_free(Token* t);
 
 #endif // DANG_TOKEN_H

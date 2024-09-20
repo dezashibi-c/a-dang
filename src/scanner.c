@@ -58,7 +58,7 @@ static Token* extract_identifier(Scanner* s)
 
     usize len = s->pos - start;
 
-    Token* t = token_make(TOK_IDENT, s->input, start, len);
+    Token* t = token_create(TOK_IDENT, s->input, start, len);
 
     switch (s->input[start])
     {
@@ -88,7 +88,7 @@ static Token* extract_number(Scanner* s)
 
     usize len = s->pos - start;
 
-    Token* t = token_make(TOK_INT, s->input, start, len);
+    Token* t = token_create(TOK_INT, s->input, start, len);
 
     return t;
 }
@@ -136,81 +136,127 @@ Token* scanner_next_token(Scanner* s)
         case '=':
             if (peek(s) == '=')
             {
-                token = token_make(TOK_EQ, s->input, s->pos, 2);
+                token = token_create(TOK_EQ, s->input, s->pos, 2);
                 read_char(s);
             }
             else
             {
-                token = token_make(TOK_ASSIGN, s->input, s->pos, 1);
+                token = token_create(TOK_ASSIGN, s->input, s->pos, 1);
             }
             break;
 
         case ';':
-            token = token_make(TOK_SEMICOLON, s->input, s->pos, 1);
+            token = token_create(TOK_SEMICOLON, s->input, s->pos, 1);
             break;
 
         case '(':
-            token = token_make(TOK_LPAREN, s->input, s->pos, 1);
+            token = token_create(TOK_LPAREN, s->input, s->pos, 1);
             break;
 
         case ')':
-            token = token_make(TOK_RPAREN, s->input, s->pos, 1);
+            token = token_create(TOK_RPAREN, s->input, s->pos, 1);
             break;
 
         case ',':
-            token = token_make(TOK_COMMA, s->input, s->pos, 1);
+            token = token_create(TOK_COMMA, s->input, s->pos, 1);
             break;
 
         case '+':
-            token = token_make(TOK_PLUS, s->input, s->pos, 1);
+            token = token_create(TOK_PLUS, s->input, s->pos, 1);
             break;
 
         case '-':
-            token = token_make(TOK_MINUS, s->input, s->pos, 1);
+            token = token_create(TOK_MINUS, s->input, s->pos, 1);
             break;
 
         case '!':
             if (peek(s) == '=')
             {
-                token = token_make(TOK_NEQ, s->input, s->pos, 2);
+                token = token_create(TOK_NEQ, s->input, s->pos, 2);
                 read_char(s);
             }
             else
             {
-                token = token_make(TOK_BANG, s->input, s->pos, 1);
+                token = token_create(TOK_BANG, s->input, s->pos, 1);
             }
             break;
 
         case '/':
-            token = token_make(TOK_SLASH, s->input, s->pos, 1);
+            token = token_create(TOK_SLASH, s->input, s->pos, 1);
             break;
 
         case '*':
-            token = token_make(TOK_ASTERISK, s->input, s->pos, 1);
+            token = token_create(TOK_ASTERISK, s->input, s->pos, 1);
             break;
 
+        case '$':
+        {
+            if (is_digit(peek(s)))
+            {
+                read_char(s); // bypass '$'
+
+                usize start = s->pos;
+                while (is_digit(s->c)) read_char(s);
+                usize len = s->pos - start;
+
+                token = token_create(TOK_IDENT, s->input, start, len);
+            }
+            else if (peek(s) == '"')
+            {
+                read_char(s); // bypass '$'
+                read_char(s); // bypass '"'
+
+                usize start = s->pos;
+                usize len;
+
+                while (true)
+                {
+                    if (s->c == '"')
+                    {
+                        len = s->pos - start;
+                        read_char(s); // bypass ending '"'
+                        break;
+                    }
+                    else if (s->c == 0 || s->c == '\n')
+                    {
+                        token_create(TOK_ILLEGAL, s->input, start,
+                                     s->pos - start);
+                        break;
+                    }
+                    read_char(s);
+                }
+
+                token = token_create(TOK_IDENT, s->input, start, len);
+            }
+            else
+            {
+                token = token_create(TOK_ILLEGAL, s->input, s->pos, 1);
+            }
+            break;
+        }
+
         case '<':
-            token = token_make(TOK_LT, s->input, s->pos, 1);
+            token = token_create(TOK_LT, s->input, s->pos, 1);
             break;
 
         case '>':
-            token = token_make(TOK_GT, s->input, s->pos, 1);
+            token = token_create(TOK_GT, s->input, s->pos, 1);
             break;
 
         case '{':
-            token = token_make(TOK_LBRACE, s->input, s->pos, 1);
+            token = token_create(TOK_LBRACE, s->input, s->pos, 1);
             break;
 
         case '}':
-            token = token_make(TOK_RBRACE, s->input, s->pos, 1);
+            token = token_create(TOK_RBRACE, s->input, s->pos, 1);
             break;
 
         case '\n':
-            token = token_make(TOK_NEWLINE, s->input, s->pos, 1);
+            token = token_create(TOK_NEWLINE, s->input, s->pos, 1);
             break;
 
         case '\0':
-            token = token_make(TOK_EOF, s->input, s->pos, 0);
+            token = token_create(TOK_EOF, s->input, s->pos, 0);
             break;
 
         default:
@@ -228,7 +274,7 @@ Token* scanner_next_token(Scanner* s)
                 return token;
             }
             else
-                token = token_make(TOK_ILLEGAL, s->input, s->pos, 1);
+                token = token_create(TOK_ILLEGAL, s->input, s->pos, 1);
         }
         break;
     }
