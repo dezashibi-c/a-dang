@@ -87,6 +87,7 @@ string tostr_DangNodeType(DangNodeType dnt);
 void dnode_string_init(DNode* dn);
 
 DNode* dnode_create(DangNodeType type, Token* token, bool has_children);
+void dnode_program_free(DNode* program);
 void dnode_free(DNode* dn);
 void dnode_child_free(DCDynValue* child);
 
