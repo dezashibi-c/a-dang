@@ -37,7 +37,7 @@ void dc_da_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
     darr->elements = malloc(DC_DYNARR_INITIAL_CAP * sizeof(DCDynValue));
     if (darr->elements == NULL)
     {
-        dc_log("Memory allocation failed\n");
+        dc_log("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
 }
@@ -55,7 +55,7 @@ void dc_da_init_custom(DCDynArr* darr, usize capacity,
     darr->elements = malloc(capacity * sizeof(DCDynValue));
     if (darr->elements == NULL)
     {
-        dc_log("Memory allocation failed\n");
+        dc_log("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
 }
@@ -66,7 +66,7 @@ DCDynArr* dc_da_create(DCDynValFreeFunc element_free_func)
     DCDynArr* darr = malloc(sizeof(DCDynArr));
     if (darr == NULL)
     {
-        dc_log("Memory allocation failed\n");
+        dc_log("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
 
@@ -81,7 +81,7 @@ DCDynArr* dc_da_create_custom(usize capacity, usize capacity_grow_multiplier,
     DCDynArr* darr = malloc(sizeof(DCDynArr));
     if (darr == NULL)
     {
-        dc_log("Memory allocation failed\n");
+        dc_log("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
 
@@ -106,7 +106,7 @@ void ___dc_da_init_with_values(DCDynArr* darr, usize count,
                             sizeof(DCDynValue));
     if (darr->elements == NULL)
     {
-        dc_log("Memory allocation failed\n");
+        dc_log("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
 
@@ -136,7 +136,7 @@ void dc_da_grow(DCDynArr* darr)
 {
     if (darr->cap > (SIZE_MAX / darr->multiplier) / sizeof(DCDynValue))
     {
-        dc_log("Array size too large, cannot allocate more memory\n");
+        dc_log("Array size too large, cannot allocate more memory");
 
         dc_da_free(darr);
 
@@ -149,7 +149,7 @@ void dc_da_grow(DCDynArr* darr)
 
     if (resized == NULL)
     {
-        dc_log("Memory reallocation failed\n");
+        dc_log("Memory reallocation failed");
 
         dc_da_free(darr);
 
@@ -167,7 +167,7 @@ void dc_da_grow_by(DCDynArr* darr, usize amount)
 
     if (resized == NULL)
     {
-        dc_log("Memory reallocation failed\n");
+        dc_log("Memory reallocation failed");
 
         dc_da_free(darr);
 
@@ -184,7 +184,7 @@ void dc_da_grow_to(DCDynArr* darr, usize amount)
 
     if (resized == NULL)
     {
-        dc_log("Memory reallocation failed\n");
+        dc_log("Memory reallocation failed");
 
         dc_da_free(darr);
 
@@ -204,7 +204,7 @@ void dc_da_trunc(DCDynArr* darr)
 
         if (resized == NULL)
         {
-            dc_log("Memory reallocation failed\n");
+            dc_log("Memory reallocation failed");
 
             dc_da_free(darr);
 
@@ -221,7 +221,7 @@ void dc_da_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
 {
     if (count > darr->count)
     {
-        dc_log("Try to pop elements more than actual number of elements\n");
+        dc_log("Try to pop elements more than actual number of elements");
 
         dc_da_free(darr);
 
@@ -234,7 +234,7 @@ void dc_da_pop(DCDynArr* darr, usize count, DCDynValue** out_popped,
 
         if (!out_popped)
         {
-            dc_log("Memory allocation failed\n");
+            dc_log("Memory allocation failed");
 
             dc_da_free(darr);
 
@@ -413,7 +413,7 @@ void dc_da_insert(DCDynArr* darr, usize index, DCDynValue value)
 {
     if (index > darr->count)
     {
-        dc_log("Index out of bound\n");
+        dc_log("Index out of bound");
 
         dc_da_free(darr);
 
@@ -440,7 +440,7 @@ void ___dc_da_insert_values(DCDynArr* darr, usize start_index, usize count,
 {
     if (start_index > darr->count)
     {
-        dc_log("Index out of bound\n");
+        dc_log("Index out of bound");
 
         dc_da_free(darr);
 

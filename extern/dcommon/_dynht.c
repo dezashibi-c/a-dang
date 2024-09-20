@@ -88,7 +88,7 @@ usize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynValue** out_result)
         DCDynValue* element = &darr->elements[_idx];
         if (element->type != dc_dvt(voidptr))
         {
-            dc_log("Wrong type other than voidptr\n");
+            dc_log("Wrong type other than voidptr");
             exit(EXIT_FAILURE);
         }
 
@@ -111,7 +111,7 @@ void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
     DCHashEntry* new_entry = (DCHashEntry*)malloc(sizeof(DCHashEntry));
     if (new_entry == NULL)
     {
-        dc_log("Memory allocation failed\n");
+        dc_log("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
 

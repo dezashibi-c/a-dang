@@ -48,7 +48,7 @@ int dc_sprintf(string* str, string fmt, ...)
     if (len < 1)
     {
         dc_log(
-            "An encoding error occurred. Setting the input pointer to NULL.\n");
+            "An encoding error occurred. Setting the input pointer to NULL.");
         *str = NULL;
         va_end(argp);
         return len;
@@ -58,7 +58,7 @@ int dc_sprintf(string* str, string fmt, ...)
     *str = malloc(len + 1);
     if (!str)
     {
-        dc_log("Couldn't allocate %i chars.\n", len + 1);
+        dc_log("Couldn't allocate %i chars.", len + 1);
         return -1;
     }
 
@@ -73,7 +73,7 @@ int dc_sappend(string* str, const string fmt, ...)
 {
     if (!str)
     {
-        dc_log("Invalid input pointer.\n");
+        dc_log("Invalid input pointer.");
         return -1;
     }
 
@@ -85,7 +85,7 @@ int dc_sappend(string* str, const string fmt, ...)
     int len = vsnprintf(one_char, 1, fmt, argp);
     if (len < 0)
     {
-        dc_log("An encoding error occurred.\n");
+        dc_log("An encoding error occurred.");
         va_end(argp);
         return len;
     }
@@ -98,7 +98,7 @@ int dc_sappend(string* str, const string fmt, ...)
     char* new_str = realloc(*str, current_len + len + 1);
     if (!new_str)
     {
-        dc_log("Couldn't allocate memory for string extension.\n");
+        dc_log("Couldn't allocate memory for string extension.");
         return -1;
     }
 
@@ -151,7 +151,7 @@ string dc_replace_file_in_path(string path, const string new_file)
 
     if (new_path == NULL)
     {
-        dc_log("Memory allocation failed\n");
+        dc_log("Memory allocation failed");
         return NULL;
     }
 
