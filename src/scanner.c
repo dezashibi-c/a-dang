@@ -97,7 +97,7 @@ static void custom_token_free(DCDynValue* item)
 {
     switch (item->type)
     {
-        case dc_value_type(voidptr):
+        case dc_dvt(voidptr):
             token_free((Token*)(dc_dv_get(*item, voidptr)));
             break;
 
@@ -218,13 +218,13 @@ Token* scanner_next_token(Scanner* s)
             if (is_letter(s->c))
             {
                 token = extract_identifier(s);
-                dc_da_push(&s->tokens, dc_dv(voidptr, (void*)token));
+                dc_da_push(&s->tokens, dc_dv(voidptr, token));
                 return token;
             }
             else if (is_digit(s->c))
             {
                 token = extract_number(s);
-                dc_da_push(&s->tokens, dc_dv(voidptr, (void*)token));
+                dc_da_push(&s->tokens, dc_dv(voidptr, token));
                 return token;
             }
             else
@@ -235,6 +235,6 @@ Token* scanner_next_token(Scanner* s)
 
     read_char(s);
 
-    dc_da_push(&s->tokens, dc_dv(voidptr, (void*)token));
+    dc_da_push(&s->tokens, dc_dv(voidptr, token));
     return token;
 }

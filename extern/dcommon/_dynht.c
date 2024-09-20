@@ -86,7 +86,7 @@ usize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynValue** out_result)
     dc_da_for(*darr)
     {
         DCDynValue* element = &darr->elements[_idx];
-        if (element->type != dc_value_type(voidptr))
+        if (element->type != dc_dvt(voidptr))
         {
             dc_log("Wrong type other than voidptr\n");
             exit(EXIT_FAILURE);

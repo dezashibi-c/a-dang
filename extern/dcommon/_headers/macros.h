@@ -312,24 +312,24 @@
 
 #define dc_dv_free_func_decl(NAME) void NAME(DCDynValue* _value)
 
+#define dc_dvt(TYPE) DC_DYN_VAL_TYPE_##TYPE
+
 #define dc_dv(TYPE, VALUE)                                                     \
     (DCDynValue)                                                               \
     {                                                                          \
-        .type = dc_value_type(TYPE), .value.TYPE##_val = VALUE                 \
+        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE                        \
     }
 
 #define dc_dv_make(NAME, TYPE, VALUE)                                          \
-    DCDynValue NAME = {.type = dc_value_type(TYPE), .value.TYPE##_val = VALUE}
-
-#define dc_value_type(TYPE) DC_DYN_VAL_TYPE_##TYPE
+    DCDynValue NAME = {.type = dc_dvt(TYPE), .value.TYPE##_val = VALUE}
 
 #define dc_dv_set(NAME, TYPE, VALUE)                                           \
-    (NAME).type = dc_value_type(TYPE);                                         \
+    (NAME).type = dc_dvt(TYPE);                                                \
     (NAME).value.TYPE##_val = VALUE
 
-#define dc_dv_is(NAME, TYPE) ((NAME).type == dc_value_type(TYPE))
+#define dc_dv_is(NAME, TYPE) ((NAME).type == dc_dvt(TYPE))
 
-#define dc_dv_is_not(NAME, TYPE) ((NAME).type != dc_value_type(TYPE))
+#define dc_dv_is_not(NAME, TYPE) ((NAME).type != dc_dvt(TYPE))
 
 #define dc_dv_get(NAME, TYPE) ((NAME).value.TYPE##_val)
 
@@ -386,7 +386,7 @@
     for (usize i = 0; i < arr->count; ++i)                                     \
     {                                                                          \
         DCDynValue* elem = &arr->elements[i];                                  \
-        if (elem->type != dc_value_type(ORIGIN_TYPE))                          \
+        if (elem->type != dc_dvt(ORIGIN_TYPE))                                 \
         {                                                                      \
             if (must_fail)                                                     \
             {                                                                  \
