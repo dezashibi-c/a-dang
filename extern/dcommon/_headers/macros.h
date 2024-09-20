@@ -331,10 +331,10 @@
 
 #define dc_dv_is_not(NAME, TYPE) ((NAME).type != dc_dvt(TYPE))
 
-#define dc_dv_get(NAME, TYPE) ((NAME).value.TYPE##_val)
+#define dc_dv_as(NAME, TYPE) ((NAME).value.TYPE##_val)
 
 #define dc_da_get_as(DYNARR, INDEX, TYPE)                                      \
-    dc_dv_get(*dc_da_get(DYNARR, INDEX), TYPE)
+    dc_dv_as(*dc_da_get(DYNARR, INDEX), TYPE)
 
 #define dc_da_is(DYNARR, INDEX, TYPE) dc_dv_is((DYNARR).elements[INDEX], TYPE)
 
@@ -396,7 +396,7 @@
             }                                                                  \
             continue;                                                          \
         }                                                                      \
-        (*out_arr)[dest_index] = dc_dv_get((*elem), ORIGIN_TYPE);              \
+        (*out_arr)[dest_index] = dc_dv_as((*elem), ORIGIN_TYPE);               \
         dest_index++;                                                          \
     }                                                                          \
     (*out_arr)[dest_index] = dc_arr_terminator(ORIGIN_TYPE);                   \
