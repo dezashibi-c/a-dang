@@ -85,62 +85,66 @@
     case ITEM:                                                                 \
         return #ITEM
 
-// Detect Operating System
+// ***************************************************************************************
+// * DETECT OPERATING SYSTEM MACROS
+// ***************************************************************************************
+// clang-format off
 #if defined(_WIN32) || defined(_WIN64)
-#define DC_WINDOWS
-#if defined(_M_X64)
-#define DC_WINDOWS_X64
-#elif defined(_M_IX86)
-#define DC_WINDOWS_X86
-#elif defined(_M_ARM64)
-#define DC_WINDOWS_ARM64
-#elif defined(_M_ARM)
-#define DC_WINDOWS_ARM
-#endif
+    #define DC_WINDOWS
+    #if defined(_M_X64)
+        #define DC_WINDOWS_X64
+    #elif defined(_M_IX86)
+        #define DC_WINDOWS_X86
+    #elif defined(_M_ARM64)
+        #define DC_WINDOWS_ARM64
+    #elif defined(_M_ARM)
+        #define DC_WINDOWS_ARM
+    #endif
 #elif defined(__APPLE__) && defined(__MACH__)
-#include <TargetConditionals.h>
-#if TARGET_OS_MAC == 1
-#define DC_MACOS
-#if defined(__x86_64__) || defined(__aarch64__)
-#define DC_MACOS_X64
-#else
-#define DC_MACOS_X86
-#endif
-#endif
+    #include <TargetConditionals.h>
+    #if TARGET_OS_MAC == 1
+        #define DC_MACOS
+        #if defined(__x86_64__) || defined(__aarch64__)
+            #define DC_MACOS_X64
+        #else
+            #define DC_MACOS_X86
+        #endif
+    #endif
 #elif defined(__linux__)
-#define DC_LINUX
-#if defined(__x86_64__)
-#define DC_LINUX_X64
-#elif defined(__aarch64__)
-#define DC_LINUX_ARM64
-#elif defined(__arm__)
-#define DC_LINUX_ARM
-#else
-#define DC_LINUX_X86
-#endif
+    #define DC_LINUX
+    #if defined(__x86_64__)
+        #define DC_LINUX_X64
+    #elif defined(__aarch64__)
+        #define DC_LINUX_ARM64
+    #elif defined(__arm__)
+        #define DC_LINUX_ARM
+    #else
+        #define DC_LINUX_X86
+    #endif
 #elif defined(__ANDROID__)
-#define DC_ANDROID
-#if defined(__x86_64__)
-#define DC_ANDROID_X64
-#elif defined(__aarch64__)
-#define DC_ANDROID_ARM64
-#elif defined(__arm__)
-#define DC_ANDROID_ARM
-#else
-#define DC_ANDROID_X86
-#endif
+    #define DC_ANDROID
+    #if defined(__x86_64__)
+        #define DC_ANDROID_X64
+    #elif defined(__aarch64__)
+        #define DC_ANDROID_ARM64
+    #elif defined(__arm__)
+        #define DC_ANDROID_ARM
+    #else
+        #define DC_ANDROID_X86
+    #endif
 #elif defined(__unix__)
-#define DC_UNIX
-#if defined(__x86_64__)
-#define DC_UNIX_X64
-#elif defined(__aarch64__)
-#define DC_UNIX_ARM64
-#elif defined(__arm__)
-#define DC_UNIX_ARM
-#else
-#define DC_UNIX_X86
+    #define DC_UNIX
+    #if defined(__x86_64__)
+        #define DC_UNIX_X64
+    #elif defined(__aarch64__)
+        #define DC_UNIX_ARM64
+    #elif defined(__arm__)
+        #define DC_UNIX_ARM
+    #else
+        #define DC_UNIX_X86
+    #endif
 #endif
-#endif
+// clang-format on
 
 // ***************************************************************************************
 // * INTERNAL LOG MACROS MACROS
