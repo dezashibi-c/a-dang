@@ -98,7 +98,7 @@ static void custom_token_free(DCDynValue* item)
     switch (item->type)
     {
         case dc_dvt(voidptr):
-            token_free((Token*)(dc_dv_get(*item, voidptr)));
+            token_free((Token*)(dc_dv_as(*item, voidptr)));
             break;
 
         default:

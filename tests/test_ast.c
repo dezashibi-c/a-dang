@@ -33,5 +33,7 @@ CLOVE_TEST(node_string)
                  CLOVE_FAIL(), "wrong string for program, got='%s'",
                  program->text);
 
+    dnode_free(program);
+    free(program);
     CLOVE_PASS();
 }

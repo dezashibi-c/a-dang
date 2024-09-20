@@ -151,7 +151,22 @@ DNode* dnode_create(DangNodeType type, Token* token, bool has_children)
     node->token = token;
     node->text = NULL;
 
-    if (has_children) dc_da_init(&node->children, NULL);
+    node->children = (DCDynArr){0};
+
+    if (has_children) dc_da_init(&node->children, dnode_child_free);
 
     return node;
+}
+
+void dnode_free(DNode* dn)
+{
+    if (dn->text != NULL) free(dn->text);
+
+    if (dn->children.cap != 0) dc_da_free(&dn->children);
+}
+
+void dnode_child_free(DCDynValue* child)
+{
+    if (dc_dv_is(*child, voidptr))
+        dnode_free((DNode*)dc_dv_as(*child, voidptr));
 }
