@@ -23,6 +23,10 @@
 #define current_token_is(P, TYPE) ((P)->current_token->type == TYPE)
 #define current_token_is_not(P, TYPE) ((P)->current_token->type != TYPE)
 
+#define current_token_is_end_of_stmt(P)                                        \
+    (current_token_is(P, TOK_SEMICOLON) || current_token_is(P, TOK_NEWLINE) || \
+     current_token_is(P, TOK_EOF))
+
 #define peek_token_is(P, TYPE) ((P)->peek_token->type == TYPE)
 #define peek_token_is_not(P, TYPE) ((P)->peek_token->type != TYPE)
 
@@ -53,7 +57,7 @@ static bool move_if_peek_token_is(Parser* p, DangTokenType type)
     return false;
 }
 
-static DNode* parser_parse_let_statement(Parser* p)
+static DNode* parse_let_statement(Parser* p)
 {
     DNode* stmt = node_create(DN_LET_STATEMENT, p->current_token, true);
 
@@ -62,9 +66,18 @@ static DNode* parser_parse_let_statement(Parser* p)
     DNode* name = node_create(DN_IDENTIFIER, p->current_token, false);
     dc_da_push(&stmt->children, dc_dv(voidptr, name));
 
-    while (current_token_is(p, TOK_SEMICOLON) &&
-           current_token_is(p, TOK_NEWLINE))
-        next_token(p);
+    while (!current_token_is_end_of_stmt(p)) next_token(p);
+
+    return stmt;
+}
+
+static DNode* parse_return_statement(Parser* p)
+{
+    DNode* stmt = node_create(DN_RETURN_STATEMENT, p->current_token, false);
+
+    next_token(p);
+
+    while (!current_token_is_end_of_stmt(p)) next_token(p);
 
     return stmt;
 }
@@ -74,7 +87,10 @@ static DNode* parser_parse_statement(Parser* p)
     switch (p->current_token->type)
     {
         case TOK_LET:
-            return parser_parse_let_statement(p);
+            return parse_let_statement(p);
+
+        case TOK_RET:
+            return parse_return_statement(p);
 
         default:
             return NULL;

@@ -89,3 +89,45 @@ CLOVE_TEST(let_statements)
 
     CLOVE_PASS();
 }
+
+CLOVE_TEST(return_statement)
+{
+    const string input = "return 5; return 10\n"
+                         "return 838383";
+
+    Scanner s;
+    scanner_init(&s, input);
+
+    Parser p;
+    parser_init(&p, &s);
+
+    DNode* program = parser_parse_program(&p);
+
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+
+    dc_action_on(program->type != DN_PROGRAM, CLOVE_FAIL(),
+                 "Wrong program node type, expected type='%s' but got='%s'",
+                 tostr_DangNodeType(DN_PROGRAM),
+                 tostr_DangNodeType(program->type));
+
+    dc_action_on(program->children.count != 3, CLOVE_FAIL(),
+                 "Wrong number of statements, expected='%d' but got='%zu'", 3,
+                 program->children.count);
+
+    for (usize i = 0; i < program->children.count; ++i)
+    {
+        DNode* stmt = dc_da_get_as(&program->children, i, voidptr);
+
+        dc_action_on(!dc_sv_str_eq(stmt->token->text, "return"), CLOVE_FAIL(),
+                     "Token text must be 'return', got='" DC_SV_FMT "'",
+                     dc_sv_fmt_val(stmt->token->text));
+
+        dc_action_on(
+            stmt->type != DN_RETURN_STATEMENT, CLOVE_FAIL(),
+            "Wrong statement node type, expected type='%s' but got='%s'",
+            tostr_DangNodeType(DN_RETURN_STATEMENT),
+            tostr_DangNodeType(stmt->type));
+    }
+
+    CLOVE_PASS();
+}
