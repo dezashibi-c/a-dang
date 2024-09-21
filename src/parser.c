@@ -34,16 +34,6 @@
     (peek_token_is(P, TOK_SEMICOLON) || peek_token_is(P, TOK_NEWLINE) ||       \
      peek_token_is(P, TOK_EOF))
 
-static void register_prefix_fn(Parser* p, DangTokenType tt, ParsePrefixFn fn)
-{
-    p->parse_prefix_fns[tt] = fn;
-}
-
-static void register_infix_fn(Parser* p, DangTokenType tt, ParseInfixFn fn)
-{
-    p->parse_infix_fns[tt] = fn;
-}
-
 static void next_token(Parser* p)
 {
     p->current_token = p->peek_token;
@@ -160,8 +150,13 @@ void parser_init(Parser* p, Scanner* s)
 
     dc_da_init(&(p->errors), NULL);
 
-    register_prefix_fn(p, TOK_IDENT, parse_identifier);
+    // Initialize function pointers
+    memset(p->parse_prefix_fns, 0, sizeof(p->parse_prefix_fns));
+    memset(p->parse_infix_fns, 0, sizeof(p->parse_infix_fns));
 
+    p->parse_prefix_fns[TOK_IDENT] = parse_identifier;
+
+    // Update current and peek tokens
     next_token(p);
     next_token(p);
 }
