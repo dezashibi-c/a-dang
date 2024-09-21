@@ -24,6 +24,7 @@
 #endif
 
 #include <assert.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <math.h>
 #include <memory.h>
