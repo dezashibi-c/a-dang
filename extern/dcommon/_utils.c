@@ -268,13 +268,33 @@ string dc_get_arch()
 // * CLEANUP
 // ***************************************************************************************
 
-void ___dc_handle_signal(int sig)
+void __dc_handle_signal(int sig)
 {
-    dc_dbg_log("caught signal %d.", sig);
+    switch (sig)
+    {
+        case SIGINT:
+            dc_log("Caught SIGINT (Ctrl+C)");
+            break;
+
+        case SIGTERM:
+            dc_log("Caught SIGTERM");
+            break;
+
+        case SIGSEGV:
+            dc_log("Caught SIGSEGV (Segmentation Fault)");
+            break;
+
+        default:
+            dc_log("Caught other signals: %d", sig);
+            break;
+    };
+
+    if (sig != SIGSEGV) dc_perform_cleanup();
+
     exit(sig);
 }
 
-void ___dc_perform_cleanup(DCCleanups* cleanups_arr)
+void __dc_perform_cleanup(DCCleanups* cleanups_arr)
 {
     dc_dbg_log_if(cleanups_arr->cap == 0 || cleanups_arr->count == 0,
                   "cleanups_arr is not initialized or has no "
@@ -296,17 +316,24 @@ void ___dc_perform_cleanup(DCCleanups* cleanups_arr)
     }
 
     // clean up the dc_cleanup itself
+    dc_dbg_log("freeing cleanups dynamic array, current capacity: %zu, current "
+               "count: %zu",
+               cleanups_arr->cap, cleanups_arr->count);
     dc_da_free(cleanups_arr);
+    dc_dbg_log(
+        "cleanups dynamic array has been freed, current capacity: %zu, current "
+        "count: %zu",
+        cleanups_arr->cap, cleanups_arr->count);
 }
 
-void ___dc_perform_global_cleanup(void)
+void dc_perform_cleanup(void)
 {
     dc_dbg_log("performing global cleanups");
-    ___dc_perform_cleanup(&dc_cleanups);
+    __dc_perform_cleanup(&dc_cleanups);
 }
 
-void ____dc_cleanups_custom_push(DCCleanups* cleanup_arr, voidptr element,
-                                 DCCleanupFunc cleanup_func)
+void __dc_cleanups_custom_push(DCCleanups* cleanup_arr, voidptr element,
+                               DCCleanupFunc cleanup_func)
 {
     if (!element || !cleanup_func)
     {
@@ -315,7 +342,7 @@ void ____dc_cleanups_custom_push(DCCleanups* cleanup_arr, voidptr element,
         exit(1);
     }
 
-    ___dc_cleanups_arr_init(*cleanup_arr, 10);
+    __dc_cleanups_arr_init(*cleanup_arr, 10);
 
     DCCleanupEntry* item = malloc(sizeof(DCCleanupEntry));
     if (!item)

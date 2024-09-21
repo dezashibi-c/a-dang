@@ -150,7 +150,7 @@
 // * INTERNAL LOG MACROS MACROS
 // ***************************************************************************************
 
-#define ____dc_log(CAT, ...)                                                   \
+#define __dc_log(CAT, ...)                                                     \
     do                                                                         \
     {                                                                          \
         fprintf(dc_error_logs ? dc_error_logs : stderr, "[%s] %s:%d: ", CAT,   \
@@ -159,21 +159,21 @@
         fprintf(dc_error_logs ? dc_error_logs : stderr, "\n");                 \
     } while (0)
 
-#define ____dc_log_if(CAT, CONDITION, ...)                                     \
+#define __dc_log_if(CAT, CONDITION, ...)                                       \
     do                                                                         \
     {                                                                          \
         if (CONDITION)                                                         \
         {                                                                      \
-            ____dc_log(CAT, __VA_ARGS__);                                      \
+            __dc_log(CAT, __VA_ARGS__);                                        \
         }                                                                      \
     } while (0)
 
-#define ____dc_action_on(CAT, CONDITION, FAILURE_ACTION, ...)                  \
+#define __dc_action_on(CAT, CONDITION, FAILURE_ACTION, ...)                    \
     do                                                                         \
     {                                                                          \
         if (CONDITION)                                                         \
         {                                                                      \
-            ____dc_log(CAT, __VA_ARGS__);                                      \
+            __dc_log(CAT, __VA_ARGS__);                                        \
             if (dc_error_mode == DC_ERR_MODE_ABORT)                            \
             {                                                                  \
                 abort();                                                       \
@@ -190,23 +190,23 @@
 // * LOG MACROS
 // ***************************************************************************************
 
-#define dc_log(...) ____dc_log("LOG", __VA_ARGS__)
+#define dc_log(...) __dc_log("LOG", __VA_ARGS__)
 
-#define dc_log_if(CONDITION, ...) ____dc_log_if("LOG", CONDITION, __VA_ARGS__)
+#define dc_log_if(CONDITION, ...) __dc_log_if("LOG", CONDITION, __VA_ARGS__)
 
 #define dc_action_on(CONDITION, FAILURE_ACTION, ...)                           \
-    ____dc_action_on("LOG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
+    __dc_action_on("LOG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
 
 
 #ifdef DC_DEBUG
 
-#define dc_dbg_log(...) ____dc_log("DEBUG", __VA_ARGS__)
+#define dc_dbg_log(...) __dc_log("DEBUG", __VA_ARGS__)
 
 #define dc_dbg_log_if(CONDITION, ...)                                          \
-    ____dc_log_if("DEBUG", CONDITION, __VA_ARGS__)
+    __dc_log_if("DEBUG", CONDITION, __VA_ARGS__)
 
 #define dc_dbg_action_on(CONDITION, FAILURE_ACTION, ...)                       \
-    ____dc_action_on("DEBUG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
+    __dc_action_on("DEBUG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
 
 #else
 
@@ -363,31 +363,31 @@
     do                                                                         \
     {                                                                          \
         dc_sarray(__initial_values, DCDynValue, __VA_ARGS__);                  \
-        ___dc_da_init_with_values(DYNARRPTR, dc_count(__initial_values),       \
-                                  FREE_FUNC, __initial_values);                \
+        __dc_da_init_with_values(DYNARRPTR, dc_count(__initial_values),        \
+                                 FREE_FUNC, __initial_values);                 \
     } while (0)
 
 #define dc_da_append_values(DYNARRPTR, ...)                                    \
     do                                                                         \
     {                                                                          \
         dc_sarray(__initial_values, DCDynValue, __VA_ARGS__);                  \
-        ___dc_da_append_values(DYNARRPTR, dc_count(__initial_values),          \
-                               __initial_values);                              \
+        __dc_da_append_values(DYNARRPTR, dc_count(__initial_values),           \
+                              __initial_values);                               \
     } while (0)
 
 #define dc_da_insert_values(DYNARRPTR, INDEX, ...)                             \
     do                                                                         \
     {                                                                          \
         dc_sarray(__initial_values, DCDynValue, __VA_ARGS__);                  \
-        ___dc_da_insert_values(DYNARRPTR, INDEX, dc_count(__initial_values),   \
-                               __initial_values);                              \
+        __dc_da_insert_values(DYNARRPTR, INDEX, dc_count(__initial_values),    \
+                              __initial_values);                               \
     } while (0)
 
-#define ___dc_da_converters_decl(ORIGIN_TYPE)                                  \
+#define __dc_da_converters_decl(ORIGIN_TYPE)                                   \
     usize dc_##ORIGIN_TYPE##_da_to_flat_arr(                                   \
         DCDynArr* arr, ORIGIN_TYPE** out_arr, bool must_fail)
 
-#define ___dc_da_converters_impl(ORIGIN_TYPE)                                  \
+#define __dc_da_converters_impl(ORIGIN_TYPE)                                   \
     if (!arr || arr->count == 0 || !out_arr)                                   \
     {                                                                          \
         return 0;                                                              \
@@ -440,8 +440,8 @@
     do                                                                         \
     {                                                                          \
         dc_sarray(__initial_values, DCHashEntry, __VA_ARGS__);                 \
-        ___dc_ht_set_multiple(HT, dc_count(__initial_values),                  \
-                              __initial_values);                               \
+        __dc_ht_set_multiple(HT, dc_count(__initial_values),                   \
+                             __initial_values);                                \
     } while (0)
 
 // ***************************************************************************************
@@ -513,53 +513,38 @@
 
 #define dc_cleanup_do(ENTRY) (ENTRY).cleanup_func(((ENTRY).element))
 
-#define ___dc_cleanups_arr_init(CLEANUPS, CAPACITY)                            \
+#define __dc_cleanups_arr_init(CLEANUPS, CAPACITY)                             \
     if ((CLEANUPS).cap == 0) dc_da_init_custom(&(CLEANUPS), CAPACITY, 3, NULL)
 
 #define dc_global_cleanups_init(CAPACITY)                                      \
     do                                                                         \
     {                                                                          \
-        ___dc_cleanups_arr_init(dc_cleanups, CAPACITY);                        \
-        atexit(___dc_perform_global_cleanup);                                  \
-        signal(SIGINT, ___dc_handle_signal);                                   \
+        __dc_cleanups_arr_init(dc_cleanups, CAPACITY);                         \
+        signal(SIGINT, __dc_handle_signal);                                    \
+        signal(SIGTERM, __dc_handle_signal);                                   \
+        signal(SIGSEGV, __dc_handle_signal);                                   \
     } while (0)
 
-#define dc_local_cleanup_decl(RETVAL_TYPE, RETVAL_INIT, CAPACITY)              \
-    RETVAL_TYPE ___dc_ret_val = RETVAL_INIT;                                   \
-    DCCleanups ____dc_local_cleanups = {0};                                    \
-    dc_da_init_custom(&____dc_local_cleanups, CAPACITY, 3, NULL)
+#define dc_ret_val_decl(RETVAL_TYPE, RETVAL_INIT)                              \
+    RETVAL_TYPE __dc_ret_val = RETVAL_INIT
 
 #define dc_cleanups_push(ELEMENT, CLEAN_FUNC)                                  \
     dc_dbg_log("global cleanup push: %p", (voidptr)ELEMENT);                   \
-    ____dc_cleanups_custom_push(&dc_cleanups, ELEMENT, CLEAN_FUNC)
-
-#define dc_local_cleanup_push(ELEMENT, CLEAN_FUNC)                             \
-    dc_dbg_log("local cleanup push: %p", (voidptr)ELEMENT);                    \
-    ____dc_cleanups_custom_push(&____dc_local_cleanups, ELEMENT, CLEAN_FUNC)
-
-#define dc_perform_local_cleanups()                                            \
-    dc_dbg_log("performing local cleanups");                                   \
-    ___dc_perform_cleanup(&____dc_local_cleanups)
+    __dc_cleanups_custom_push(&dc_cleanups, ELEMENT, CLEAN_FUNC)
 
 #define dc_cleanups_push_ht(ELEMENT) dc_cleanups_push(ELEMENT, dc_ht_free__)
-#define dc_local_cleanups_push_ht(ELEMENT)                                     \
-    dc_local_cleanup_push(ELEMENT, dc_ht_free__)
 
 #define dc_cleanups_push_da(ELEMENT) dc_cleanups_push(ELEMENT, dc_da_free__)
-#define dc_local_cleanups_push_da(ELEMENT)                                     \
-    dc_local_cleanup_push(ELEMENT, dc_da_free__)
 
 #define dc_cleanups_push_dv(ELEMENT) dc_cleanups_push(ELEMENT, dc_dv_free__)
-#define dc_local_cleanups_push_dv(ELEMENT)                                     \
-    dc_local_cleanup_push(ELEMENT, dc_dv_free__)
 
-#define dc_def_local_cleanups_label()                                          \
-    ___dc_perform_local_cleanups_label:                                        \
-    dc_perform_local_cleanups();                                               \
-    return ___dc_ret_val;
+#define dc_def_exit_label()                                                    \
+    __dc_exit_label:                                                           \
+    dc_perform_cleanup();                                                      \
+    return __dc_ret_val;
 
 #define dc_return(RETVAL)                                                      \
-    ___dc_ret_val = RETVAL;                                                    \
-    goto ___dc_perform_local_cleanups_label
+    __dc_ret_val = RETVAL;                                                     \
+    goto __dc_exit_label
 
 #endif // DC_MACROS_H

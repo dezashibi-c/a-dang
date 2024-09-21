@@ -144,7 +144,7 @@ void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
     ht->key_count++;
 }
 
-void ___dc_ht_set_multiple(DCHashTable* ht, usize count, DCHashEntry entries[])
+void __dc_ht_set_multiple(DCHashTable* ht, usize count, DCHashEntry entries[])
 {
     for (usize i = 0; i < count; ++i)
     {

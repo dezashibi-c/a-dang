@@ -92,9 +92,9 @@ DCDynArr* dc_da_create_custom(usize capacity, usize capacity_grow_multiplier,
 }
 
 // Function to initialize the dynamic array with initial values
-void ___dc_da_init_with_values(DCDynArr* darr, usize count,
-                               DCDynValFreeFunc element_free_func,
-                               DCDynValue values[])
+void __dc_da_init_with_values(DCDynArr* darr, usize count,
+                              DCDynValFreeFunc element_free_func,
+                              DCDynValue values[])
 {
     darr->cap = count;
     darr->count = 0;
@@ -116,7 +116,7 @@ void ___dc_da_init_with_values(DCDynArr* darr, usize count,
     }
 }
 
-void ___dc_da_append_values(DCDynArr* darr, usize count, DCDynValue values[])
+void __dc_da_append_values(DCDynArr* darr, usize count, DCDynValue values[])
 {
     if ((count + darr->count) > darr->cap)
         dc_da_grow_to(darr, count + darr->count);
@@ -129,7 +129,7 @@ void ___dc_da_append_values(DCDynArr* darr, usize count, DCDynValue values[])
 
 void dc_da_append(DCDynArr* darr, DCDynArr* from)
 {
-    ___dc_da_append_values(darr, from->count, from->elements);
+    __dc_da_append_values(darr, from->count, from->elements);
 }
 
 void dc_da_grow(DCDynArr* darr)
@@ -437,8 +437,8 @@ void dc_da_insert(DCDynArr* darr, usize index, DCDynValue value)
     darr->count++;
 }
 
-void ___dc_da_insert_values(DCDynArr* darr, usize start_index, usize count,
-                            DCDynValue values[])
+void __dc_da_insert_values(DCDynArr* darr, usize start_index, usize count,
+                           DCDynValue values[])
 {
     if (start_index > darr->count)
     {
@@ -471,54 +471,54 @@ void ___dc_da_insert_values(DCDynArr* darr, usize start_index, usize count,
 
 void dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from)
 {
-    ___dc_da_insert_values(darr, start_index, from->count, from->elements);
+    __dc_da_insert_values(darr, start_index, from->count, from->elements);
 }
 
-___dc_da_converters_decl(u8)
+__dc_da_converters_decl(u8)
 {
-    ___dc_da_converters_impl(u8);
+    __dc_da_converters_impl(u8);
 }
-___dc_da_converters_decl(i32)
+__dc_da_converters_decl(i32)
 {
-    ___dc_da_converters_impl(i32);
+    __dc_da_converters_impl(i32);
 }
-___dc_da_converters_decl(u32)
+__dc_da_converters_decl(u32)
 {
-    ___dc_da_converters_impl(u32);
+    __dc_da_converters_impl(u32);
 }
-___dc_da_converters_decl(u64)
+__dc_da_converters_decl(u64)
 {
-    ___dc_da_converters_impl(u64);
+    __dc_da_converters_impl(u64);
 }
-___dc_da_converters_decl(f32)
+__dc_da_converters_decl(f32)
 {
-    ___dc_da_converters_impl(f32);
+    __dc_da_converters_impl(f32);
 }
-___dc_da_converters_decl(f64)
+__dc_da_converters_decl(f64)
 {
-    ___dc_da_converters_impl(f64);
+    __dc_da_converters_impl(f64);
 }
-___dc_da_converters_decl(uptr)
+__dc_da_converters_decl(uptr)
 {
-    ___dc_da_converters_impl(uptr);
+    __dc_da_converters_impl(uptr);
 }
-___dc_da_converters_decl(char)
+__dc_da_converters_decl(char)
 {
-    ___dc_da_converters_impl(char);
+    __dc_da_converters_impl(char);
 }
-___dc_da_converters_decl(size)
+__dc_da_converters_decl(size)
 {
-    ___dc_da_converters_impl(size);
+    __dc_da_converters_impl(size);
 }
-___dc_da_converters_decl(usize)
+__dc_da_converters_decl(usize)
 {
-    ___dc_da_converters_impl(usize);
+    __dc_da_converters_impl(usize);
 }
-___dc_da_converters_decl(string)
+__dc_da_converters_decl(string)
 {
-    ___dc_da_converters_impl(string);
+    __dc_da_converters_impl(string);
 }
-___dc_da_converters_decl(voidptr)
+__dc_da_converters_decl(voidptr)
 {
-    ___dc_da_converters_impl(voidptr);
+    __dc_da_converters_impl(voidptr);
 }
