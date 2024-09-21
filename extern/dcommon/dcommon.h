@@ -29,6 +29,17 @@
 // * FUNCTION DECLARATIONS
 // ***************************************************************************************
 
+bool dc_str_to_i8(const char* str, i8* out);
+bool dc_str_to_i16(const char* str, i16* out);
+bool dc_str_to_i32(const char* str, i32* out);
+bool dc_str_to_i64(const char* str, i64* out);
+bool dc_str_to_u8(const char* str, u8* out);
+bool dc_str_to_u16(const char* str, u16* out);
+bool dc_str_to_u32(const char* str, u32* out);
+bool dc_str_to_u64(const char* str, u64* out);
+bool dc_str_to_f32(const char* str, f32* out);
+bool dc_str_to_f64(const char* str, f64* out);
+
 void dc_da_init(DCDynArr* darr, DCDynValFreeFunc element_free_func);
 DCDynArr* dc_da_create(DCDynValFreeFunc element_free_func);
 void __dc_da_init_with_values(DCDynArr* darr, usize count,
@@ -116,6 +127,7 @@ DCCleanups dc_cleanups = {0};
 
 #include "_dynarr.c"
 #include "_dynht.c"
+#include "_lit_val.c"
 #include "_string_view.c"
 #include "_utils.c"
 

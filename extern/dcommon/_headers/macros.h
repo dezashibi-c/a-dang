@@ -27,51 +27,51 @@
 // * PRIMITIVE TYPES MACROS
 // ***************************************************************************************
 
-#define DC_ARR_TERMINATOR_i8 INT8_MAX
-#define DC_ARR_TERMINATOR_i16 INT16_MAX
-#define DC_ARR_TERMINATOR_i32 INT32_MAX
-#define DC_ARR_TERMINATOR_i64 INT64_MAX
+#define DC_STOPPER_i8 INT8_MAX
+#define DC_STOPPER_i16 INT16_MAX
+#define DC_STOPPER_i32 INT32_MAX
+#define DC_STOPPER_i64 INT64_MAX
 
-#define DC_ARR_TERMINATOR_u8 UINT8_MAX
-#define DC_ARR_TERMINATOR_u16 UINT16_MAX
-#define DC_ARR_TERMINATOR_u32 UINT32_MAX
-#define DC_ARR_TERMINATOR_u64 UINT64_MAX
+#define DC_STOPPER_u8 UINT8_MAX
+#define DC_STOPPER_u16 UINT16_MAX
+#define DC_STOPPER_u32 UINT32_MAX
+#define DC_STOPPER_u64 UINT64_MAX
 
-#define DC_ARR_TERMINATOR_f32 NAN
-#define DC_ARR_TERMINATOR_f64 NAN
+#define DC_STOPPER_f32 NAN
+#define DC_STOPPER_f64 NAN
 
-#define DC_ARR_TERMINATOR_uptr (uptr) NULL
-#define DC_ARR_TERMINATOR_string NULL
-#define DC_ARR_TERMINATOR_voidptr NULL
+#define DC_STOPPER_uptr (uptr) NULL
+#define DC_STOPPER_string NULL
+#define DC_STOPPER_voidptr NULL
 
-#define DC_ARR_TERMINATOR_char '\0'
+#define DC_STOPPER_char '\0'
 
-#define DC_ARR_TERMINATOR_size -1
-#define DC_ARR_TERMINATOR_usize SIZE_MAX
+#define DC_STOPPER_size -1
+#define DC_STOPPER_usize SIZE_MAX
 
 // Terminator checks for each type
-#define DC_IS_ARR_TERMINATOR_i8(EL) (EL == DC_ARR_TERMINATOR_i8)
-#define DC_IS_ARR_TERMINATOR_i16(EL) (EL == DC_ARR_TERMINATOR_i16)
-#define DC_IS_ARR_TERMINATOR_i32(EL) (EL == DC_ARR_TERMINATOR_i32)
-#define DC_IS_ARR_TERMINATOR_i64(EL) (EL == DC_ARR_TERMINATOR_i64)
+#define DC_IS_ARR_TERMINATOR_i8(EL) (EL == DC_STOPPER_i8)
+#define DC_IS_ARR_TERMINATOR_i16(EL) (EL == DC_STOPPER_i16)
+#define DC_IS_ARR_TERMINATOR_i32(EL) (EL == DC_STOPPER_i32)
+#define DC_IS_ARR_TERMINATOR_i64(EL) (EL == DC_STOPPER_i64)
 
 
-#define DC_IS_ARR_TERMINATOR_u8(EL) (EL == DC_ARR_TERMINATOR_u8)
-#define DC_IS_ARR_TERMINATOR_u16(EL) (EL == DC_ARR_TERMINATOR_u16)
-#define DC_IS_ARR_TERMINATOR_u32(EL) (EL == DC_ARR_TERMINATOR_u32)
-#define DC_IS_ARR_TERMINATOR_u64(EL) (EL == DC_ARR_TERMINATOR_u64)
+#define DC_IS_ARR_TERMINATOR_u8(EL) (EL == DC_STOPPER_u8)
+#define DC_IS_ARR_TERMINATOR_u16(EL) (EL == DC_STOPPER_u16)
+#define DC_IS_ARR_TERMINATOR_u32(EL) (EL == DC_STOPPER_u32)
+#define DC_IS_ARR_TERMINATOR_u64(EL) (EL == DC_STOPPER_u64)
 
 #define DC_IS_ARR_TERMINATOR_f32(EL) (isnan(EL))
 #define DC_IS_ARR_TERMINATOR_f64(EL) (isnan(EL))
 
-#define DC_IS_ARR_TERMINATOR_uptr(EL) (EL == DC_ARR_TERMINATOR_uptr)
-#define DC_IS_ARR_TERMINATOR_string(EL) (EL == DC_ARR_TERMINATOR_string)
-#define DC_IS_ARR_TERMINATOR_voidptr(EL) (EL == DC_ARR_TERMINATOR_voidptr)
+#define DC_IS_ARR_TERMINATOR_uptr(EL) (EL == DC_STOPPER_uptr)
+#define DC_IS_ARR_TERMINATOR_string(EL) (EL == DC_STOPPER_string)
+#define DC_IS_ARR_TERMINATOR_voidptr(EL) (EL == DC_STOPPER_voidptr)
 
-#define DC_IS_ARR_TERMINATOR_char(EL) (EL == DC_ARR_TERMINATOR_char)
+#define DC_IS_ARR_TERMINATOR_char(EL) (EL == DC_STOPPER_char)
 
-#define DC_IS_ARR_TERMINATOR_size(EL) (EL == DC_ARR_TERMINATOR_size)
-#define DC_IS_ARR_TERMINATOR_usize(EL) (EL == DC_ARR_TERMINATOR_usize)
+#define DC_IS_ARR_TERMINATOR_size(EL) (EL == DC_STOPPER_size)
+#define DC_IS_ARR_TERMINATOR_usize(EL) (EL == DC_STOPPER_usize)
 
 // ***************************************************************************************
 // * UTILITY MACROS
@@ -233,7 +233,7 @@
 // * NON-POINTER ARRAY MACROS
 // ***************************************************************************************
 
-#define dc_arr_terminator(TYPE) (DC_ARR_TERMINATOR_##TYPE)
+#define dc_arr_terminator(TYPE) (DC_STOPPER_##TYPE)
 
 #define dc_is_terminator(TYPE, VALUE) (DC_IS_ARR_TERMINATOR_##TYPE(VALUE))
 
@@ -271,7 +271,7 @@
 #define dc_parr_lit(TYPE, ...)                                                 \
     (TYPE[])                                                                   \
     {                                                                          \
-        __VA_ARGS__, DC_ARR_TERMINATOR_voidptr                                 \
+        __VA_ARGS__, DC_STOPPER_voidptr                                        \
     }
 #define dc_parray(NAME, TYPE, ...) TYPE** NAME = dc_parr_lit(TYPE*, __VA_ARGS__)
 
