@@ -118,6 +118,14 @@ void dnode_string_init(DNode* dn)
                        dc_sv_fmt_val(dn_text(dn)), dn_child(dn, 0)->text);
             break;
 
+        case DN_INFIX_EXPRESSION:
+            dnode_string_init(dn_child(dn, 0));
+            dnode_string_init(dn_child(dn, 1));
+            dc_sappend(&dn->text, "(%s " DC_SV_FMT " %s)",
+                       dn_child(dn, 0)->text, dc_sv_fmt_val(dn_text(dn)),
+                       dn_child(dn, 1)->text);
+            break;
+
         default:
             dc_sprintf(&dn->text, DC_SV_FMT, dc_sv_fmt_val(dn_text(dn)));
             break;
@@ -125,7 +133,6 @@ void dnode_string_init(DNode* dn)
             // DN_BLOCK_STATEMENT,
 
             // DN_IDENTIFIER,
-            // DN_INFIX_EXPRESSION,
             // DN_IF_EXPRESSION,
             // DN_WHILE_EXPRESSION,
             // DN_CALL_EXPRESSION,
@@ -147,7 +154,7 @@ DNode* dnode_create(DangNodeType type, Token* token, bool has_children)
 
     if (node == NULL)
     {
-        printf("Memory allocation failed\n");
+        dc_log("Memory allocation failed");
 
         return NULL;
     }

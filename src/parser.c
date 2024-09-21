@@ -40,6 +40,9 @@ static DNode* parse_expression(Parser* p, Precedence precedence);
     (peek_token_is(P, TOK_SEMICOLON) || peek_token_is(P, TOK_NEWLINE) ||       \
      peek_token_is(P, TOK_EOF))
 
+#define peek_prec(P) get_precedence((P)->peek_token->type)
+#define current_prec(P) get_precedence((P)->current_token->type)
+
 static void next_token(Parser* p)
 {
     p->current_token = p->peek_token;
@@ -78,6 +81,33 @@ static bool move_if_peek_token_is(Parser* p, DangTokenType type)
 
     add_token_error(p, type);
     return false;
+}
+
+static Precedence get_precedence(DangTokenType type)
+{
+    switch (type)
+    {
+        case TOK_EQ:
+        case TOK_NEQ:
+            return PREC_EQUALS;
+
+        case TOK_LT:
+        case TOK_GT:
+            return PREC_CMP;
+
+        case TOK_PLUS:
+        case TOK_MINUS:
+            return PREC_SUM;
+
+        case TOK_SLASH:
+        case TOK_ASTERISK:
+            return PREC_PROD;
+
+        default:
+            break;
+    };
+
+    return PREC_LOWEST;
 }
 
 static DNode* parse_identifier(Parser* p)
@@ -120,6 +150,21 @@ static DNode* parse_prefix_expression(Parser* p)
     return expression;
 }
 
+static DNode* parse_infix_expression(Parser* p, DNode* left)
+{
+    DNode* expression =
+        dnode_create(DN_INFIX_EXPRESSION, p->current_token, true);
+
+    dn_child_push(expression, left);
+
+    Precedence prec = current_prec(p);
+    next_token(p);
+    DNode* right = parse_expression(p, prec);
+    dn_child_push(expression, right);
+
+    return expression;
+}
+
 static DNode* parse_let_statement(Parser* p)
 {
     DNode* stmt = dnode_create(DN_LET_STATEMENT, p->current_token, true);
@@ -156,6 +201,16 @@ static DNode* parse_expression(Parser* p, Precedence precedence)
     }
 
     DNode* left_exp = prefix(p);
+
+    while (!peek_token_is_end_of_stmt(p) && precedence < peek_prec(p))
+    {
+        ParseInfixFn infix = p->parse_infix_fns[p->peek_token->type];
+        if (infix == NULL) return left_exp;
+
+        next_token(p);
+
+        left_exp = infix(p, left_exp);
+    }
 
     return left_exp;
 }
@@ -210,6 +265,15 @@ void parser_init(Parser* p, Scanner* s)
     p->parse_prefix_fns[TOK_INT] = parse_integer_literal;
     p->parse_prefix_fns[TOK_BANG] = parse_prefix_expression;
     p->parse_prefix_fns[TOK_MINUS] = parse_prefix_expression;
+
+    p->parse_infix_fns[TOK_PLUS] = parse_infix_expression;
+    p->parse_infix_fns[TOK_MINUS] = parse_infix_expression;
+    p->parse_infix_fns[TOK_SLASH] = parse_infix_expression;
+    p->parse_infix_fns[TOK_ASTERISK] = parse_infix_expression;
+    p->parse_infix_fns[TOK_EQ] = parse_infix_expression;
+    p->parse_infix_fns[TOK_NEQ] = parse_infix_expression;
+    p->parse_infix_fns[TOK_LT] = parse_infix_expression;
+    p->parse_infix_fns[TOK_GT] = parse_infix_expression;
 
     // Update current and peek tokens
     next_token(p);

@@ -231,13 +231,16 @@ typedef struct
 {
     string input;
     string operator;
-    string value_str;
-    i64 value;
-} PrefixTest;
+    string lval_str;
+    i64 lval;
+    string rval_str;
+    i64 rval;
+} ExpressionTest;
 
 CLOVE_TEST(prefix_expressions)
 {
-    PrefixTest tests[] = {{"!5", "!", "5", 5}, {"-15", "-", "15", 15}};
+    ExpressionTest tests[] = {{"!5", "!", "5", 5, "", 0},
+                              {"-15", "-", "15", 15, "", 0}};
 
     for (usize i = 0; i < dc_count(tests); ++i)
     {
@@ -269,8 +272,130 @@ CLOVE_TEST(prefix_expressions)
 
         DNode* value = dn_child(prefix, 0);
         dc_action_on(
-            !test_integer_value(value, tests[i].value_str, tests[i].value),
+            !test_integer_value(value, tests[i].lval_str, tests[i].lval),
             CLOVE_FAIL(), "Wrong integer value node");
+
+        dnode_program_free(program);
+        parser_free(&p);
+    }
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(infix_expressions)
+{
+    ExpressionTest tests[] = {
+        {"5 + 5", "+", "5", 5, "5", 5},   {"5 - 5", "-", "5", 5, "5", 5},
+        {"5 * 5", "*", "5", 5, "5", 5},   {"5 / 5", "/", "5", 5, "5", 5},
+        {"5 > 5", ">", "5", 5, "5", 5},   {"5 < 5", "<", "5", 5, "5", 5},
+        {"5 == 5", "==", "5", 5, "5", 5}, {"5 != 5", "!=", "5", 5, "5", 5},
+    };
+
+    for (usize i = 0; i < dc_count(tests); ++i)
+    {
+        Scanner s;
+        scanner_init(&s, tests[i].input);
+
+        Parser p;
+        parser_init(&p, &s);
+
+        DNode* program = parser_parse_program(&p);
+
+        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(),
+                     "parser has error");
+
+        dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
+                     "program is not valid");
+
+        DNode* statement1 = dn_child(program, 0);
+        dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1),
+                     CLOVE_FAIL(), "statement is not valid");
+
+        DNode* infix = dn_child(statement1, 0);
+        dc_action_on(!node_is_valid(infix, DN_INFIX_EXPRESSION, 2),
+                     CLOVE_FAIL(), "infix expression is not valid");
+
+        dc_action_on(!dc_sv_str_eq(infix->token->text, tests[i].operator),
+                     CLOVE_FAIL(), "operator is not '%s', got='" DC_SV_FMT "'",
+                     tests[i].operator, dc_sv_fmt_val(infix->token->text));
+
+        DNode* lval = dn_child(infix, 0);
+        dc_action_on(
+            !test_integer_value(lval, tests[i].lval_str, tests[i].lval),
+            CLOVE_FAIL(), "Wrong integer value node for left value");
+
+        DNode* rval = dn_child(infix, 1);
+        dc_action_on(
+            !test_integer_value(rval, tests[i].rval_str, tests[i].rval),
+            CLOVE_FAIL(), "Wrong integer value node for right value");
+
+        dnode_program_free(program);
+        parser_free(&p);
+    }
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(operator_precedence)
+{
+    string tests[] = {
+        "-a * b",
+        "((-a) * b)\n",
+
+        "!-a",
+        "(!(-a))\n",
+
+        "a + b + c",
+        "((a + b) + c)\n",
+
+        "a + b - c",
+        "((a + b) - c)\n",
+
+        "a * b * c",
+        "((a * b) * c)\n",
+
+        "a * b / c",
+        "((a * b) / c)\n",
+
+        "a + b / c",
+        "(a + (b / c))\n",
+
+        "a + b * c + d / e - f",
+        "(((a + (b * c)) + (d / e)) - f)\n",
+
+        "3 + 4; -5 * 5",
+        "(3 + 4)\n((-5) * 5)\n",
+
+        "5 > 4 == 3 < 4",
+        "((5 > 4) == (3 < 4))\n",
+
+        "5 < 4 != 3 > 4",
+        "((5 < 4) != (3 > 4))\n",
+
+        "3 + 4 * 5 == 3 * 1 + 4 * 5",
+        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n",
+    };
+
+    for (usize i = 0; i < dc_count(tests) / 2; ++i)
+    {
+        string input = tests[i * 2];
+        string expected = tests[(i * 2) + 1];
+
+        Scanner s;
+        scanner_init(&s, input);
+
+        Parser p;
+        parser_init(&p, &s);
+
+        DNode* program = parser_parse_program(&p);
+
+        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(),
+                     "parser has error");
+
+        dnode_string_init(program);
+
+        dc_action_on(strcmp(expected, program->text) != 0, CLOVE_FAIL(),
+                     "expected=%s, got=%s", expected, program->text);
 
         dnode_program_free(program);
         parser_free(&p);
