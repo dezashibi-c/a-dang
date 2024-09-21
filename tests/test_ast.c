@@ -20,10 +20,10 @@ CLOVE_TEST(node_string)
     DNode* ident = dnode_create(DN_IDENTIFIER, my_var_tok, false);
     DNode* ident2 = dnode_create(DN_IDENTIFIER, another_var, false);
 
-    dc_da_push(&statement1->children, dc_dv(voidptr, ident));
-    dc_da_push(&statement1->children, dc_dv(voidptr, ident2));
+    dn_child_push(statement1, ident);
+    dn_child_push(statement1, ident2);
 
-    dc_da_push(&program->children, dc_dv(voidptr, statement1));
+    dn_child_push(program, statement1);
 
     dnode_string_init(program);
 

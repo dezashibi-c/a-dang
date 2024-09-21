@@ -160,8 +160,11 @@ DNode* dnode_create(DangNodeType type, Token* token, bool has_children)
 
 void dnode_program_free(DNode* program)
 {
-    dnode_free(program);
-    free(program);
+    if (program)
+    {
+        dnode_free(program);
+        free(program);
+    }
 }
 
 void dnode_free(DNode* dn)

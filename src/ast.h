@@ -78,6 +78,15 @@ typedef enum
 
 #define dn_text(NODE) (NODE)->token->text
 
+#define dn_child_push(NODE, CHILD)                                             \
+    dc_da_push(&NODE->children, dc_dva(voidptr, CHILD))
+
+#define dn_val_push(NODE, TYPE, VALUE)                                         \
+    dc_da_push(&NODE->children, dc_dv(TYPE, VALUE))
+
+#define dn_vala_push(NODE, TYPE, VALUE)                                        \
+    dc_da_push(&NODE->children, dc_dva(TYPE, VALUE))
+
 typedef struct
 {
     DangNodeType type;

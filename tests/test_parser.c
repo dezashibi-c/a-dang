@@ -18,6 +18,8 @@ static bool parser_has_no_error(Parser* p)
 static bool node_is_valid(DNode* node, DangNodeType dnt,
                           usize number_of_expected_statements)
 {
+    dc_action_on(node == NULL, return false, "received NULL node");
+
     dc_action_on(node->type != dnt, return false,
                  "Wrong node node type, expected type='%s' but got='%s'",
                  tostr_DangNodeType(dnt), tostr_DangNodeType(node->type));
@@ -163,15 +165,50 @@ CLOVE_TEST(identifier)
                  CLOVE_FAIL(), "statement is not valid");
 
     DNode* expression = dn_child(statement1, 0);
-    dc_action_on(!node_is_valid(expression, DN_IDENTIFIER, 1), CLOVE_FAIL(),
-                 "statement is not valid");
-
-    string value = dn_child_as(expression, 0, string);
-    dc_action_on(strcmp(value, "foobar") != 0, CLOVE_FAIL(),
-                 "identifier value is not '%s', got='%s'", "foobar", value);
+    dc_action_on(!node_is_valid(expression, DN_IDENTIFIER, 0), CLOVE_FAIL(),
+                 "expression is not valid");
 
     dc_action_on(!dc_sv_str_eq(expression->token->text, "foobar"), CLOVE_FAIL(),
                  "identifier value is not '%s', got='" DC_SV_FMT "'", "foobar",
+                 dc_sv_fmt_val(expression->token->text));
+
+    dnode_program_free(program);
+    parser_free(&p);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(integer_literal)
+{
+    const string input = "5";
+
+    Scanner s;
+    scanner_init(&s, input);
+
+    Parser p;
+    parser_init(&p, &s);
+
+    DNode* program = parser_parse_program(&p);
+
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
+                 "program is not valid");
+
+    DNode* statement1 = dn_child(program, 0);
+    dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1),
+                 CLOVE_FAIL(), "statement is not valid");
+
+    DNode* expression = dn_child(statement1, 0);
+    dc_action_on(!node_is_valid(expression, DN_INTEGER_LITERAL, 1),
+                 CLOVE_FAIL(), "expression is not valid");
+
+    i64 value = dn_child_as(expression, 0, i64);
+    dc_action_on(value != 5, CLOVE_FAIL(),
+                 "expected integer value of 5, got=%" PRId64, value);
+
+    dc_action_on(!dc_sv_str_eq(expression->token->text, "5"), CLOVE_FAIL(),
+                 "identifier value is not '%s', got='" DC_SV_FMT "'", "5",
                  dc_sv_fmt_val(expression->token->text));
 
     dnode_program_free(program);
