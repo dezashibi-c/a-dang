@@ -309,6 +309,11 @@ DCDynValue* dc_da_get(DCDynArr* darr, usize index)
 // Function to find an element in the dynamic array
 DCDynValue* dc_da_find(DCDynArr* darr, DCDynValue* el)
 {
+#define find_if(TYPE)                                                          \
+    case dc_dvt(TYPE):                                                         \
+        if (element->value.TYPE##_val == el->value.TYPE##_val) return element; \
+        break
+
     for (usize i = 0; i < darr->count; i++)
     {
         DCDynValue* element = &darr->elements[i];
@@ -320,81 +325,37 @@ DCDynValue* dc_da_find(DCDynArr* darr, DCDynValue* el)
         // check the actual value based on the type
         switch (el->type)
         {
-            case DC_DYN_VAL_TYPE_i8:
-                if (element->value.i8_val == el->value.i8_val) return element;
-                break;
+            find_if(i8);
+            find_if(i16);
+            find_if(i32);
+            find_if(i64);
 
-            case DC_DYN_VAL_TYPE_i16:
-                if (element->value.i16_val == el->value.i16_val) return element;
-                break;
+            find_if(u8);
+            find_if(u16);
+            find_if(u32);
+            find_if(u64);
 
-            case DC_DYN_VAL_TYPE_i32:
-                if (element->value.i32_val == el->value.i32_val) return element;
-                break;
+            find_if(f32);
+            find_if(f64);
 
-            case DC_DYN_VAL_TYPE_i64:
-                if (element->value.i64_val == el->value.i64_val) return element;
-                break;
+            find_if(uptr);
+            find_if(char);
 
-            case DC_DYN_VAL_TYPE_u8:
-                if (element->value.u8_val == el->value.u8_val) return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_u16:
-                if (element->value.u16_val == el->value.u16_val) return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_u32:
-                if (element->value.u32_val == el->value.u32_val) return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_u64:
-                if (element->value.u64_val == el->value.u64_val) return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_f32:
-                if (element->value.f32_val == el->value.f32_val) return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_f64:
-                if (element->value.f64_val == el->value.f64_val) return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_uptr:
-                if (element->value.uptr_val == el->value.uptr_val)
-                    return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_char:
-                if (element->value.char_val == el->value.char_val)
-                    return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_string:
+            case dc_dvt(string):
                 if (strcmp(element->value.string_val, el->value.string_val) ==
                     0)
                     return element;
                 break;
 
-            case DC_DYN_VAL_TYPE_voidptr:
-                if (element->value.voidptr_val == el->value.voidptr_val)
-                    return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_usize:
-                if (element->value.usize_val == el->value.usize_val)
-                    return element;
-                break;
-
-            case DC_DYN_VAL_TYPE_size:
-                if (element->value.size_val == el->value.size_val)
-                    return element;
-                break;
+                find_if(voidptr);
+                find_if(size);
+                find_if(usize);
 
             default:
                 break;
         }
     }
+#undef find_if
     return NULL; // Return NULL if not found
 }
 
