@@ -69,22 +69,68 @@ static bool test_DNodeLetStatement(DNode* stmt, string* name)
     return true;
 }
 
-static bool test_integer_value(DNode* expression, string expected,
-                               i64 expected_val)
+static bool test_BooleanLiteral(DNode* integer_literal_node, string expected,
+                                bool expected_val)
 {
-    dc_action_on(!node_is_valid(expression, DN_INTEGER_LITERAL, 1),
-                 return false, "expression is not valid");
+    dc_action_on(integer_literal_node->children.count != 1, return false,
+                 "Wrong number of children, expected='1' but got='%zu'",
+                 integer_literal_node->children.count);
 
-    i64 value = dn_child_as(expression, 0, i64);
+    bool value = dn_child_as(integer_literal_node, 0, u8);
+    dc_action_on(value != expected_val, return false,
+                 "expected boolean literal of '%s', got='%s'",
+                 dc_tostr_bool(expected_val), dc_tostr_bool(value));
+
+    dc_action_on(!dc_sv_str_eq(integer_literal_node->token->text, expected),
+                 return false,
+                 "boolean literal is not '%s', got='" DC_SV_FMT "'", expected,
+                 dc_sv_fmt_val(integer_literal_node->token->text));
+
+    return true;
+}
+
+static bool test_IntegerLiteral(DNode* integer_literal_node, string expected,
+                                i64 expected_val)
+{
+    dc_action_on(integer_literal_node->children.count != 1, return false,
+                 "Wrong number of children, expected='1' but got='%zu'",
+                 integer_literal_node->children.count);
+
+    i64 value = dn_child_as(integer_literal_node, 0, i64);
     dc_action_on(value != expected_val, return false,
                  "expected integer value of '%" PRId64 "', got='%" PRId64 "'",
                  expected_val, value);
 
-    dc_action_on(!dc_sv_str_eq(expression->token->text, expected), return false,
+    dc_action_on(!dc_sv_str_eq(integer_literal_node->token->text, expected),
+                 return false,
                  "identifier value is not '%s', got='" DC_SV_FMT "'", expected,
-                 dc_sv_fmt_val(expression->token->text));
+                 dc_sv_fmt_val(integer_literal_node->token->text));
 
     return true;
+}
+
+static bool test_Literal(DNode* literal_node, string expected, i64 expected_val)
+{
+    dc_action_on(!dnode_group_is_literal(literal_node->type), return false,
+                 "node is not literal, got='%s'",
+                 tostr_DangNodeType(literal_node->type));
+
+    switch (literal_node->type)
+    {
+        case DN_INTEGER_LITERAL:
+            return test_IntegerLiteral(literal_node, expected, expected_val);
+
+        case DN_BOOLEAN_LITERAL:
+            return test_BooleanLiteral(literal_node, expected,
+                                       (bool)expected_val);
+
+        default:
+            dc_log("test for '%s' is not implemented yet",
+                   tostr_DangNodeType(literal_node->type));
+            break;
+    };
+
+    return false;
 }
 
 CLOVE_TEST(let_statements)
@@ -196,6 +242,37 @@ CLOVE_TEST(identifier)
     CLOVE_PASS();
 }
 
+CLOVE_TEST(boolean_literal)
+{
+    const string input = "true";
+
+    Scanner s;
+    scanner_init(&s, input);
+
+    Parser p;
+    parser_init(&p, &s);
+
+    DNode* program = parser_parse_program(&p);
+
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
+                 "program is not valid");
+
+    DNode* statement1 = dn_child(program, 0);
+    dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1),
+                 CLOVE_FAIL(), "statement is not valid");
+
+    DNode* expression = dn_child(statement1, 0);
+    dc_action_on(!test_BooleanLiteral(expression, "true", true), CLOVE_FAIL(),
+                 "Wrong boolean literal node");
+
+    dnode_program_free(program);
+    parser_free(&p);
+
+    CLOVE_PASS();
+}
+
 CLOVE_TEST(integer_literal)
 {
     const string input = "5";
@@ -218,7 +295,7 @@ CLOVE_TEST(integer_literal)
                  CLOVE_FAIL(), "statement is not valid");
 
     DNode* expression = dn_child(statement1, 0);
-    dc_action_on(!test_integer_value(expression, "5", 5), CLOVE_FAIL(),
+    dc_action_on(!test_IntegerLiteral(expression, "5", 5), CLOVE_FAIL(),
                  "Wrong integer value node");
 
     dnode_program_free(program);
@@ -239,8 +316,12 @@ typedef struct
 
 CLOVE_TEST(prefix_expressions)
 {
-    ExpressionTest tests[] = {{"!5", "!", "5", 5, "", 0},
-                              {"-15", "-", "15", 15, "", 0}};
+    ExpressionTest tests[] = {
+        {"!5", "!", "5", 5, "", 0},
+        {"-15", "-", "15", 15, "", 0},
+        {"!false", "!", "false", false, "", 0},
+        {"!true", "!", "true", true, "", 0},
+    };
 
     for (usize i = 0; i < dc_count(tests); ++i)
     {
@@ -271,9 +352,8 @@ CLOVE_TEST(prefix_expressions)
                      tests[i].operator, dc_sv_fmt_val(prefix->token->text));
 
         DNode* value = dn_child(prefix, 0);
-        dc_action_on(
-            !test_integer_value(value, tests[i].lval_str, tests[i].lval),
-            CLOVE_FAIL(), "Wrong integer value node");
+        dc_action_on(!test_Literal(value, tests[i].lval_str, tests[i].lval),
+                     CLOVE_FAIL(), "Wrong literal value node");
 
         dnode_program_free(program);
         parser_free(&p);
@@ -285,10 +365,17 @@ CLOVE_TEST(prefix_expressions)
 CLOVE_TEST(infix_expressions)
 {
     ExpressionTest tests[] = {
-        {"5 + 5", "+", "5", 5, "5", 5},   {"5 - 5", "-", "5", 5, "5", 5},
-        {"5 * 5", "*", "5", 5, "5", 5},   {"5 / 5", "/", "5", 5, "5", 5},
-        {"5 > 5", ">", "5", 5, "5", 5},   {"5 < 5", "<", "5", 5, "5", 5},
-        {"5 == 5", "==", "5", 5, "5", 5}, {"5 != 5", "!=", "5", 5, "5", 5},
+        {"5 + 5", "+", "5", 5, "5", 5},
+        {"5 - 5", "-", "5", 5, "5", 5},
+        {"5 * 5", "*", "5", 5, "5", 5},
+        {"5 / 5", "/", "5", 5, "5", 5},
+        {"5 > 5", ">", "5", 5, "5", 5},
+        {"5 < 5", "<", "5", 5, "5", 5},
+        {"5 == 5", "==", "5", 5, "5", 5},
+        {"5 != 5", "!=", "5", 5, "5", 5},
+        {"true == true", "==", "true", true, "true", true},
+        {"true != false", "!=", "true", true, "false", false},
+        {"false == false", "==", "false", false, "false", false},
     };
 
     for (usize i = 0; i < dc_count(tests); ++i)
@@ -320,14 +407,12 @@ CLOVE_TEST(infix_expressions)
                      tests[i].operator, dc_sv_fmt_val(infix->token->text));
 
         DNode* lval = dn_child(infix, 0);
-        dc_action_on(
-            !test_integer_value(lval, tests[i].lval_str, tests[i].lval),
-            CLOVE_FAIL(), "Wrong integer value node for left value");
+        dc_action_on(!test_Literal(lval, tests[i].lval_str, tests[i].lval),
+                     CLOVE_FAIL(), "Wrong integer value node for left value");
 
         DNode* rval = dn_child(infix, 1);
-        dc_action_on(
-            !test_integer_value(rval, tests[i].rval_str, tests[i].rval),
-            CLOVE_FAIL(), "Wrong integer value node for right value");
+        dc_action_on(!test_Literal(rval, tests[i].rval_str, tests[i].rval),
+                     CLOVE_FAIL(), "Wrong integer value node for right value");
 
         dnode_program_free(program);
         parser_free(&p);
@@ -374,6 +459,18 @@ CLOVE_TEST(operator_precedence)
 
         "3 + 4 * 5 == 3 * 1 + 4 * 5",
         "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n",
+
+        "true",
+        "true\n",
+
+        "false",
+        "false\n",
+
+        "3 > 5 == false",
+        "((3 > 5) == false)\n",
+
+        "3 < 5 == true",
+        "((3 < 5) == true)\n",
     };
 
     for (usize i = 0; i < dc_count(tests) / 2; ++i)

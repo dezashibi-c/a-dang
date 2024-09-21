@@ -137,6 +137,15 @@ static DNode* parse_integer_literal(Parser* p)
     return literal;
 }
 
+static DNode* parse_boolean_literal(Parser* p)
+{
+    DNode* literal = dnode_create(DN_BOOLEAN_LITERAL, p->current_token, true);
+
+    dn_val_push(literal, u8, (p->current_token->type == TOK_TRUE));
+
+    return literal;
+}
+
 static DNode* parse_prefix_expression(Parser* p)
 {
     DNode* expression =
@@ -158,7 +167,9 @@ static DNode* parse_infix_expression(Parser* p, DNode* left)
     dn_child_push(expression, left);
 
     Precedence prec = current_prec(p);
+
     next_token(p);
+
     DNode* right = parse_expression(p, prec);
     dn_child_push(expression, right);
 
@@ -265,6 +276,8 @@ void parser_init(Parser* p, Scanner* s)
     p->parse_prefix_fns[TOK_INT] = parse_integer_literal;
     p->parse_prefix_fns[TOK_BANG] = parse_prefix_expression;
     p->parse_prefix_fns[TOK_MINUS] = parse_prefix_expression;
+    p->parse_prefix_fns[TOK_TRUE] = parse_boolean_literal;
+    p->parse_prefix_fns[TOK_FALSE] = parse_boolean_literal;
 
     p->parse_infix_fns[TOK_PLUS] = parse_infix_expression;
     p->parse_infix_fns[TOK_MINUS] = parse_infix_expression;
