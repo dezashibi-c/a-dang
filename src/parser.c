@@ -17,6 +17,12 @@
 #include "parser.h"
 
 // ***************************************************************************************
+// * PRIVATE FUNCTIONS DECLARATIONS
+// ***************************************************************************************
+
+static DNode* parse_expression(Parser* p, Precedence precedence);
+
+// ***************************************************************************************
 // * PRIVATE FUNCTIONS
 // ***************************************************************************************
 
@@ -43,6 +49,14 @@ static void next_token(Parser* p)
 static void add_error(Parser* p, string message)
 {
     dc_da_push(&p->errors, dc_dva(string, message));
+}
+
+static void no_prefix_fn_error(Parser* p, DangTokenType type)
+{
+    string err;
+    dc_sprintf(&err, "no prefix parse function for '%s' is declared.",
+               tostr_DangTokenType(type));
+    dc_da_push(&p->errors, dc_dva(string, err));
 }
 
 static void add_token_error(Parser* p, DangTokenType type)
@@ -77,7 +91,6 @@ static DNode* parse_integer_literal(Parser* p)
 {
     DNode* literal = dnode_create(DN_INTEGER_LITERAL, p->current_token, true);
 
-    // i64 num = strtoll(dc_sv_as_cstr(&p->current_token->text), NULL, 10);
     i64 num;
     if (!dc_str_to_i64(dc_sv_as_cstr(&p->current_token->text), &num))
     {
@@ -92,6 +105,19 @@ static DNode* parse_integer_literal(Parser* p)
     dn_val_push(literal, i64, num);
 
     return literal;
+}
+
+static DNode* parse_prefix_expression(Parser* p)
+{
+    DNode* expression =
+        dnode_create(DN_PREFIX_EXPRESSION, p->current_token, true);
+
+    next_token(p);
+
+    DNode* right = parse_expression(p, PREC_PREFIX);
+    dn_child_push(expression, right);
+
+    return expression;
 }
 
 static DNode* parse_let_statement(Parser* p)
@@ -123,7 +149,11 @@ static DNode* parse_expression(Parser* p, Precedence precedence)
 {
     ParsePrefixFn prefix = p->parse_prefix_fns[p->current_token->type];
 
-    if (prefix == NULL) return NULL;
+    if (prefix == NULL)
+    {
+        no_prefix_fn_error(p, p->current_token->type);
+        return NULL;
+    }
 
     DNode* left_exp = prefix(p);
 
@@ -178,6 +208,8 @@ void parser_init(Parser* p, Scanner* s)
 
     p->parse_prefix_fns[TOK_IDENT] = parse_identifier;
     p->parse_prefix_fns[TOK_INT] = parse_integer_literal;
+    p->parse_prefix_fns[TOK_BANG] = parse_prefix_expression;
+    p->parse_prefix_fns[TOK_MINUS] = parse_prefix_expression;
 
     // Update current and peek tokens
     next_token(p);

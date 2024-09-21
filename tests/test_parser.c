@@ -69,6 +69,24 @@ static bool test_DNodeLetStatement(DNode* stmt, string* name)
     return true;
 }
 
+static bool test_integer_value(DNode* expression, string expected,
+                               i64 expected_val)
+{
+    dc_action_on(!node_is_valid(expression, DN_INTEGER_LITERAL, 1),
+                 return false, "expression is not valid");
+
+    i64 value = dn_child_as(expression, 0, i64);
+    dc_action_on(value != expected_val, return false,
+                 "expected integer value of '%" PRId64 "', got='%" PRId64 "'",
+                 expected_val, value);
+
+    dc_action_on(!dc_sv_str_eq(expression->token->text, expected), return false,
+                 "identifier value is not '%s', got='" DC_SV_FMT "'", expected,
+                 dc_sv_fmt_val(expression->token->text));
+
+    return true;
+}
+
 CLOVE_TEST(let_statements)
 {
     const string input = "let $1 5; let $\"some long variable name\" 10\n"
@@ -200,19 +218,63 @@ CLOVE_TEST(integer_literal)
                  CLOVE_FAIL(), "statement is not valid");
 
     DNode* expression = dn_child(statement1, 0);
-    dc_action_on(!node_is_valid(expression, DN_INTEGER_LITERAL, 1),
-                 CLOVE_FAIL(), "expression is not valid");
-
-    i64 value = dn_child_as(expression, 0, i64);
-    dc_action_on(value != 5, CLOVE_FAIL(),
-                 "expected integer value of 5, got=%" PRId64, value);
-
-    dc_action_on(!dc_sv_str_eq(expression->token->text, "5"), CLOVE_FAIL(),
-                 "identifier value is not '%s', got='" DC_SV_FMT "'", "5",
-                 dc_sv_fmt_val(expression->token->text));
+    dc_action_on(!test_integer_value(expression, "5", 5), CLOVE_FAIL(),
+                 "Wrong integer value node");
 
     dnode_program_free(program);
     parser_free(&p);
+
+    CLOVE_PASS();
+}
+
+typedef struct
+{
+    string input;
+    string operator;
+    string value_str;
+    i64 value;
+} PrefixTest;
+
+CLOVE_TEST(prefix_expressions)
+{
+    PrefixTest tests[] = {{"!5", "!", "5", 5}, {"-15", "-", "15", 15}};
+
+    for (usize i = 0; i < dc_count(tests); ++i)
+    {
+        Scanner s;
+        scanner_init(&s, tests[i].input);
+
+        Parser p;
+        parser_init(&p, &s);
+
+        DNode* program = parser_parse_program(&p);
+
+        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(),
+                     "parser has error");
+
+        dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
+                     "program is not valid");
+
+        DNode* statement1 = dn_child(program, 0);
+        dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1),
+                     CLOVE_FAIL(), "statement is not valid");
+
+        DNode* prefix = dn_child(statement1, 0);
+        dc_action_on(!node_is_valid(prefix, DN_PREFIX_EXPRESSION, 1),
+                     CLOVE_FAIL(), "prefix expression is not valid");
+
+        dc_action_on(!dc_sv_str_eq(prefix->token->text, tests[i].operator),
+                     CLOVE_FAIL(), "operator is not '%s', got='" DC_SV_FMT "'",
+                     tests[i].operator, dc_sv_fmt_val(prefix->token->text));
+
+        DNode* value = dn_child(prefix, 0);
+        dc_action_on(
+            !test_integer_value(value, tests[i].value_str, tests[i].value),
+            CLOVE_FAIL(), "Wrong integer value node");
+
+        dnode_program_free(program);
+        parser_free(&p);
+    }
 
     CLOVE_PASS();
 }
