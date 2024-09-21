@@ -27,10 +27,15 @@
 // * PRIMITIVE TYPES MACROS
 // ***************************************************************************************
 
-#define DC_ARR_TERMINATOR_u8 UINT8_MAX   // 255
-#define DC_ARR_TERMINATOR_i32 INT32_MAX  // 2147483647
-#define DC_ARR_TERMINATOR_u32 UINT32_MAX // 4294967295
-#define DC_ARR_TERMINATOR_u64 UINT64_MAX // 18446744073709551615
+#define DC_ARR_TERMINATOR_i8 INT8_MAX
+#define DC_ARR_TERMINATOR_i16 INT16_MAX
+#define DC_ARR_TERMINATOR_i32 INT32_MAX
+#define DC_ARR_TERMINATOR_i64 INT64_MAX
+
+#define DC_ARR_TERMINATOR_u8 UINT8_MAX
+#define DC_ARR_TERMINATOR_u16 UINT16_MAX
+#define DC_ARR_TERMINATOR_u32 UINT32_MAX
+#define DC_ARR_TERMINATOR_u64 UINT64_MAX
 
 #define DC_ARR_TERMINATOR_f32 NAN
 #define DC_ARR_TERMINATOR_f64 NAN
@@ -45,8 +50,14 @@
 #define DC_ARR_TERMINATOR_usize SIZE_MAX
 
 // Terminator checks for each type
-#define DC_IS_ARR_TERMINATOR_u8(EL) (EL == DC_ARR_TERMINATOR_u8)
+#define DC_IS_ARR_TERMINATOR_i8(EL) (EL == DC_ARR_TERMINATOR_i8)
+#define DC_IS_ARR_TERMINATOR_i16(EL) (EL == DC_ARR_TERMINATOR_i16)
 #define DC_IS_ARR_TERMINATOR_i32(EL) (EL == DC_ARR_TERMINATOR_i32)
+#define DC_IS_ARR_TERMINATOR_i64(EL) (EL == DC_ARR_TERMINATOR_i64)
+
+
+#define DC_IS_ARR_TERMINATOR_u8(EL) (EL == DC_ARR_TERMINATOR_u8)
+#define DC_IS_ARR_TERMINATOR_u16(EL) (EL == DC_ARR_TERMINATOR_u16)
 #define DC_IS_ARR_TERMINATOR_u32(EL) (EL == DC_ARR_TERMINATOR_u32)
 #define DC_IS_ARR_TERMINATOR_u64(EL) (EL == DC_ARR_TERMINATOR_u64)
 
@@ -224,6 +235,8 @@
 
 #define dc_arr_terminator(TYPE) (DC_ARR_TERMINATOR_##TYPE)
 
+#define dc_is_terminator(TYPE, VALUE) (DC_IS_ARR_TERMINATOR_##TYPE(VALUE))
+
 #define dc_arr_lit(TYPE, ...)                                                  \
     (TYPE[])                                                                   \
     {                                                                          \
@@ -240,13 +253,13 @@
 #define dc_last(ARR) ARR[(dc_len(ARR) - 1)]
 
 #define dc_foreach(ARR, TYPE)                                                  \
-    for (TYPE* _it = ARR; !DC_IS_ARR_TERMINATOR_##TYPE(*_it); ++_it)
+    for (TYPE* _it = ARR; !dc_is_terminator(TYPE, *_it); ++_it)
 
 #define dc_oneach(ARR, TYPE, FN) dc_foreach(ARR, TYPE) FN(_it)
 
 #define dc_foreach_lit(TYPE, ...)                                              \
     for (TYPE* _it = dc_arr_lit(TYPE, __VA_ARGS__);                            \
-         !DC_IS_ARR_TERMINATOR_##TYPE(*_it); ++_it)
+         !dc_is_terminator(TYPE, *_it); ++_it)
 
 #define dc_oneach_lit(TYPE, FN, ...) dc_foreach_lit(TYPE, __VA_ARGS__) FN(_it)
 

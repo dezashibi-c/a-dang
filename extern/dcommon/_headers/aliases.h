@@ -42,8 +42,13 @@ typedef enum
 // * PRIMITIVE TYPES DECLARATIONS
 // ***************************************************************************************
 
-typedef uint8_t u8;
+typedef int8_t i8;
+typedef int16_t i16;
 typedef int32_t i32;
+typedef int64_t i64;
+
+typedef uint8_t u8;
+typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
@@ -65,12 +70,19 @@ typedef void* voidptr;
 
 typedef enum
 {
-    DC_DYN_VAL_TYPE_u8,
+    DC_DYN_VAL_TYPE_i8,
+    DC_DYN_VAL_TYPE_i16,
     DC_DYN_VAL_TYPE_i32,
+    DC_DYN_VAL_TYPE_i64,
+
+    DC_DYN_VAL_TYPE_u8,
+    DC_DYN_VAL_TYPE_u16,
     DC_DYN_VAL_TYPE_u32,
     DC_DYN_VAL_TYPE_u64,
+
     DC_DYN_VAL_TYPE_f32,
     DC_DYN_VAL_TYPE_f64,
+
     DC_DYN_VAL_TYPE_uptr,
     DC_DYN_VAL_TYPE_char,
     DC_DYN_VAL_TYPE_string,
@@ -85,12 +97,19 @@ typedef struct
     bool allocated;
     union
     {
-        u8 u8_val;
+        i8 i8_val;
+        i16 i16_val;
         i32 i32_val;
+        i64 i64_val;
+
+        u8 u8_val;
+        u16 u16_val;
         u32 u32_val;
         u64 u64_val;
+
         f32 f32_val;
         f64 f64_val;
+
         uptr uptr_val;
         char char_val;
         string string_val;
