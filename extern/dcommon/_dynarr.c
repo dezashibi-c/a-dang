@@ -25,6 +25,38 @@
 #include "_headers/general.h"
 #include "_headers/macros.h"
 
+bool dc_dv_as_bool(DCDynValue* dv)
+{
+#define type_to_bool(TYPE)                                                     \
+    case dc_dvt(TYPE):                                                         \
+        return dc_as_bool(TYPE, dv->value.TYPE##_val)
+
+    switch (dv->type)
+    {
+        type_to_bool(u8);
+        type_to_bool(u16);
+        type_to_bool(u32);
+        type_to_bool(u64);
+        type_to_bool(i8);
+        type_to_bool(i16);
+        type_to_bool(i32);
+        type_to_bool(i64);
+        type_to_bool(f32);
+        type_to_bool(f64);
+        type_to_bool(uptr);
+        type_to_bool(char);
+        type_to_bool(string);
+        type_to_bool(voidptr);
+        type_to_bool(size);
+        type_to_bool(usize);
+
+        default:
+            dc_log("unkown dynamic value type");
+            exit(1);
+    }
+#undef type_to_bool
+}
+
 // Function to initialize the dynamic array
 void dc_da_init(DCDynArr* darr, DCDynValFreeFunc element_free_func)
 {
@@ -288,12 +320,28 @@ DCDynValue* dc_da_find(DCDynArr* darr, DCDynValue* el)
         // check the actual value based on the type
         switch (el->type)
         {
-            case DC_DYN_VAL_TYPE_u8:
-                if (element->value.u8_val == el->value.u8_val) return element;
+            case DC_DYN_VAL_TYPE_i8:
+                if (element->value.i8_val == el->value.i8_val) return element;
+                break;
+
+            case DC_DYN_VAL_TYPE_i16:
+                if (element->value.i16_val == el->value.i16_val) return element;
                 break;
 
             case DC_DYN_VAL_TYPE_i32:
                 if (element->value.i32_val == el->value.i32_val) return element;
+                break;
+
+            case DC_DYN_VAL_TYPE_i64:
+                if (element->value.i64_val == el->value.i64_val) return element;
+                break;
+
+            case DC_DYN_VAL_TYPE_u8:
+                if (element->value.u8_val == el->value.u8_val) return element;
+                break;
+
+            case DC_DYN_VAL_TYPE_u16:
+                if (element->value.u16_val == el->value.u16_val) return element;
                 break;
 
             case DC_DYN_VAL_TYPE_u32:
@@ -330,6 +378,16 @@ DCDynValue* dc_da_find(DCDynArr* darr, DCDynValue* el)
 
             case DC_DYN_VAL_TYPE_voidptr:
                 if (element->value.voidptr_val == el->value.voidptr_val)
+                    return element;
+                break;
+
+            case DC_DYN_VAL_TYPE_usize:
+                if (element->value.usize_val == el->value.usize_val)
+                    return element;
+                break;
+
+            case DC_DYN_VAL_TYPE_size:
+                if (element->value.size_val == el->value.size_val)
                     return element;
                 break;
 
@@ -474,13 +532,29 @@ void dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from)
     __dc_da_insert_values(darr, start_index, from->count, from->elements);
 }
 
-__dc_da_converters_decl(u8)
+__dc_da_converters_decl(i8)
 {
-    __dc_da_converters_impl(u8);
+    __dc_da_converters_impl(i8);
+}
+__dc_da_converters_decl(i16)
+{
+    __dc_da_converters_impl(i16);
 }
 __dc_da_converters_decl(i32)
 {
     __dc_da_converters_impl(i32);
+}
+__dc_da_converters_decl(i64)
+{
+    __dc_da_converters_impl(i64);
+}
+__dc_da_converters_decl(u8)
+{
+    __dc_da_converters_impl(u8);
+}
+__dc_da_converters_decl(u16)
+{
+    __dc_da_converters_impl(u16);
 }
 __dc_da_converters_decl(u32)
 {

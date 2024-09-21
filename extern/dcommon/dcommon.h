@@ -40,6 +40,7 @@ bool dc_str_to_u64(const char* str, u64* out);
 bool dc_str_to_f32(const char* str, f32* out);
 bool dc_str_to_f64(const char* str, f64* out);
 
+bool dc_dv_as_bool(DCDynValue* dv);
 void dc_da_init(DCDynArr* darr, DCDynValFreeFunc element_free_func);
 DCDynArr* dc_da_create(DCDynValFreeFunc element_free_func);
 void __dc_da_init_with_values(DCDynArr* darr, usize count,
@@ -66,12 +67,19 @@ void __dc_da_insert_values(DCDynArr* darr, usize start_index, usize count,
                            DCDynValue values[]);
 void dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from);
 
-__dc_da_converters_decl(u8);
+__dc_da_converters_decl(i8);
+__dc_da_converters_decl(i16);
 __dc_da_converters_decl(i32);
+__dc_da_converters_decl(i64);
+
+__dc_da_converters_decl(u8);
+__dc_da_converters_decl(u16);
 __dc_da_converters_decl(u32);
 __dc_da_converters_decl(u64);
+
 __dc_da_converters_decl(f32);
 __dc_da_converters_decl(f64);
+
 __dc_da_converters_decl(uptr);
 __dc_da_converters_decl(char);
 __dc_da_converters_decl(size);

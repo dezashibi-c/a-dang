@@ -113,7 +113,8 @@ typedef struct
         uptr uptr_val;
         char char_val;
         string string_val;
-        void* voidptr_val;
+        voidptr voidptr_val;
+
         size size_val;
         usize usize_val;
     } value;

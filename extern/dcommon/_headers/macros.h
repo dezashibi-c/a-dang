@@ -27,6 +27,26 @@
 // * PRIMITIVE TYPES MACROS
 // ***************************************************************************************
 
+#define dc_as_bool(TYPE, VAL) dc_##TYPE##_as_bool(VAL)
+
+#define dc_u8_as_bool(VAL) ((bool)(VAL))
+#define dc_u16_as_bool(VAL) ((bool)(VAL))
+#define dc_u32_as_bool(VAL) ((bool)(VAL))
+#define dc_u64_as_bool(VAL) ((bool)(VAL))
+#define dc_i8_as_bool(VAL) ((bool)(VAL))
+#define dc_i16_as_bool(VAL) ((bool)(VAL))
+#define dc_i32_as_bool(VAL) ((bool)(VAL))
+#define dc_i64_as_bool(VAL) ((bool)(VAL))
+#define dc_f32_as_bool(VAL) ((bool)(VAL))
+#define dc_f64_as_bool(VAL) ((bool)(VAL))
+
+#define dc_uptr_as_bool(VAL) ((VAL) != 0)
+#define dc_char_as_bool(VAL) ((VAL) != '\0')
+#define dc_string_as_bool(VAL) ((VAL) != NULL && *(VAL) != '\0')
+#define dc_voidptr_as_bool(VAL) ((VAL) != NULL)
+#define dc_size_as_bool(VAL) ((VAL) != 0)
+#define dc_usize_as_bool(VAL) ((VAL) != 0)
+
 #define DC_STOPPER_i8 INT8_MAX
 #define DC_STOPPER_i16 INT16_MAX
 #define DC_STOPPER_i32 INT32_MAX
