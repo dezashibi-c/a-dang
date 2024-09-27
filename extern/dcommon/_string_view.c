@@ -25,34 +25,61 @@
 #include "_headers/general.h"
 #include "_headers/macros.h"
 
-DCStringView dc_sv_create(string base, usize start, usize length)
+DCResultSv dc_sv_create(string base, usize start, usize length)
 {
+    DC_RES_sv();
+
+    if (!base)
+    {
+        dc_dbg_log("got NULL base string");
+
+        dc_res_ret_e(1, "got NULL base string");
+    }
+
     DCStringView view;
     view.cstr = NULL;
     view.str = base + start;
     view.len = length;
 
-    return view;
+    dc_res_ret_ok(view);
 }
 
-string dc_sv_as_cstr(DCStringView* sv)
+DCResultString dc_sv_as_cstr(DCStringView* sv)
 {
-    if (sv->cstr != NULL) return sv->cstr;
+    DC_RES_string();
+
+    if (!sv)
+    {
+        dc_dbg_log("got NULL DCStringView");
+
+        dc_res_ret_e(1, "got NULL DCStringView");
+    }
+
+    if (sv->cstr != NULL) dc_res_ret_ok(sv->cstr);
 
     sv->cstr = (string)malloc(sv->len + 1);
-    if (sv->cstr == NULL) return NULL;
+    if (sv->cstr == NULL)
+    {
+        dc_dbg_log("Memory allocation failed");
+
+        dc_res_ret_e(2, "Memory allocation failed");
+    }
 
     strncpy(sv->cstr, sv->str, sv->len);
 
     sv->cstr[sv->len] = '\0';
 
-    return sv->cstr;
+    dc_res_ret_ok(sv->cstr);
 }
 
-void dc_sv_free(DCStringView* sv)
+DCResultVoid dc_sv_free(DCStringView* sv)
 {
-    if (sv->cstr == NULL) return;
+    DC_RES_void();
+
+    if (!sv || sv->cstr == NULL) dc_res_ret();
 
     free(sv->cstr);
     sv->cstr = NULL;
+
+    dc_res_ret();
 }

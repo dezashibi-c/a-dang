@@ -55,7 +55,7 @@ typedef enum
     DN__END_LITERAL,
 
     DN__MAX,
-} DangNodeType;
+} DNodeType;
 
 #define __dnode_group_is(NODE_TYPE, GROUP)                                     \
     (NODE_TYPE > DN__START_##GROUP && NODE_TYPE < DN__END_##GROUP)
@@ -69,10 +69,10 @@ typedef enum
      dnode_group_is_statement(NODE_TYPE) || dnode_group_is_literal(NODE_TYPE))
 
 #define dn_child(NODE, INDEX)                                                  \
-    ((DNode*)dc_da_get_as(&((NODE)->children), INDEX, voidptr))
+    ((DNode*)dc_da_get_as(NODE->children, INDEX, voidptr))
 
 #define dn_child_as(NODE, INDEX, TYPE)                                         \
-    (dc_da_get_as(&((NODE)->children), INDEX, TYPE))
+    (dc_da_get_as(((NODE)->children), INDEX, TYPE))
 
 #define dn_child_count(NODE) ((NODE)->children.count)
 
@@ -89,18 +89,20 @@ typedef enum
 
 typedef struct
 {
-    DangNodeType type;
-    Token* token;
+    DNodeType type;
+    DToken* token;
     string text;
     DCDynArr children;
 } DNode;
 
-string tostr_DangNodeType(DangNodeType dnt);
+DCResultType(DNode*, ResultDNode);
+
+string tostr_DNodeType(DNodeType dnt);
 void dnode_string_init(DNode* dn);
 
-DNode* dnode_create(DangNodeType type, Token* token, bool has_children);
-void dnode_program_free(DNode* program);
-void dnode_free(DNode* dn);
-void dnode_child_free(DCDynValue* child);
+ResultDNode dnode_create(DNodeType type, DToken* token, bool has_children);
+DCResultVoid dnode_program_free(DNode* program);
+DCResultVoid dnode_free(DNode* dn);
+DCResultVoid dnode_child_free(DCDynVal* child);
 
 #endif // DANG_AST_H

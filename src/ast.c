@@ -16,7 +16,7 @@
 
 #include "ast.h"
 
-string tostr_DangNodeType(DangNodeType dnt)
+string tostr_DNodeType(DNodeType dnt)
 {
     switch (dnt)
     {
@@ -54,8 +54,8 @@ string tostr_DangNodeType(DangNodeType dnt)
 
 void dnode_string_init(DNode* dn)
 {
-    dc_action_on(!dnode_type_is_valid(dn->type), exit(1),
-                 "got wrong node type: %s", tostr_DangNodeType(dn->type));
+    dc_action_on(!dnode_type_is_valid(dn->type), exit(-1),
+                 "got wrong node type: %s", tostr_DNodeType(dn->type));
 
     if (dn->text != NULL) return;
 
@@ -73,16 +73,15 @@ void dnode_string_init(DNode* dn)
         case DN_LET_STATEMENT:
         {
             dnode_string_init(dn_child(dn, 0));
-            string value = NULL;
+            string value = "";
             if (dn_child_count(dn) > 1)
             {
                 dnode_string_init(dn_child(dn, 1));
                 value = dn_child(dn, 1)->text;
             }
 
-            dc_sprintf(&dn->text, DC_SV_FMT " %s %s",
-                       dc_sv_fmt_val(dn_text(dn)), dn_child(dn, 0)->text,
-                       (value == NULL ? "" : value));
+            dc_sprintf(&dn->text, DCPRIsv " %s %s", dc_sv_fmt(dn_text(dn)),
+                       dn_child(dn, 0)->text, value);
 
             break;
         }
@@ -95,7 +94,7 @@ void dnode_string_init(DNode* dn)
                 dnode_string_init(dn_child(dn, 0));
                 value = dn_child(dn, 0)->text;
             }
-            dc_sprintf(&dn->text, DC_SV_FMT " %s", dc_sv_fmt_val(dn_text(dn)),
+            dc_sprintf(&dn->text, DCPRIsv " %s", dc_sv_fmt(dn_text(dn)),
                        (value == NULL ? "" : value));
             break;
         }
@@ -114,20 +113,19 @@ void dnode_string_init(DNode* dn)
 
         case DN_PREFIX_EXPRESSION:
             dnode_string_init(dn_child(dn, 0));
-            dc_sappend(&dn->text, "(" DC_SV_FMT "%s)",
-                       dc_sv_fmt_val(dn_text(dn)), dn_child(dn, 0)->text);
+            dc_sappend(&dn->text, "(" DCPRIsv "%s)", dc_sv_fmt(dn_text(dn)),
+                       dn_child(dn, 0)->text);
             break;
 
         case DN_INFIX_EXPRESSION:
             dnode_string_init(dn_child(dn, 0));
             dnode_string_init(dn_child(dn, 1));
-            dc_sappend(&dn->text, "(%s " DC_SV_FMT " %s)",
-                       dn_child(dn, 0)->text, dc_sv_fmt_val(dn_text(dn)),
-                       dn_child(dn, 1)->text);
+            dc_sappend(&dn->text, "(%s " DCPRIsv " %s)", dn_child(dn, 0)->text,
+                       dc_sv_fmt(dn_text(dn)), dn_child(dn, 1)->text);
             break;
 
         default:
-            dc_sprintf(&dn->text, DC_SV_FMT, dc_sv_fmt_val(dn_text(dn)));
+            dc_sprintf(&dn->text, DCPRIsv, dc_sv_fmt(dn_text(dn)));
             break;
 
             // DN_BLOCK_STATEMENT,
@@ -148,15 +146,16 @@ void dnode_string_init(DNode* dn)
     };
 }
 
-DNode* dnode_create(DangNodeType type, Token* token, bool has_children)
+ResultDNode dnode_create(DNodeType type, DToken* token, bool has_children)
 {
-    DNode* node = malloc(sizeof(DNode));
+    DC_RES2(ResultDNode);
 
+    DNode* node = malloc(sizeof(DNode));
     if (node == NULL)
     {
-        dc_log("Memory allocation failed");
+        dc_dbg_log("DNode Memory allocation failed");
 
-        return NULL;
+        dc_res_ret_e(2, "DNode Memory allocation failed");
     }
 
     node->type = type;
@@ -165,29 +164,43 @@ DNode* dnode_create(DangNodeType type, Token* token, bool has_children)
 
     node->children = (DCDynArr){0};
 
-    if (has_children) dc_da_init(&node->children, dnode_child_free);
+    if (has_children)
+        dc_try_fail_temp(DCResultVoid,
+                         dc_da_init(&node->children, dnode_child_free));
 
-    return node;
+    dc_res_ret_ok(node);
 }
 
-void dnode_program_free(DNode* program)
+DCResultVoid dnode_program_free(DNode* program)
 {
+    DC_RES_void();
+
     if (program)
     {
-        dnode_free(program);
+        dc_try(dnode_free(program));
         free(program);
     }
+
+    dc_res_ret();
 }
 
-void dnode_free(DNode* dn)
+DCResultVoid dnode_free(DNode* dn)
 {
+    DC_RES_void();
+
     if (dn->text != NULL) free(dn->text);
 
-    if (dn->children.cap != 0) dc_da_free(&dn->children);
+    if (dn->children.cap != 0) dc_try(dc_da_free(&dn->children));
+
+    dc_res_ret();
 }
 
-void dnode_child_free(DCDynValue* child)
+DCResultVoid dnode_child_free(DCDynVal* child)
 {
+    DC_RES_void();
+
     if (dc_dv_is(*child, voidptr))
-        dnode_free((DNode*)dc_dv_as(*child, voidptr));
+        dc_try(dnode_free((DNode*)dc_dv_as(*child, voidptr)));
+
+    dc_res_ret();
 }

@@ -1,12 +1,15 @@
 {
     "files.associations": {
+        "*.h": "c",
         "clove-unit.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "typeinfo": "c"
     },
     "cSpell.words": [
         "arcname",
         "dcommon",
         "DCOMMON",
+        "DCPR",
         "dnode",
         "dynarr",
         "DYNARR",
@@ -24,6 +27,7 @@
         "scase",
         "sforeach",
         "soneach",
+        "vala",
         "voidptr",
         "zipf"
     ]

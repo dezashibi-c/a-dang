@@ -27,35 +27,37 @@ static void repl()
 
     char line[1024];
 
-    while (true)
-    {
-        printf("%s", dc_colorize_fg(LGREEN, "> "));
+    // while (true)
+    // {
+    //     printf("%s", dc_colorize_fg(LGREEN, "> "));
 
-        if (!fgets(line, sizeof(line), stdin))
-        {
-            puts("");
-            break;
-        }
+    //     if (!fgets(line, sizeof(line), stdin))
+    //     {
+    //         puts("");
+    //         break;
+    //     }
 
-        if (strncmp(line, DANG_REPL_EXIT, strlen(DANG_REPL_EXIT)) == 0) break;
+    //     if (strncmp(line, DANG_REPL_EXIT, strlen(DANG_REPL_EXIT)) == 0)
+    //     break;
 
-        Scanner s;
-        scanner_init(&s, line);
+    //     Scanner s;
+    //     scanner_init(&s, line);
 
-        Token* token;
+    //     Token* token;
 
-        token = scanner_next_token(&s);
+    //     token = scanner_next_token(&s);
 
-        u8 i = 0;
-        while (token->type != TOK_EOF)
-        {
-            printf("[%d] '" DC_SV_FMT "' (%s)\n", i, dc_sv_fmt_val(token->text),
-                   tostr_DangTokenType(token->type));
+    //     u8 i = 0;
+    //     while (token->type != TOK_EOF)
+    //     {
+    //         printf("[%d] '" DC_SV_FMT "' (%s)\n", i,
+    //         dc_sv_fmt_val(token->text),
+    //                tostr_DTokenType(token->type));
 
-            token = scanner_next_token(&s);
-            ++i;
-        }
-    }
+    //         token = scanner_next_token(&s);
+    //         ++i;
+    //     }
+    // }
 }
 
 int main(int argc, string argv[])

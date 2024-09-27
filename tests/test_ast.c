@@ -1,5 +1,4 @@
 #define CLOVE_SUITE_NAME ast_tests
-#define DCOMMON_IMPL
 
 #include "clove-unit/clove-unit.h"
 
@@ -10,21 +9,24 @@ CLOVE_TEST(node_string)
 {
     const string input = "let my_var another_var;-1";
 
-    DNode* program = dnode_create(DN_PROGRAM, NULL, true);
+    DNode* program = dc_res_val2(dnode_create(DN_PROGRAM, NULL, true));
 
-    Token* let_tok = token_create(TOK_LET, input, 0, 3);
-    Token* my_var_tok = token_create(TOK_IDENT, input, 4, 6);
-    Token* another_var = token_create(TOK_IDENT, input, 11, 11);
-    Token* minus = token_create(TOK_IDENT, input, 23, 1);
-    Token* one = token_create(TOK_IDENT, input, 24, 1);
+    DToken* let_tok = dc_res_val2(token_create(TOK_LET, input, 0, 3));
+    DToken* my_var_tok = dc_res_val2(token_create(TOK_IDENT, input, 4, 6));
+    DToken* another_var = dc_res_val2(token_create(TOK_IDENT, input, 11, 11));
+    DToken* minus = dc_res_val2(token_create(TOK_IDENT, input, 23, 1));
+    DToken* one = dc_res_val2(token_create(TOK_IDENT, input, 24, 1));
 
-    DNode* statement1 = dnode_create(DN_LET_STATEMENT, let_tok, true);
+    DNode* statement1 =
+        dc_res_val2(dnode_create(DN_LET_STATEMENT, let_tok, true));
 
-    DNode* ident = dnode_create(DN_IDENTIFIER, my_var_tok, false);
-    DNode* ident2 = dnode_create(DN_IDENTIFIER, another_var, false);
+    DNode* ident = dc_res_val2(dnode_create(DN_IDENTIFIER, my_var_tok, false));
+    DNode* ident2 =
+        dc_res_val2(dnode_create(DN_IDENTIFIER, another_var, false));
 
-    DNode* expression = dnode_create(DN_PREFIX_EXPRESSION, minus, true);
-    DNode* value = dnode_create(DN_INTEGER_LITERAL, one, true);
+    DNode* expression =
+        dc_res_val2(dnode_create(DN_PREFIX_EXPRESSION, minus, true));
+    DNode* value = dc_res_val2(dnode_create(DN_INTEGER_LITERAL, one, true));
 
     dn_child_push(expression, value);
     dn_val_push(value, i64, 1);

@@ -57,18 +57,20 @@ typedef enum
     TOK_ELSE,
     TOK_RET
 
-} DangTokenType;
+} DTokenType;
 
 typedef struct
 {
-    DangTokenType type;
+    DTokenType type;
     DCStringView text;
-} Token;
+} DToken;
 
-string tostr_DangTokenType(DangTokenType dtt);
-DangTokenType is_keyword(DCStringView* text);
+DCResultType(DToken*, ResultToken);
 
-Token* token_create(DangTokenType type, string str, usize start, usize len);
-void token_free(Token* t);
+string tostr_DTokenType(DTokenType dtt);
+DTokenType is_keyword(DCStringView* text);
+
+ResultToken token_create(DTokenType type, string str, usize start, usize len);
+DCResultVoid token_free(DToken* t);
 
 #endif // DANG_TOKEN_H

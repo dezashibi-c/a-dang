@@ -22,8 +22,8 @@
 
 typedef struct Parser Parser;
 
-typedef DNode* (*ParsePrefixFn)(Parser*);
-typedef DNode* (*ParseInfixFn)(Parser*, DNode*);
+typedef ResultDNode (*ParsePrefixFn)(Parser*);
+typedef ResultDNode (*ParseInfixFn)(Parser*, DNode*);
 
 typedef enum
 {
@@ -40,8 +40,8 @@ typedef struct Parser
 {
     Scanner* scanner;
 
-    Token* current_token;
-    Token* peek_token;
+    DToken* current_token;
+    DToken* peek_token;
 
     DCDynArr errors;
 
@@ -49,9 +49,9 @@ typedef struct Parser
     ParseInfixFn parse_infix_fns[DN__MAX];
 } Parser;
 
-void parser_init(Parser* p, Scanner* s);
-void parser_free(Parser* p);
-DNode* parser_parse_program(Parser* p);
+DCResultVoid parser_init(Parser* p, Scanner* s);
+DCResultVoid parser_free(Parser* p);
+ResultDNode parser_parse_program(Parser* p);
 void parser_log_errors(Parser* p);
 
 #endif // DANG_PARSER_H

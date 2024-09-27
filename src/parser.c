@@ -16,11 +16,13 @@
 
 #include "parser.h"
 
+#include "common.h"
+
 // ***************************************************************************************
 // * PRIVATE FUNCTIONS DECLARATIONS
 // ***************************************************************************************
 
-static DNode* parse_expression(Parser* p, Precedence precedence);
+static ResultDNode parse_expression(Parser* p, Precedence precedence);
 
 // ***************************************************************************************
 // * PRIVATE FUNCTIONS
@@ -43,47 +45,43 @@ static DNode* parse_expression(Parser* p, Precedence precedence);
 #define peek_prec(P) get_precedence((P)->peek_token->type)
 #define current_prec(P) get_precedence((P)->current_token->type)
 
-static void next_token(Parser* p)
+#define token_err_fmt(P, TYPE)                                                 \
+    "expected next token to be %s, got %s instead.", tostr_DTokenType(TYPE),   \
+        tostr_DTokenType(P->peek_token->type)
+
+#define no_prefix_fn_err_fmt(TYPE)                                             \
+    "no prefix parse function for '%s' is declared.", tostr_DTokenType(TYPE)
+
+static DCResultVoid next_token(Parser* p)
 {
+    DC_RES_void();
+
     p->current_token = p->peek_token;
-    p->peek_token = scanner_next_token(p->scanner);
+
+    ResultToken res = scanner_next_token(p->scanner);
+    dc_res_fail_if_err2(res);
+
+    p->peek_token = dc_res_val2(res);
+
+    dc_res_ret();
 }
 
-static void add_error(Parser* p, string message)
+static void add_error(Parser* p, string message, bool allocated)
 {
-    dc_da_push(&p->errors, dc_dva(string, message));
+    dc_da_push(&p->errors,
+               (allocated ? dc_dva(string, message) : dc_dv(string, message)));
 }
 
-static void no_prefix_fn_error(Parser* p, DangTokenType type)
+static DCResultVoid move_if_peek_token_is(Parser* p, DTokenType type)
 {
-    string err;
-    dc_sprintf(&err, "no prefix parse function for '%s' is declared.",
-               tostr_DangTokenType(type));
-    dc_da_push(&p->errors, dc_dva(string, err));
+    DC_RES_void();
+
+    if (peek_token_is(p, type)) return next_token(p);
+
+    dc_res_ret_ea(-2, token_err_fmt(p, type));
 }
 
-static void add_token_error(Parser* p, DangTokenType type)
-{
-    string err;
-    dc_sprintf(&err, "expected next token to be %s, got %s instead.",
-               tostr_DangTokenType(type),
-               tostr_DangTokenType(p->peek_token->type));
-    dc_da_push(&p->errors, dc_dva(string, err));
-}
-
-static bool move_if_peek_token_is(Parser* p, DangTokenType type)
-{
-    if (peek_token_is(p, type))
-    {
-        next_token(p);
-        return true;
-    }
-
-    add_token_error(p, type);
-    return false;
-}
-
-static Precedence get_precedence(DangTokenType type)
+static Precedence get_precedence(DTokenType type)
 {
     switch (type)
     {
@@ -110,137 +108,255 @@ static Precedence get_precedence(DangTokenType type)
     return PREC_LOWEST;
 }
 
-static DNode* parse_identifier(Parser* p)
+static ResultDNode parse_identifier(Parser* p)
 {
-    DNode* identifier = dnode_create(DN_IDENTIFIER, p->current_token, false);
-
-    return identifier;
+    return dnode_create(DN_IDENTIFIER, p->current_token, false);
 }
 
-static DNode* parse_integer_literal(Parser* p)
+static ResultDNode parse_integer_literal(Parser* p)
 {
-    DNode* literal = dnode_create(DN_INTEGER_LITERAL, p->current_token, true);
+    DC_TRY_DEF2(ResultDNode,
+                dnode_create(DN_INTEGER_LITERAL, p->current_token, true));
 
-    i64 num;
-    if (!dc_str_to_i64(dc_sv_as_cstr(&p->current_token->text), &num))
-    {
-        string err;
-        dc_sprintf(&err, "could not parse '%s' to i64 number",
-                   p->current_token->text.cstr);
-        add_error(p, err);
+    DCResultString str_res = dc_sv_as_cstr(&p->current_token->text);
+    dc_res_ret_if_err2(str_res, {
+        dc_res_err_dbg_log2(
+            str_res, "Cannot retrieve string value of the current token");
 
-        return NULL;
-    }
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
 
-    dn_val_push(literal, i64, num);
+    DCResultI64 i64_res = dc_str_to_i64(dc_res_val2(str_res));
+    dc_res_ret_if_err2(i64_res, {
+        dc_res_err_dbg_log2(i64_res,
+                            "could not parse token text to i64 number");
 
-    return literal;
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
+
+    dc_try_fail_temp(DCResultVoid,
+                     dn_val_push(dc_res_val(), i64, dc_res_val2(i64_res)));
+
+    dc_res_ret();
 }
 
-static DNode* parse_boolean_literal(Parser* p)
+static ResultDNode parse_boolean_literal(Parser* p)
 {
-    DNode* literal = dnode_create(DN_BOOLEAN_LITERAL, p->current_token, true);
+    DC_TRY_DEF2(ResultDNode,
+                dnode_create(DN_BOOLEAN_LITERAL, p->current_token, true));
 
-    dn_val_push(literal, u8, (p->current_token->type == TOK_TRUE));
+    DCResultVoid res =
+        dn_val_push(dc_res_val(), u8, (p->current_token->type == TOK_TRUE));
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the value to expression");
 
-    return literal;
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
+
+    dc_res_ret();
 }
 
-static DNode* parse_prefix_expression(Parser* p)
+static ResultDNode parse_prefix_expression(Parser* p)
 {
-    DNode* expression =
-        dnode_create(DN_PREFIX_EXPRESSION, p->current_token, true);
+    DC_TRY_DEF2(ResultDNode,
+                dnode_create(DN_PREFIX_EXPRESSION, p->current_token, true));
 
-    next_token(p);
+    DCResultVoid res = next_token(p);
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not move to the next token");
 
-    DNode* right = parse_expression(p, PREC_PREFIX);
-    dn_child_push(expression, right);
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
 
-    return expression;
+    ResultDNode right = parse_expression(p, PREC_PREFIX);
+    dc_res_ret_if_err2(right, {
+        dc_res_err_dbg_log2(right, "could not parse right hand side");
+
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
+
+    res = dn_child_push(dc_res_val(), dc_res_val2(right));
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the value to expression");
+
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val2(right)));
+    });
+
+    dc_res_ret();
 }
 
-static DNode* parse_infix_expression(Parser* p, DNode* left)
+static ResultDNode parse_infix_expression(Parser* p, DNode* left)
 {
-    DNode* expression =
-        dnode_create(DN_INFIX_EXPRESSION, p->current_token, true);
+    DC_TRY_DEF2(ResultDNode,
+                dnode_create(DN_INFIX_EXPRESSION, p->current_token, true));
 
-    dn_child_push(expression, left);
+    DCResultVoid res = dn_child_push(dc_res_val(), left);
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the value to expression");
+
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
 
     Precedence prec = current_prec(p);
 
-    next_token(p);
+    res = next_token(p);
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not move to the next token");
 
-    DNode* right = parse_expression(p, prec);
-    dn_child_push(expression, right);
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
 
-    return expression;
+    ResultDNode right = parse_expression(p, prec);
+    dc_res_ret_if_err2(right, {
+        dc_res_err_dbg_log2(right, "could not parse right hand side");
+
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
+
+    res = dn_child_push(dc_res_val(), dc_res_val2(right));
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the value to expression");
+
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val2(right)));
+    });
+
+    dc_res_ret();
 }
 
-static DNode* parse_let_statement(Parser* p)
+static ResultDNode parse_let_statement(Parser* p)
 {
-    DNode* stmt = dnode_create(DN_LET_STATEMENT, p->current_token, true);
+    DC_TRY_DEF2(ResultDNode,
+                dnode_create(DN_LET_STATEMENT, p->current_token, true));
 
-    if (!move_if_peek_token_is(p, TOK_IDENT)) return NULL;
+    DCResultVoid res = move_if_peek_token_is(p, TOK_IDENT);
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "Identifier needed");
 
-    DNode* name = dnode_create(DN_IDENTIFIER, p->current_token, false);
-    dn_child_push(stmt, name);
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
 
-    while (!current_token_is_end_of_stmt(p)) next_token(p);
+    ResultDNode name = dnode_create(DN_IDENTIFIER, p->current_token, false);
+    dc_res_ret_if_err2(name, {
+        dc_res_err_dbg_log2(right, "could not parse name");
 
-    return stmt;
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
+
+    res = dn_child_push(dc_res_val(), dc_res_val2(name));
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the name to statement");
+
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val2(name)));
+    });
+
+    while (!current_token_is_end_of_stmt(p))
+    {
+        res = next_token(p);
+        dc_res_ret_if_err2(res, {
+            dc_res_err_dbg_log2(res, "could not move to the next token");
+
+            dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+        });
+    }
+
+    dc_res_ret();
 }
 
-static DNode* parse_return_statement(Parser* p)
+static ResultDNode parse_return_statement(Parser* p)
 {
-    DNode* stmt = dnode_create(DN_RETURN_STATEMENT, p->current_token, false);
+    DC_TRY_DEF2(ResultDNode,
+                dnode_create(DN_RETURN_STATEMENT, p->current_token, false));
 
-    next_token(p);
+    DCResultVoid res = next_token(p);
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not move to the next token");
 
-    while (!current_token_is_end_of_stmt(p)) next_token(p);
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
 
-    return stmt;
+    while (!current_token_is_end_of_stmt(p))
+    {
+        res = next_token(p);
+        dc_res_ret_if_err2(res, {
+            dc_res_err_dbg_log2(res, "could not move to the next token");
+
+            dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+        });
+    }
+
+    dc_res_ret();
 }
 
-static DNode* parse_expression(Parser* p, Precedence precedence)
+static ResultDNode parse_expression(Parser* p, Precedence precedence)
 {
+    DC_RES2(ResultDNode);
+
     ParsePrefixFn prefix = p->parse_prefix_fns[p->current_token->type];
 
     if (prefix == NULL)
     {
-        no_prefix_fn_error(p, p->current_token->type);
-        return NULL;
+        dc_dbg_log(no_prefix_fn_err_fmt(p->current_token->type));
+
+        dc_res_ret_ea(1, no_prefix_fn_err_fmt(p->current_token->type));
     }
 
-    DNode* left_exp = prefix(p);
+    ResultDNode left_exp = prefix(p);
 
     while (!peek_token_is_end_of_stmt(p) && precedence < peek_prec(p))
     {
         ParseInfixFn infix = p->parse_infix_fns[p->peek_token->type];
         if (infix == NULL) return left_exp;
 
-        next_token(p);
+        DCResultVoid res = next_token(p);
+        dc_res_ret_if_err2(res, {
+            dc_res_err_dbg_log2(res, "could not move to the next token");
 
-        left_exp = infix(p, left_exp);
+            dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val2(left_exp)));
+        });
+
+        left_exp = infix(p, dc_res_val2(left_exp));
     }
 
     return left_exp;
 }
 
-static DNode* parse_expression_statement(Parser* p)
+static ResultDNode parse_expression_statement(Parser* p)
 {
-    DNode* stmt = dnode_create(DN_EXPRESSION_STATEMENT, p->current_token, true);
+    DC_TRY_DEF2(ResultDNode,
+                dnode_create(DN_EXPRESSION_STATEMENT, p->current_token, true));
 
-    DNode* expression = parse_expression(p, PREC_LOWEST);
+    ResultDNode expression = parse_expression(p, PREC_LOWEST);
+    dc_res_ret_if_err2(expression, {
+        dc_res_err_dbg_log2(res, "could not parse expression");
 
-    if (expression) dn_child_push(stmt, expression);
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+    });
+
+    DCResultVoid res = dn_child_push(dc_res_val(), dc_res_val2(expression));
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the name to statement");
+
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val2(expression)));
+    });
 
     if (peek_token_is(p, TOK_NEWLINE) || peek_token_is(p, TOK_SEMICOLON))
-        next_token(p);
+    {
+        res = next_token(p);
+        dc_res_ret_if_err2(res, {
+            dc_res_err_dbg_log2(res, "could not move to the next token");
 
-    return stmt;
+            dc_try_fail_temp(DCResultVoid, dnode_free(dc_res_val()));
+        });
+    }
+
+    dc_res_ret();
 }
 
-static DNode* parse_statement(Parser* p)
+static ResultDNode parse_statement(Parser* p)
 {
     switch (p->current_token->type)
     {
@@ -259,14 +375,23 @@ static DNode* parse_statement(Parser* p)
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-void parser_init(Parser* p, Scanner* s)
+DCResultVoid parser_init(Parser* p, Scanner* s)
 {
+    DC_RES_void();
+
+    if (!p || !s)
+    {
+        dc_dbg_log("Parser or Scanner cannot be NULL");
+
+        dc_res_ret_e(1, "Parser or Scanner cannot be NULL");
+    }
+
     p->scanner = s;
 
     p->current_token = NULL;
     p->peek_token = NULL;
 
-    dc_da_init(&(p->errors), NULL);
+    dc_try(dc_da_init(&p->errors, NULL));
 
     // Initialize function pointers
     memset(p->parse_prefix_fns, 0, sizeof(p->parse_prefix_fns));
@@ -291,35 +416,70 @@ void parser_init(Parser* p, Scanner* s)
     // Update current and peek tokens
     next_token(p);
     next_token(p);
+
+    dc_res_ret();
 }
 
-void parser_free(Parser* p)
+DCResultVoid parser_free(Parser* p)
 {
-    dc_da_free(&p->errors);
+    DC_RES_void();
 
-    scanner_free(p->scanner);
+    dc_try(dc_da_free(&p->errors));
+
+    dc_try(scanner_free(p->scanner));
+
+    dc_res_ret();
 }
 
-DNode* parser_parse_program(Parser* p)
+ResultDNode parser_parse_program(Parser* p)
 {
-    DNode* program = dnode_create(DN_PROGRAM, NULL, true);
+    DC_TRY_DEF2(ResultDNode, dnode_create(DN_PROGRAM, NULL, true));
 
     while (p->current_token->type != TOK_EOF)
     {
-        DNode* stmt = parse_statement(p);
-        if (stmt != NULL) dn_child_push(program, stmt);
+        ResultDNode stmt = parse_statement(p);
+        if (dc_res_is_err2(stmt))
+        {
+            dc_res_err_dbg_log2(stmt, "could not parse statement");
 
-        next_token(p);
+            add_error(p, dc_res_err_msg2(stmt), dc_res_err2(stmt).allocated);
+
+            continue;
+        }
+
+        DCResultVoid res = dn_child_push(dc_res_val(), dc_res_val2(stmt));
+        if (dc_res_is_err2(res))
+        {
+            dc_res_err_dbg_log2(res, "could not push statement to program");
+
+            add_error(p, dc_res_err_msg2(res), dc_res_err2(res).allocated);
+
+            dnode_free(dc_res_val2(stmt));
+
+            continue;
+        }
+
+        res = next_token(p);
+        if (dc_res_is_err2(res))
+        {
+            dc_res_err_dbg_log2(res, "could not move to the next token");
+
+            add_error(p, dc_res_err_msg2(res), dc_res_err2(res).allocated);
+
+            continue;
+        }
     }
 
-    return program;
+    if (p->errors.count != 0) dc_res_ret_e(-1, "parser has error");
+
+    dc_res_ret();
 }
 
 void parser_log_errors(Parser* p)
 {
     dc_da_for(p->errors)
     {
-        string error = dc_da_get_as(&(p->errors), _idx, string);
+        string error = dc_da_get_as(p->errors, _idx, string);
         dc_log("%s", error);
     }
 }

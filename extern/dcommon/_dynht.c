@@ -23,96 +23,165 @@
 
 #include "dcommon.h"
 
-void dc_ht_init(DCHashTable* ht, usize capacity, DCHashFunc hash_func,
-                DCKeyCompFunc key_cmp_func, DCDynValFreeFunc element_free_func)
+DCResultVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn,
+                        DCKeyCompFn key_cmp_fn, DCDynValFreeFn element_free_fn)
 {
+    DC_RES_void();
+
+    if (!ht)
+    {
+        dc_dbg_log("got NULL DCHashTable");
+
+        dc_res_ret_e(1, "got NULL DCHashTable");
+    }
+
     ht->container = (DCDynArr*)calloc(capacity, sizeof(DCDynArr));
+
+    if (ht->container == NULL)
+    {
+        dc_dbg_log("Memory allocation failed");
+
+        dc_res_ret_e(2, "Memory allocation failed");
+    }
 
     ht->cap = capacity;
     ht->key_count = 0;
 
-    ht->hash_func = hash_func;
-    ht->key_cmp_func = key_cmp_func;
-    ht->element_free_func = element_free_func;
+    ht->hash_fn = hash_fn;
+    ht->key_cmp_fn = key_cmp_fn;
+    ht->element_free_fn = element_free_fn;
+
+    dc_res_ret();
 }
 
-DCHashTable* dc_ht_create(usize capacity, DCHashFunc hash_func,
-                          DCKeyCompFunc key_cmp_func,
-                          DCDynValFreeFunc element_free_func)
+DCResultHt dc_ht_new(usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn,
+                     DCDynValFreeFn element_free_fn)
 {
+    DC_RES_ht();
+
     DCHashTable* ht = (DCHashTable*)malloc(sizeof(DCHashTable));
 
-    dc_ht_init(ht, capacity, hash_func, key_cmp_func, element_free_func);
+    if (ht == NULL)
+    {
+        dc_dbg_log("Memory allocation failed");
 
-    return ht;
+        dc_res_ret_e(2, "Memory allocation failed");
+    }
+
+    dc_try_fail_temp(DCResultVoid, dc_ht_init(ht, capacity, hash_fn, key_cmp_fn,
+                                              element_free_fn));
+
+    dc_res_ret_ok(ht);
 }
 
-void dc_ht_free(DCHashTable* ht)
+DCResultVoid dc_ht_free(DCHashTable* ht)
 {
-    dc_dbg_log("dc_ht_free, capacity: %zu", ht->cap);
+    DC_RES_void();
 
-    if (ht && ht->cap == 0) return;
+    if (!ht)
+    {
+        dc_dbg_log("got NULL DCHashTable");
+
+        dc_res_ret_e(1, "got NULL DCHashTable");
+    }
+
+    if (ht && ht->cap == 0) dc_res_ret();
 
     for (usize i = 0; i < ht->cap; ++i)
     {
         dc_ht_get_container_row(darr, *ht, i);
 
-        dc_da_free(darr);
+        dc_try_fail_temp(DCResultVoid, dc_da_free(darr));
     }
 
     free(ht->container);
 
     ht->cap = 0;
     ht->key_count = 0;
-    ht->hash_func = NULL;
-    ht->key_cmp_func = NULL;
-    ht->element_free_func = NULL;
+    ht->hash_fn = NULL;
+    ht->key_cmp_fn = NULL;
+    ht->element_free_fn = NULL;
+
+    dc_res_ret();
 }
 
-void dc_ht_free__(voidptr ht)
+DCResultVoid __dc_ht_free(voidptr ht)
 {
-    dc_dbg_log("dc_ht_free__ for address: %p", ht);
-    dc_action_on(ht == NULL, return, "got null pointer");
+    DC_RES_void();
 
-    dc_ht_free((DCHashTable*)ht);
+    if (!ht)
+    {
+        dc_dbg_log("got NULL DCHashTable");
+
+        dc_res_ret_e(1, "got NULL DCHashTable");
+    }
+
+    dc_try_fail(dc_ht_free((DCHashTable*)ht));
+
+    dc_res_ret();
 }
 
-usize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynValue** out_result)
+DCResultUsize dc_ht_find_by_key(DCHashTable* ht, voidptr key,
+                                DCDynVal** out_result)
 {
-    dc_ht_get_hash(_index, *ht, key);
+    DC_RES_usize();
+
+    if (!ht)
+    {
+        dc_dbg_log("got NULL DCHashTable");
+
+        dc_res_ret_e(1, "got NULL DCHashTable");
+    }
+
+    dc_try_fail_temp_ht_get_hash(_index, *ht, key);
 
     dc_ht_get_container_row(darr, *ht, _index);
 
     dc_da_for(*darr)
     {
-        DCDynValue* element = &darr->elements[_idx];
+        DCDynVal* element = &darr->elements[_idx];
         if (element->type != dc_dvt(voidptr))
         {
-            dc_log("Wrong type other than voidptr");
-            exit(EXIT_FAILURE);
+            dc_dbg_log("wrong type, voidptr needed");
+
+            dc_res_ret_e(3, "wrong type, voidptr needed");
         }
 
         voidptr element_key = ((DCHashEntry*)element->value.voidptr_val)->key;
-        if (ht->key_cmp_func(element_key, key))
+
+        DCResultBool cmp_res = ht->key_cmp_fn(element_key, key);
+        dc_res_fail_if_err2(cmp_res);
+
+        if (dc_res_val2(cmp_res))
         {
             *out_result = &((DCHashEntry*)element->value.voidptr_val)->value;
-            return _idx;
+            dc_res_ret_ok(_idx);
         }
     }
 
     *out_result = NULL;
-    return 0;
+    dc_res_ret_ok(0);
 }
 
-void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
+DCResultVoid dc_ht_set(DCHashTable* ht, voidptr key, DCDynVal value)
 {
-    dc_ht_get_hash(_index, *ht, key);
+    DC_RES_void();
+
+    if (!ht)
+    {
+        dc_dbg_log("got NULL DCHashTable");
+
+        dc_res_ret_e(1, "got NULL DCHashTable");
+    }
+
+    dc_try_fail_temp_ht_get_hash(_index, *ht, key);
 
     DCHashEntry* new_entry = (DCHashEntry*)malloc(sizeof(DCHashEntry));
     if (new_entry == NULL)
     {
-        dc_log("Memory allocation failed");
-        exit(EXIT_FAILURE);
+        dc_dbg_log("Memory allocation failed");
+
+        dc_res_ret_e(2, "Memory allocation failed");
     }
 
     new_entry->key = key;
@@ -122,81 +191,125 @@ void dc_ht_set(DCHashTable* ht, voidptr key, DCDynValue value)
 
     if (current->cap == 0)
     {
-        dc_da_init(current, ht->element_free_func);
-        dc_da_push(current, dc_dva(voidptr, new_entry));
+        dc_try_fail(dc_da_init(current, ht->element_free_fn));
+        dc_try_fail(dc_da_push(current, dc_dva(voidptr, new_entry)));
+
         ht->key_count++;
 
-        return;
+        dc_res_ret();
     }
 
-    DCDynValue* existed = NULL;
-    usize existed_index = dc_ht_find_by_key(ht, key, &existed);
+    DCDynVal* existed = NULL;
+    DCResultUsize find_res = dc_ht_find_by_key(ht, key, &existed);
+    dc_res_fail_if_err2(find_res);
+
+    usize existed_index = dc_res_val2(find_res);
 
     if (existed != NULL)
     {
-        dc_dv_free(&current->elements[existed_index], ht->element_free_func);
+        dc_try_fail(
+            dc_dv_free(&current->elements[existed_index], ht->element_free_fn));
+
         current->elements[existed_index] = dc_dva(voidptr, new_entry);
 
-        return;
+        dc_res_ret();
     }
 
-    dc_da_push(current, dc_dva(voidptr, new_entry));
+    dc_try_fail(dc_da_push(current, dc_dva(voidptr, new_entry)));
     ht->key_count++;
+
+    dc_res_ret();
 }
 
-void __dc_ht_set_multiple(DCHashTable* ht, usize count, DCHashEntry entries[])
+DCResultVoid __dc_ht_set_multiple(DCHashTable* ht, usize count,
+                                  DCHashEntry entries[])
 {
+    DC_RES_void();
+
+    if (!ht)
+    {
+        dc_dbg_log("got NULL DCHashTable");
+
+        dc_res_ret_e(1, "got NULL DCHashTable");
+    }
+
     for (usize i = 0; i < count; ++i)
     {
-        dc_ht_set(ht, entries[i].key, entries[i].value);
+        dc_try_fail(dc_ht_set(ht, entries[i].key, entries[i].value));
     }
+
+    dc_res_ret();
 }
 
-void dc_ht_merge(DCHashTable* ht, DCHashTable* from)
+DCResultVoid dc_ht_merge(DCHashTable* ht, DCHashTable* from)
 {
+    DC_RES_void();
+
+    if (!ht)
+    {
+        dc_dbg_log("got NULL DCHashTable");
+
+        dc_res_ret_e(1, "got NULL DCHashTable");
+    }
+
     for (usize i = 0; i < from->cap; ++i)
     {
         if (from->container[i].cap == 0) continue;
 
         for (usize j = 0; j < from->container[i].count; ++j)
         {
-            DCHashEntry* entry = dc_da_get_as(&from->container[i], j, voidptr);
+            DCHashEntry* entry = dc_da_get_as(from->container[i], j, voidptr);
 
-            dc_ht_set(ht, entry->key, entry->value);
+            dc_try_fail(dc_ht_set(ht, entry->key, entry->value));
         }
     }
+
+    dc_res_ret();
 }
 
-bool dc_ht_delete(DCHashTable* ht, voidptr key)
+DCResultBool dc_ht_delete(DCHashTable* ht, voidptr key)
 {
-    dc_ht_get_hash(_index, *ht, key);
+    DC_RES_bool();
+
+    dc_try_fail_temp_ht_get_hash(_index, *ht, key);
 
     dc_ht_get_container_row(current, *ht, _index);
 
-    if (current->count == 0) return false;
+    if (current->count == 0) dc_res_ret_ok(false);
 
-    DCDynValue* existed = NULL;
-    usize existed_index = dc_ht_find_by_key(ht, key, &existed);
+    DCDynVal* existed = NULL;
+    DCResultUsize possible_bucket = dc_ht_find_by_key(ht, key, &existed);
+    dc_res_fail_if_err2(possible_bucket);
 
-    if (existed == NULL) return false;
+    usize existed_index = dc_res_val2(possible_bucket);
 
-    dc_da_delete(current, existed_index);
+    if (existed == NULL) dc_res_ret_ok(false);
+
+    dc_try_fail_temp(DCResultVoid, dc_da_delete(current, existed_index));
     ht->key_count--;
 
-    return true;
+    dc_res_ret_ok(true);
 }
 
-usize dc_ht_keys(DCHashTable* ht, voidptr** out_arr)
+DCResultUsize dc_ht_keys(DCHashTable* ht, voidptr** out_arr)
 {
-    if (!ht || ht->key_count == 0 || !out_arr)
+    DC_RES_usize();
+
+    if (!ht || ht->key_count == 0)
     {
-        return 0;
+        dc_dbg_log("got NULL or Empty DCHashTable");
+
+        dc_res_ret_e(1, "got NULL or Empty DCHashTable");
     }
+
+    if (!out_arr) dc_res_ret_e(1, "got NULL pout_arr");
 
     *out_arr = (voidptr*)malloc((ht->key_count + 1) * sizeof(voidptr));
     if (!(*out_arr))
     {
-        return 0;
+        dc_dbg_log("Memory allocation failed");
+
+        dc_res_ret_e(2, "Memory allocation failed");
     }
 
     usize key_count = 0;
@@ -208,12 +321,17 @@ usize dc_ht_keys(DCHashTable* ht, voidptr** out_arr)
 
         dc_da_for(*darr)
         {
-            DCDynValue* elem = &darr->elements[_idx];
+            DCDynVal* elem = &darr->elements[_idx];
             if (elem->type != DC_DYN_VAL_TYPE_voidptr)
             {
                 free(*out_arr);
-                *out_arr = ((void*)0);
-                return 0;
+                *out_arr = NULL;
+                dc_dbg_log(
+                    "Bad type, DCHashTable elements must be of type voidptr");
+
+                dc_res_ret_e(
+                    3,
+                    "Bad type, DCHashTable elements must be of type voidptr");
             }
 
             voidptr element_key = ((DCHashEntry*)elem->value.voidptr_val)->key;
@@ -223,6 +341,6 @@ usize dc_ht_keys(DCHashTable* ht, voidptr** out_arr)
         }
     }
 
-    (*out_arr)[ht->key_count] = (((void*)0));
-    return ht->key_count;
+    (*out_arr)[ht->key_count] = NULL;
+    dc_res_ret_ok(ht->key_count);
 }

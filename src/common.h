@@ -1,7 +1,7 @@
 // ***************************************************************************************
 //    Project: Dang Compiler -> https://github.com/dezashibi-c/dang
-//    File: scanner.h
-//    Date: 2024-09-10
+//    File: common.h
+//    Date: 2024-09-26
 //    Author: Navid Dezashibi
 //    Contact: navid@dezashibi.com
 //    Website: https://dezashibi.com | https://github.com/dezashibi
@@ -11,27 +11,20 @@
 //     or concerns, please feel free to contact me at the email address provided
 //     above.
 // ***************************************************************************************
-// *  Description: Scanner struct and related functionalities
+// *  Description: This is for initializing dcommon lib
 // ***************************************************************************************
 
-#ifndef DANG_SCANNER_H
-#define DANG_SCANNER_H
+#ifndef DANG_COMMON_H
+#define DANG_COMMON_H
 
-#include "dcommon/dcommon.h"
-
-#include "token.h"
-
-typedef struct
+typedef enum
 {
-    string input;
-    usize pos;
-    usize read_pos;
-    char c;
-    DCDynArr tokens;
-} Scanner;
+    DANG_MAIN_BATCH,
+    DANG_TEMP_BATCH,
 
-DCResultVoid scanner_init(Scanner* s, const string input);
-DCResultVoid scanner_free(Scanner* s);
-ResultToken scanner_next_token(Scanner* s);
+    DANG_MAX_BATCH,
+} DangCleanupBatch;
 
-#endif // DANG_SCANNER_H
+void configure(bool init_pool, string log_file, bool append_logs);
+
+#endif // DANG_COMMON_H

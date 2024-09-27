@@ -1,5 +1,4 @@
 #define CLOVE_SUITE_NAME scanner_tests
-#define DCOMMON_IMPL
 
 #include "clove-unit/clove-unit.h"
 
@@ -8,12 +7,12 @@
 
 typedef struct
 {
-    DangTokenType type;
+    DTokenType type;
     const string text;
 } TestExpectedResult;
 
 static bool perform_token_test(TestExpectedResult* expected_token,
-                               Token* actual_token, u8 token_index)
+                               DToken* actual_token, u8 token_index)
 {
     dc_action_on(actual_token->text.str == NULL || expected_token->text == NULL,
                  return false, "Null string in Token comparison at index %d",
@@ -21,15 +20,15 @@ static bool perform_token_test(TestExpectedResult* expected_token,
 
     dc_action_on(expected_token->type != actual_token->type, return false,
                  "Bad result on token [%d], expected type='%s' but got='%s'",
-                 token_index, tostr_DangTokenType(expected_token->type),
-                 tostr_DangTokenType(actual_token->type));
+                 token_index, tostr_DTokenType(expected_token->type),
+                 tostr_DTokenType(actual_token->type));
 
     dc_action_on(
         !dc_sv_str_eq(actual_token->text, expected_token->text), return false,
         "Bad result on token [%d], expected text='%s', len='%zu' but "
-        "got='" DC_SV_FMT "', len='%zu'",
+        "got='" DCPRIsv "', len='%zu'",
         token_index, expected_token->text, strlen(expected_token->text),
-        dc_sv_fmt_val(actual_token->text), actual_token->text.len);
+        dc_sv_fmt(actual_token->text), actual_token->text.len);
 
     return true;
 }
@@ -39,20 +38,21 @@ static bool perform_scanner_test(const string input, TestExpectedResult tests[])
     Scanner s;
     scanner_init(&s, input);
 
-    Token* token;
+    ResultToken token;
 
     u8 i = 0;
     dc_sforeach(tests, TestExpectedResult, _it->type != TOK_EOF)
     {
         token = scanner_next_token(&s);
+        if (dc_res_is_err2(token)) return false;
 
-        if (!perform_token_test(_it, token, i)) return false;
+        if (!perform_token_test(_it, dc_res_val2(token), i)) return false;
 
         ++i;
     }
 
     token = scanner_next_token(&s);
-    if (!perform_token_test(&tests[i], token, i)) return false;
+    if (!perform_token_test(&tests[i], dc_res_val2(token), i)) return false;
     ++i;
 
     dc_action_on(i != s.tokens.count, return false,

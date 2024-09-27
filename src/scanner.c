@@ -50,15 +50,19 @@ static void skip_whitespace(Scanner* s)
     while (is_whitespace(s->c)) read_char(s);
 }
 
-static Token* extract_identifier(Scanner* s)
+static ResultToken extract_identifier(Scanner* s)
 {
+    DC_RES2(ResultToken);
+
     usize start = s->pos;
 
     while (is_letter(s->c)) read_char(s);
 
     usize len = s->pos - start;
 
-    Token* t = token_create(TOK_IDENT, s->input, start, len);
+    dc_try_fail(token_create(TOK_IDENT, s->input, start, len));
+
+    DToken* t = dc_res_val();
 
     switch (s->input[start])
     {
@@ -76,58 +80,71 @@ static Token* extract_identifier(Scanner* s)
             break;
     }
 
-
-    return t;
+    dc_res_ret_ok(t);
 }
 
-static Token* extract_number(Scanner* s)
+static ResultToken extract_number(Scanner* s)
 {
+    DC_RES2(ResultToken);
+
     usize start = s->pos;
 
     while (is_digit(s->c)) read_char(s);
 
     usize len = s->pos - start;
 
-    Token* t = token_create(TOK_INT, s->input, start, len);
+    dc_try_fail(token_create(TOK_INT, s->input, start, len));
 
-    return t;
+    DToken* t = dc_res_val();
+
+    dc_res_ret_ok(t);
 }
 
-static void custom_token_free(DCDynValue* item)
+static DC_DV_FREE_FN_DECL(custom_token_free)
 {
-    switch (item->type)
+    DC_RES_void();
+
+    switch (_value->type)
     {
         case dc_dvt(voidptr):
-            token_free((Token*)(dc_dv_as(*item, voidptr)));
+            return token_free((DToken*)(dc_dv_as(*_value, voidptr)));
             break;
 
         default:
             break;
     }
+
+    dc_res_ret();
 }
 
 // ***************************************************************************************
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-void scanner_init(Scanner* s, const string input)
+DCResultVoid scanner_init(Scanner* s, const string input)
 {
+    DC_RES_void();
+
     s->pos = 0;
     s->read_pos = 0;
     s->input = input;
-    dc_da_init(&s->tokens, custom_token_free);
+    dc_try(dc_da_init(&s->tokens, custom_token_free));
 
     read_char(s);
+
+    dc_res_ret();
 }
 
-void scanner_free(Scanner* s)
+DCResultVoid scanner_free(Scanner* s)
 {
-    dc_da_free(&s->tokens);
+    return dc_da_free(&s->tokens);
 }
 
-Token* scanner_next_token(Scanner* s)
+ResultToken scanner_next_token(Scanner* s)
 {
-    Token* token;
+    DC_RES2(ResultToken);
+
+    DToken* token;
 
     skip_whitespace(s);
 
@@ -136,57 +153,69 @@ Token* scanner_next_token(Scanner* s)
         case '=':
             if (peek(s) == '=')
             {
-                token = token_create(TOK_EQ, s->input, s->pos, 2);
+                dc_try_fail(token_create(TOK_EQ, s->input, s->pos, 2));
+                token = dc_res_val();
                 read_char(s);
             }
             else
             {
-                token = token_create(TOK_ASSIGN, s->input, s->pos, 1);
+                dc_try_fail(token_create(TOK_ASSIGN, s->input, s->pos, 1));
+                token = dc_res_val();
             }
             break;
 
         case ';':
-            token = token_create(TOK_SEMICOLON, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_SEMICOLON, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '(':
-            token = token_create(TOK_LPAREN, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_LPAREN, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case ')':
-            token = token_create(TOK_RPAREN, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_RPAREN, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case ',':
-            token = token_create(TOK_COMMA, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_COMMA, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '+':
-            token = token_create(TOK_PLUS, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_PLUS, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '-':
-            token = token_create(TOK_MINUS, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_MINUS, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '!':
             if (peek(s) == '=')
             {
-                token = token_create(TOK_NEQ, s->input, s->pos, 2);
+                dc_try_fail(token_create(TOK_NEQ, s->input, s->pos, 2));
+                token = dc_res_val();
                 read_char(s);
             }
             else
             {
-                token = token_create(TOK_BANG, s->input, s->pos, 1);
+                dc_try_fail(token_create(TOK_BANG, s->input, s->pos, 1));
+                token = dc_res_val();
             }
             break;
 
         case '/':
-            token = token_create(TOK_SLASH, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_SLASH, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '*':
-            token = token_create(TOK_ASTERISK, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_ASTERISK, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '$':
@@ -199,7 +228,8 @@ Token* scanner_next_token(Scanner* s)
                 while (is_digit(s->c)) read_char(s);
                 usize len = s->pos - start;
 
-                token = token_create(TOK_IDENT, s->input, start, len);
+                dc_try_fail(token_create(TOK_IDENT, s->input, start, len));
+                token = dc_res_val();
             }
             else if (peek(s) == '"')
             {
@@ -226,55 +256,68 @@ Token* scanner_next_token(Scanner* s)
                     read_char(s);
                 }
 
-                token = token_create(TOK_IDENT, s->input, start, len);
+                dc_try_fail(token_create(TOK_IDENT, s->input, start, len));
+                token = dc_res_val();
             }
             else
             {
-                token = token_create(TOK_ILLEGAL, s->input, s->pos, 1);
+                dc_try_fail(token_create(TOK_ILLEGAL, s->input, s->pos, 1));
+                token = dc_res_val();
             }
             break;
         }
 
         case '<':
-            token = token_create(TOK_LT, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_LT, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '>':
-            token = token_create(TOK_GT, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_GT, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '{':
-            token = token_create(TOK_LBRACE, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_LBRACE, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '}':
-            token = token_create(TOK_RBRACE, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_RBRACE, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '\n':
-            token = token_create(TOK_NEWLINE, s->input, s->pos, 1);
+            dc_try_fail(token_create(TOK_NEWLINE, s->input, s->pos, 1));
+            token = dc_res_val();
             break;
 
         case '\0':
-            token = token_create(TOK_EOF, s->input, s->pos, 0);
+            dc_try_fail(token_create(TOK_EOF, s->input, s->pos, 0));
+            token = dc_res_val();
             break;
 
         default:
         {
             if (is_letter(s->c))
             {
-                token = extract_identifier(s);
+                dc_try_fail(extract_identifier(s));
+                token = dc_res_val();
                 dc_da_push(&s->tokens, dc_dva(voidptr, token));
-                return token;
+                dc_res_ret_ok(token);
             }
             else if (is_digit(s->c))
             {
-                token = extract_number(s);
+                dc_try_fail(extract_number(s));
+                token = dc_res_val();
                 dc_da_push(&s->tokens, dc_dva(voidptr, token));
-                return token;
+                dc_res_ret_ok(token);
             }
             else
-                token = token_create(TOK_ILLEGAL, s->input, s->pos, 1);
+            {
+                dc_try_fail(token_create(TOK_ILLEGAL, s->input, s->pos, 1));
+                token = dc_res_val();
+            }
         }
         break;
     }
@@ -282,5 +325,6 @@ Token* scanner_next_token(Scanner* s)
     read_char(s);
 
     dc_da_push(&s->tokens, dc_dva(voidptr, token));
-    return token;
+
+    dc_res_ret_ok(token);
 }
