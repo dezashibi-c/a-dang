@@ -476,7 +476,6 @@ ResultDNode parser_parse_program(Parser* p)
             }
         }
 
-
         res = next_token(p);
         if (dc_res_is_err2(res))
         {
