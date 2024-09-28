@@ -341,10 +341,10 @@ CLOVE_TEST(prefix_expressions)
 
         ResultDNode program_res = parser_parse_program(&p);
 
-        DNode* program = dc_res_val2(program_res);
-
         dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(),
                      "parser has error");
+
+        DNode* program = dc_res_val2(program_res);
 
         dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
                      "program is not valid");
@@ -398,10 +398,10 @@ CLOVE_TEST(infix_expressions)
 
         ResultDNode program_res = parser_parse_program(&p);
 
-        DNode* program = dc_res_val2(program_res);
-
         dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(),
                      "parser has error");
+
+        DNode* program = dc_res_val2(program_res);
 
         dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
                      "program is not valid");
@@ -498,10 +498,10 @@ CLOVE_TEST(operator_precedence)
 
         ResultDNode program_res = parser_parse_program(&p);
 
-        DNode* program = dc_res_val2(program_res);
-
         dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(),
                      "parser has error");
+
+        DNode* program = dc_res_val2(program_res);
 
         dnode_string_init(program);
 
