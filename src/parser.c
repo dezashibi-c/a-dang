@@ -35,6 +35,9 @@ static ResultDNode parse_expression(Parser* p, Precedence precedence);
     (current_token_is(P, TOK_SEMICOLON) || current_token_is(P, TOK_NEWLINE) || \
      current_token_is(P, TOK_EOF))
 
+#define current_token_is_nl_or_sc(P)                                           \
+    (current_token_is(P, TOK_SEMICOLON) || current_token_is(P, TOK_NEWLINE))
+
 #define peek_token_is(P, TYPE) ((P)->peek_token->type == TYPE)
 #define peek_token_is_not(P, TYPE) ((P)->peek_token->type != TYPE)
 
@@ -66,10 +69,10 @@ static DCResultVoid next_token(Parser* p)
     dc_res_ret();
 }
 
-static void add_error(Parser* p, string message, bool allocated)
+static void add_error(Parser* p, DCError* err)
 {
-    dc_da_push(&p->errors,
-               (allocated ? dc_dva(string, message) : dc_dv(string, message)));
+    dc_da_push(&p->errors, (err->allocated ? dc_dva(string, err->message)
+                                           : dc_dv(string, err->message)));
 }
 
 static DCResultVoid move_if_peek_token_is(Parser* p, DTokenType type)
@@ -296,7 +299,7 @@ static ResultDNode parse_expression(Parser* p, Precedence precedence)
 
     ParsePrefixFn prefix = p->parse_prefix_fns[p->current_token->type];
 
-    if (prefix == NULL)
+    if (!prefix)
     {
         dc_dbg_log(no_prefix_fn_err_fmt(p->current_token->type));
 
@@ -308,7 +311,7 @@ static ResultDNode parse_expression(Parser* p, Precedence precedence)
     while (!peek_token_is_end_of_stmt(p) && precedence < peek_prec(p))
     {
         ParseInfixFn infix = p->parse_infix_fns[p->peek_token->type];
-        if (infix == NULL) return left_exp;
+        if (!infix) return left_exp;
 
         DCResultVoid res = next_token(p);
         dc_res_ret_if_err2(res, {
@@ -435,6 +438,8 @@ ResultDNode parser_parse_program(Parser* p)
 {
     DC_TRY_DEF2(ResultDNode, dnode_create(DN_PROGRAM, NULL, true));
 
+    DCResultVoid res;
+
     while (p->current_token->type != TOK_EOF)
     {
         ResultDNode stmt = parse_statement(p);
@@ -442,31 +447,28 @@ ResultDNode parser_parse_program(Parser* p)
         {
             dc_res_err_dbg_log2(stmt, "could not parse statement");
 
-            add_error(p, dc_res_err_msg2(stmt), dc_res_err2(stmt).allocated);
-
-            continue;
+            add_error(p, &dc_res_err2(stmt));
         }
-
-        DCResultVoid res = dn_child_push(dc_res_val(), dc_res_val2(stmt));
-        if (dc_res_is_err2(res))
+        else
         {
-            dc_res_err_dbg_log2(res, "could not push statement to program");
+            res = dn_child_push(dc_res_val(), dc_res_val2(stmt));
+            if (dc_res_is_err2(res))
+            {
+                dc_res_err_dbg_log2(res, "could not push statement to program");
 
-            add_error(p, dc_res_err_msg2(res), dc_res_err2(res).allocated);
+                add_error(p, &dc_res_err2(res));
 
-            dnode_free(dc_res_val2(stmt));
-
-            continue;
+                dnode_free(dc_res_val2(stmt));
+            }
         }
+
 
         res = next_token(p);
         if (dc_res_is_err2(res))
         {
             dc_res_err_dbg_log2(res, "could not move to the next token");
 
-            add_error(p, dc_res_err_msg2(res), dc_res_err2(res).allocated);
-
-            continue;
+            add_error(p, &dc_res_err2(res));
         }
     }
 
