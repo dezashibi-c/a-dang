@@ -113,25 +113,52 @@ void dnode_string_init(DNode* dn)
 
         case DN_PREFIX_EXPRESSION:
             dnode_string_init(dn_child(dn, 0));
-            dc_sappend(&dn->text, "(" DCPRIsv "%s)", dc_sv_fmt(dn_text(dn)),
+            dc_sprintf(&dn->text, "(" DCPRIsv "%s)", dc_sv_fmt(dn_text(dn)),
                        dn_child(dn, 0)->text);
             break;
 
         case DN_INFIX_EXPRESSION:
             dnode_string_init(dn_child(dn, 0));
             dnode_string_init(dn_child(dn, 1));
-            dc_sappend(&dn->text, "(%s " DCPRIsv " %s)", dn_child(dn, 0)->text,
+            dc_sprintf(&dn->text, "(%s " DCPRIsv " %s)", dn_child(dn, 0)->text,
                        dc_sv_fmt(dn_text(dn)), dn_child(dn, 1)->text);
+            break;
+
+        case DN_IF_EXPRESSION:
+        {
+            dnode_string_init(dn_child(dn, 0));
+            dnode_string_init(dn_child(dn, 1));
+            string value = NULL;
+            if (dn_child_count(dn) > 2)
+            {
+                dnode_string_init(dn_child(dn, 2));
+                value = dn_child(dn, 2)->text;
+            }
+
+            dc_sprintf(&dn->text, DCPRIsv " %s %s %s%s", dc_sv_fmt(dn_text(dn)),
+                       dn_child(dn, 0)->text, dn_child(dn, 1)->text,
+                       (value ? "else " : ""), (value ? value : ""));
+
+            break;
+        }
+
+        case DN_BLOCK_STATEMENT:
+            dc_sprintf(&dn->text, "%s", "{ ");
+            dc_da_for(dn->children)
+            {
+                dnode_string_init(dn_child(dn, _idx));
+                dc_sappend(&dn->text, "%s; ", dn_child(dn, _idx)->text);
+            }
+            dc_sappend(&dn->text, "%s", "}");
+
             break;
 
         default:
             dc_sprintf(&dn->text, DCPRIsv, dc_sv_fmt(dn_text(dn)));
             break;
 
-            // DN_BLOCK_STATEMENT,
 
             // DN_IDENTIFIER,
-            // DN_IF_EXPRESSION,
             // DN_WHILE_EXPRESSION,
             // DN_CALL_EXPRESSION,
             // DN_INDEX_EXPRESSION,

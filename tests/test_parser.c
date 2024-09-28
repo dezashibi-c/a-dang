@@ -2,6 +2,8 @@
 
 #include "clove-unit/clove-unit.h"
 
+#define DC_DEBUG
+
 #include "dcommon/dcommon.h"
 #include "parser.h"
 #include "scanner.h"
@@ -526,6 +528,111 @@ CLOVE_TEST(operator_precedence)
         dnode_program_free(program);
         parser_free(&p);
     }
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(if_statement)
+{
+    const string input = "if (x < y) { x }";
+
+    Scanner s;
+    scanner_init(&s, input);
+
+    Parser p;
+    parser_init(&p, &s);
+
+    ResultDNode program_res = parser_parse_program(&p);
+
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+
+    DNode* program = dc_res_val2(program_res);
+
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
+                 "program is not valid");
+
+    DNode* statement1 = dn_child(program, 0);
+    dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1),
+                 CLOVE_FAIL(), "statement is not valid");
+
+    DNode* if_expr = dn_child(statement1, 0);
+    dc_action_on(!node_is_valid(if_expr, DN_IF_EXPRESSION, 2), CLOVE_FAIL(),
+                 "expression is not if expression");
+
+    // TEST IF CONDITION
+    DNode* if_condition = dn_child(if_expr, 0);
+    dc_action_on(!node_is_valid(if_condition, DN_INFIX_EXPRESSION, 2),
+                 CLOVE_FAIL(), "if_condition expression is not valid");
+
+    dc_action_on(!dc_sv_str_eq(if_condition->token->text, "<"), CLOVE_FAIL(),
+                 "operator is not '%s', got='" DCPRIsv "'", "<",
+                 dc_sv_fmt(if_condition->token->text));
+
+    DNode* lval = dn_child(if_condition, 0);
+    dc_action_on(!node_is_valid(lval, DN_IDENTIFIER, 0), CLOVE_FAIL(),
+                 "lval is not valid");
+
+    dc_action_on(!dc_sv_str_eq(lval->token->text, "x"), CLOVE_FAIL(),
+                 "identifier value is not '%s', got='" DCPRIsv "'", "x",
+                 dc_sv_fmt(lval->token->text));
+
+    DNode* rval = dn_child(if_condition, 1);
+    dc_action_on(!node_is_valid(rval, DN_IDENTIFIER, 0), CLOVE_FAIL(),
+                 "rval is not valid");
+
+    dc_action_on(!dc_sv_str_eq(rval->token->text, "y"), CLOVE_FAIL(),
+                 "identifier value is not '%s', got='" DCPRIsv "'", "y",
+                 dc_sv_fmt(rval->token->text));
+
+
+    // TEST IF CONSEQUENCE
+    DNode* if_consequence = dn_child(if_expr, 1);
+    dc_action_on(!node_is_valid(if_consequence, DN_BLOCK_STATEMENT, 1),
+                 CLOVE_FAIL(), "if_consequence is not valid");
+
+    dnode_string_init(if_consequence);
+
+    dc_action_on(strcmp(if_consequence->text, "{ x; }") != 0, CLOVE_FAIL(),
+                 "Wrong consequence");
+
+    dnode_program_free(program);
+    parser_free(&p);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(if_else_statement)
+{
+    const string input = "if x < y { x } else { y }";
+
+    Scanner s;
+    scanner_init(&s, input);
+
+    Parser p;
+    parser_init(&p, &s);
+
+    ResultDNode program_res = parser_parse_program(&p);
+
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+
+    DNode* program = dc_res_val2(program_res);
+
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
+                 "program is not valid");
+
+    DNode* statement1 = dn_child(program, 0);
+    dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1),
+                 CLOVE_FAIL(), "statement is not valid");
+
+    dnode_string_init(program);
+
+    const string expected = "if (x < y) { x; } else { y; }\n";
+
+    dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(),
+                 "expected='%s', got='%s'", expected, program->text);
+
+    dnode_program_free(program);
+    parser_free(&p);
 
     CLOVE_PASS();
 }
