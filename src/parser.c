@@ -159,6 +159,19 @@ static ResultDNode parse_boolean_literal(Parser* p)
     dc_res_ret();
 }
 
+static ResultDNode parse_grouped_expression(Parser* p)
+{
+    DC_RES2(ResultDNode);
+
+    dc_try_fail_temp(DCResultVoid, next_token(p));
+
+    dc_try_fail(parse_expression(p, PREC_LOWEST));
+
+    dc_try_fail_temp(DCResultVoid, move_if_peek_token_is(p, TOK_RPAREN));
+
+    dc_res_ret();
+}
+
 static ResultDNode parse_prefix_expression(Parser* p)
 {
     DC_TRY_DEF2(ResultDNode,
@@ -406,6 +419,7 @@ DCResultVoid parser_init(Parser* p, Scanner* s)
     p->parse_prefix_fns[TOK_MINUS] = parse_prefix_expression;
     p->parse_prefix_fns[TOK_TRUE] = parse_boolean_literal;
     p->parse_prefix_fns[TOK_FALSE] = parse_boolean_literal;
+    p->parse_prefix_fns[TOK_LPAREN] = parse_grouped_expression;
 
     p->parse_infix_fns[TOK_PLUS] = parse_infix_expression;
     p->parse_infix_fns[TOK_MINUS] = parse_infix_expression;
