@@ -9,7 +9,7 @@ CLOVE_TEST(node_string)
 {
     const string input = "let my_var another_var;-1";
 
-    DNode* program = dc_res_val2(dnode_create(DN_PROGRAM, NULL, true));
+    DNode* program = dc_res_val2(dn_new(DN_PROGRAM, NULL, true));
 
     DToken* let_tok = dc_res_val2(token_create(TOK_LET, input, 0, 3));
     DToken* my_var_tok = dc_res_val2(token_create(TOK_IDENT, input, 4, 6));
@@ -17,16 +17,13 @@ CLOVE_TEST(node_string)
     DToken* minus = dc_res_val2(token_create(TOK_IDENT, input, 23, 1));
     DToken* one = dc_res_val2(token_create(TOK_IDENT, input, 24, 1));
 
-    DNode* statement1 =
-        dc_res_val2(dnode_create(DN_LET_STATEMENT, let_tok, true));
+    DNode* statement1 = dc_res_val2(dn_new(DN_LET_STATEMENT, let_tok, true));
 
-    DNode* ident = dc_res_val2(dnode_create(DN_IDENTIFIER, my_var_tok, false));
-    DNode* ident2 =
-        dc_res_val2(dnode_create(DN_IDENTIFIER, another_var, false));
+    DNode* ident = dc_res_val2(dn_new(DN_IDENTIFIER, my_var_tok, false));
+    DNode* ident2 = dc_res_val2(dn_new(DN_IDENTIFIER, another_var, false));
 
-    DNode* expression =
-        dc_res_val2(dnode_create(DN_PREFIX_EXPRESSION, minus, true));
-    DNode* value = dc_res_val2(dnode_create(DN_INTEGER_LITERAL, one, true));
+    DNode* expression = dc_res_val2(dn_new(DN_PREFIX_EXPRESSION, minus, true));
+    DNode* value = dc_res_val2(dn_new(DN_INTEGER_LITERAL, one, true));
 
     dn_child_push(expression, value);
     dn_val_push(value, i64, 1);
@@ -37,13 +34,13 @@ CLOVE_TEST(node_string)
     dn_child_push(program, statement1);
     dn_child_push(program, expression);
 
-    dnode_string_init(program);
+    dn_string_init(program);
 
     dc_action_on(strcmp(program->text, "let my_var another_var\n(-1)\n") != 0,
                  CLOVE_FAIL(), "wrong string for program, got='%s'",
                  program->text);
 
-    dnode_program_free(program);
+    dn_program_free(program);
 
     token_free(let_tok);
     token_free(my_var_tok);

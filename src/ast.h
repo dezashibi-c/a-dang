@@ -55,18 +55,16 @@ typedef enum
     DN__END_LITERAL,
 
     DN__MAX,
-} DNodeType;
+} DNType;
 
-#define __dnode_group_is(NODE_TYPE, GROUP)                                     \
+#define __dn_group_is(NODE_TYPE, GROUP)                                        \
     (NODE_TYPE > DN__START_##GROUP && NODE_TYPE < DN__END_##GROUP)
-#define dnode_group_is_statement(NODE_TYPE)                                    \
-    __dnode_group_is(NODE_TYPE, STATEMENT)
-#define dnode_group_is_expression(NODE_TYPE)                                   \
-    __dnode_group_is(NODE_TYPE, EXPRESSION)
-#define dnode_group_is_literal(NODE_TYPE) __dnode_group_is(NODE_TYPE, LITERAL)
-#define dnode_type_is_valid(NODE_TYPE)                                         \
-    ((NODE_TYPE) == DN_PROGRAM || dnode_group_is_expression(NODE_TYPE) ||      \
-     dnode_group_is_statement(NODE_TYPE) || dnode_group_is_literal(NODE_TYPE))
+#define dn_group_is_statement(NODE_TYPE) __dn_group_is(NODE_TYPE, STATEMENT)
+#define dn_group_is_expression(NODE_TYPE) __dn_group_is(NODE_TYPE, EXPRESSION)
+#define dn_group_is_literal(NODE_TYPE) __dn_group_is(NODE_TYPE, LITERAL)
+#define dn_type_is_valid(NODE_TYPE)                                            \
+    ((NODE_TYPE) == DN_PROGRAM || dn_group_is_expression(NODE_TYPE) ||         \
+     dn_group_is_statement(NODE_TYPE) || dn_group_is_literal(NODE_TYPE))
 
 #define dn_child(NODE, INDEX)                                                  \
     ((DNode*)dc_da_get_as(NODE->children, INDEX, voidptr))
@@ -89,7 +87,7 @@ typedef enum
 
 typedef struct
 {
-    DNodeType type;
+    DNType type;
     DToken* token;
     string text;
     DCDynArr children;
@@ -97,12 +95,12 @@ typedef struct
 
 DCResultType(DNode*, ResultDNode);
 
-string tostr_DNodeType(DNodeType dnt);
-void dnode_string_init(DNode* dn);
+string tostr_DNType(DNType dnt);
+void dn_string_init(DNode* dn);
 
-ResultDNode dnode_create(DNodeType type, DToken* token, bool has_children);
-DCResultVoid dnode_program_free(DNode* program);
-DCResultVoid dnode_free(DNode* dn);
-DCResultVoid dnode_child_free(DCDynVal* child);
+ResultDNode dn_new(DNType type, DToken* token, bool has_children);
+DCResultVoid dn_program_free(DNode* program);
+DCResultVoid dn_free(DNode* dn);
+DCResultVoid dn_child_free(DCDynVal* child);
 
 #endif // DANG_AST_H

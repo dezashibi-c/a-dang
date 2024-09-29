@@ -16,7 +16,7 @@
 
 #include "ast.h"
 
-string tostr_DNodeType(DNodeType dnt)
+string tostr_DNType(DNType dnt)
 {
     switch (dnt)
     {
@@ -52,10 +52,10 @@ string tostr_DNodeType(DNodeType dnt)
     return NULL;
 }
 
-void dnode_string_init(DNode* dn)
+void dn_string_init(DNode* dn)
 {
-    dc_action_on(!dnode_type_is_valid(dn->type), exit(-1),
-                 "got wrong node type: %s", tostr_DNodeType(dn->type));
+    dc_action_on(!dn_type_is_valid(dn->type), exit(-1),
+                 "got wrong node type: %s", tostr_DNType(dn->type));
 
     if (dn->text != NULL) return;
 
@@ -64,7 +64,7 @@ void dnode_string_init(DNode* dn)
         case DN_PROGRAM:
             dc_da_for(dn->children)
             {
-                dnode_string_init(dn_child(dn, _idx));
+                dn_string_init(dn_child(dn, _idx));
                 dc_sappend(&dn->text, "%s\n", dn_child(dn, _idx)->text);
             }
 
@@ -72,11 +72,11 @@ void dnode_string_init(DNode* dn)
 
         case DN_LET_STATEMENT:
         {
-            dnode_string_init(dn_child(dn, 0));
+            dn_string_init(dn_child(dn, 0));
             string value = "";
             if (dn_child_count(dn) > 1)
             {
-                dnode_string_init(dn_child(dn, 1));
+                dn_string_init(dn_child(dn, 1));
                 value = dn_child(dn, 1)->text;
             }
 
@@ -91,7 +91,7 @@ void dnode_string_init(DNode* dn)
             string value = NULL;
             if (dn_child_count(dn) > 0)
             {
-                dnode_string_init(dn_child(dn, 0));
+                dn_string_init(dn_child(dn, 0));
                 value = dn_child(dn, 0)->text;
             }
             dc_sprintf(&dn->text, DCPRIsv " %s", dc_sv_fmt(dn_text(dn)),
@@ -104,7 +104,7 @@ void dnode_string_init(DNode* dn)
             string value = NULL;
             if (dn_child_count(dn) > 0)
             {
-                dnode_string_init(dn_child(dn, 0));
+                dn_string_init(dn_child(dn, 0));
                 value = dn_child(dn, 0)->text;
             }
             dc_sprintf(&dn->text, "%s", (value == NULL ? "" : value));
@@ -112,26 +112,26 @@ void dnode_string_init(DNode* dn)
         }
 
         case DN_PREFIX_EXPRESSION:
-            dnode_string_init(dn_child(dn, 0));
+            dn_string_init(dn_child(dn, 0));
             dc_sprintf(&dn->text, "(" DCPRIsv "%s)", dc_sv_fmt(dn_text(dn)),
                        dn_child(dn, 0)->text);
             break;
 
         case DN_INFIX_EXPRESSION:
-            dnode_string_init(dn_child(dn, 0));
-            dnode_string_init(dn_child(dn, 1));
+            dn_string_init(dn_child(dn, 0));
+            dn_string_init(dn_child(dn, 1));
             dc_sprintf(&dn->text, "(%s " DCPRIsv " %s)", dn_child(dn, 0)->text,
                        dc_sv_fmt(dn_text(dn)), dn_child(dn, 1)->text);
             break;
 
         case DN_IF_EXPRESSION:
         {
-            dnode_string_init(dn_child(dn, 0));
-            dnode_string_init(dn_child(dn, 1));
+            dn_string_init(dn_child(dn, 0));
+            dn_string_init(dn_child(dn, 1));
             string value = NULL;
             if (dn_child_count(dn) > 2)
             {
-                dnode_string_init(dn_child(dn, 2));
+                dn_string_init(dn_child(dn, 2));
                 value = dn_child(dn, 2)->text;
             }
 
@@ -146,10 +146,29 @@ void dnode_string_init(DNode* dn)
             dc_sprintf(&dn->text, "%s", "{ ");
             dc_da_for(dn->children)
             {
-                dnode_string_init(dn_child(dn, _idx));
+                dn_string_init(dn_child(dn, _idx));
                 dc_sappend(&dn->text, "%s; ", dn_child(dn, _idx)->text);
             }
             dc_sappend(&dn->text, "%s", "}");
+
+            break;
+
+        case DN_FUNCTION_LITERAL:
+            dc_sprintf(&dn->text, DCPRIsv " %s", dc_sv_fmt(dn_text(dn)), "(");
+            dc_da_for(dn->children)
+            {
+                dn_string_init(dn_child(dn, _idx));
+
+                if (_idx == dn_child_count(dn) - 1) break;
+
+                dc_sappend(&dn->text, "%s", dn_child(dn, _idx)->text);
+
+                if (_idx < dn_child_count(dn) - 2)
+                    dc_sappend(&dn->text, "%s", ", ");
+            }
+
+            dc_sappend(&dn->text, "%s %s", ")",
+                       dn_child(dn, dn_child_count(dn) - 1)->text);
 
             break;
 
@@ -163,7 +182,6 @@ void dnode_string_init(DNode* dn)
             // DN_CALL_EXPRESSION,
             // DN_INDEX_EXPRESSION,
 
-            // DN_FUNCTION_LITERAL,
             // DN_ARRAY_LITERAL,
             // DN_HASH_LITERAL,
             // DN_MACRO_LITERAL,
@@ -173,7 +191,7 @@ void dnode_string_init(DNode* dn)
     };
 }
 
-ResultDNode dnode_create(DNodeType type, DToken* token, bool has_children)
+ResultDNode dn_new(DNType type, DToken* token, bool has_children)
 {
     DC_RES2(ResultDNode);
 
@@ -193,25 +211,25 @@ ResultDNode dnode_create(DNodeType type, DToken* token, bool has_children)
 
     if (has_children)
         dc_try_fail_temp(DCResultVoid,
-                         dc_da_init(&node->children, dnode_child_free));
+                         dc_da_init(&node->children, dn_child_free));
 
     dc_res_ret_ok(node);
 }
 
-DCResultVoid dnode_program_free(DNode* program)
+DCResultVoid dn_program_free(DNode* program)
 {
     DC_RES_void();
 
     if (program)
     {
-        dc_try(dnode_free(program));
+        dc_try(dn_free(program));
         free(program);
     }
 
     dc_res_ret();
 }
 
-DCResultVoid dnode_free(DNode* dn)
+DCResultVoid dn_free(DNode* dn)
 {
     DC_RES_void();
 
@@ -222,12 +240,12 @@ DCResultVoid dnode_free(DNode* dn)
     dc_res_ret();
 }
 
-DCResultVoid dnode_child_free(DCDynVal* child)
+DCResultVoid dn_child_free(DCDynVal* child)
 {
     DC_RES_void();
 
     if (dc_dv_is(*child, voidptr))
-        dc_try(dnode_free((DNode*)dc_dv_as(*child, voidptr)));
+        dc_try(dn_free((DNode*)dc_dv_as(*child, voidptr)));
 
     dc_res_ret();
 }

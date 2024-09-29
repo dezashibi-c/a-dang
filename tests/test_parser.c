@@ -16,14 +16,14 @@ static bool parser_has_no_error(Parser* p)
     return true;
 }
 
-static bool node_is_valid(DNode* node, DNodeType dnt,
+static bool node_is_valid(DNode* node, DNType dnt,
                           usize number_of_expected_statements)
 {
     dc_action_on(node == NULL, return false, "received NULL node");
 
     dc_action_on(node->type != dnt, return false,
                  "Wrong node node type, expected type='%s' but got='%s'",
-                 tostr_DNodeType(dnt), tostr_DNodeType(node->type));
+                 tostr_DNType(dnt), tostr_DNType(node->type));
 
     dc_action_on(node->children.count != number_of_expected_statements,
                  return false,
@@ -48,7 +48,7 @@ static bool test_DNodeLetStatement(DNode* stmt, string* name)
     dc_action_on(
         stmt->type != DN_LET_STATEMENT, return false,
         "---- Wrong statement node type, expected type='%s' but got='%s'",
-        tostr_DNodeType(DN_LET_STATEMENT), tostr_DNodeType(stmt->type));
+        tostr_DNType(DN_LET_STATEMENT), tostr_DNType(stmt->type));
 
     dc_action_on(stmt->children.count != 1, return false,
                  "---- Wrong number of children expected '1' but got='%zu'",
@@ -58,8 +58,7 @@ static bool test_DNodeLetStatement(DNode* stmt, string* name)
 
     dc_action_on(stmt_name->type != DN_IDENTIFIER, return false,
                  "---- Wrong name node type, expected type='%s' but got = '%s'",
-                 tostr_DNodeType(DN_IDENTIFIER),
-                 tostr_DNodeType(stmt_name->type));
+                 tostr_DNType(DN_IDENTIFIER), tostr_DNType(stmt_name->type));
 
     dc_action_on(!dc_sv_str_eq(stmt_name->token->text, *name), return false,
                  " ---- Wrong text for statement's name token text, expected "
@@ -111,9 +110,9 @@ static bool test_IntegerLiteral(DNode* integer_literal_node, string expected,
 
 static bool test_Literal(DNode* literal_node, string expected, i64 expected_val)
 {
-    dc_action_on(!dnode_group_is_literal(literal_node->type), return false,
+    dc_action_on(!dn_group_is_literal(literal_node->type), return false,
                  "node is not literal, got='%s'",
-                 tostr_DNodeType(literal_node->type));
+                 tostr_DNType(literal_node->type));
 
     switch (literal_node->type)
     {
@@ -126,7 +125,7 @@ static bool test_Literal(DNode* literal_node, string expected, i64 expected_val)
 
         default:
             dc_log("test for '%s' is not implemented yet",
-                   tostr_DNodeType(literal_node->type));
+                   tostr_DNType(literal_node->type));
             break;
     };
 
@@ -165,7 +164,7 @@ CLOVE_TEST(let_statements)
                      "Test failed on item #%zu check reasons above", i);
     }
 
-    dnode_program_free(program);
+    dn_program_free(program);
     parser_free(&p);
 
     CLOVE_PASS();
@@ -202,10 +201,10 @@ CLOVE_TEST(return_statement)
         dc_action_on(
             stmt->type != DN_RETURN_STATEMENT, CLOVE_FAIL(),
             "Wrong statement node type, expected type='%s' but got='%s'",
-            tostr_DNodeType(DN_RETURN_STATEMENT), tostr_DNodeType(stmt->type));
+            tostr_DNType(DN_RETURN_STATEMENT), tostr_DNType(stmt->type));
     }
 
-    dnode_program_free(program);
+    dn_program_free(program);
     parser_free(&p);
 
     CLOVE_PASS();
@@ -242,7 +241,7 @@ CLOVE_TEST(identifier)
                  "identifier value is not '%s', got='" DCPRIsv "'", "foobar",
                  dc_sv_fmt(expression->token->text));
 
-    dnode_program_free(program);
+    dn_program_free(program);
     parser_free(&p);
 
     CLOVE_PASS();
@@ -275,7 +274,7 @@ CLOVE_TEST(boolean_literal)
     dc_action_on(!test_BooleanLiteral(expression, "true", true), CLOVE_FAIL(),
                  "Wrong boolean literal node");
 
-    dnode_program_free(program);
+    dn_program_free(program);
     parser_free(&p);
 
     CLOVE_PASS();
@@ -308,7 +307,7 @@ CLOVE_TEST(integer_literal)
     dc_action_on(!test_IntegerLiteral(expression, "5", 5), CLOVE_FAIL(),
                  "Wrong integer value node");
 
-    dnode_program_free(program);
+    dn_program_free(program);
     parser_free(&p);
 
     CLOVE_PASS();
@@ -367,7 +366,7 @@ CLOVE_TEST(prefix_expressions)
         dc_action_on(!test_Literal(value, tests[i].lval_str, tests[i].lval),
                      CLOVE_FAIL(), "Wrong literal value node");
 
-        dnode_program_free(program);
+        dn_program_free(program);
         parser_free(&p);
     }
 
@@ -428,7 +427,7 @@ CLOVE_TEST(infix_expressions)
         dc_action_on(!test_Literal(rval, tests[i].rval_str, tests[i].rval),
                      CLOVE_FAIL(), "Wrong integer value node for right value");
 
-        dnode_program_free(program);
+        dn_program_free(program);
         parser_free(&p);
     }
 
@@ -520,12 +519,12 @@ CLOVE_TEST(operator_precedence)
 
         DNode* program = dc_res_val2(program_res);
 
-        dnode_string_init(program);
+        dn_string_init(program);
 
         dc_action_on(strcmp(expected, program->text) != 0, CLOVE_FAIL(),
                      "expected=%s, got=%s", expected, program->text);
 
-        dnode_program_free(program);
+        dn_program_free(program);
         parser_free(&p);
     }
 
@@ -590,12 +589,12 @@ CLOVE_TEST(if_statement)
     dc_action_on(!node_is_valid(if_consequence, DN_BLOCK_STATEMENT, 1),
                  CLOVE_FAIL(), "if_consequence is not valid");
 
-    dnode_string_init(if_consequence);
+    dn_string_init(if_consequence);
 
     dc_action_on(strcmp(if_consequence->text, "{ x; }") != 0, CLOVE_FAIL(),
                  "Wrong consequence");
 
-    dnode_program_free(program);
+    dn_program_free(program);
     parser_free(&p);
 
     CLOVE_PASS();
@@ -624,14 +623,14 @@ CLOVE_TEST(if_else_statement)
     dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1),
                  CLOVE_FAIL(), "statement is not valid");
 
-    dnode_string_init(program);
+    dn_string_init(program);
 
     const string expected = "if (x < y) { x; } else { y; }\n";
 
     dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(),
                  "expected='%s', got='%s'", expected, program->text);
 
-    dnode_program_free(program);
+    dn_program_free(program);
     parser_free(&p);
 
     CLOVE_PASS();
