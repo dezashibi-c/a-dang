@@ -689,3 +689,82 @@ CLOVE_TEST(function_literal)
 
     CLOVE_PASS();
 }
+
+typedef struct
+{
+    string input;
+    string expected_output;
+    usize expected_param_count;
+    string expected_params[3];
+} FNParamTest;
+
+CLOVE_TEST(function_literal_params)
+{
+    FNParamTest tests[] = {
+        {"fn () {};", "fn () { }\n", 0, {NULL}},
+        {"fn (x) {};", "fn (x) { }\n", 1, {"x"}},
+        {"fn (x y z) {};", "fn (x, y, z) { }\n", 3, {"x", "y", "z"}},
+        {"", "", 0, {NULL}},
+    };
+
+    dc_sforeach(tests, FNParamTest, _it->input[0] != '\0')
+    {
+        Scanner s;
+        scanner_init(&s, _it->input);
+
+        Parser p;
+        parser_init(&p, &s);
+
+        ResultDNode program_res = parser_parse_program(&p);
+
+        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(),
+                     "parser has error");
+
+        DNode* program = dc_res_val2(program_res);
+
+        dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
+                     "program is not valid");
+
+        dn_string_init(program);
+
+        dc_action_on(strcmp(program->text, _it->expected_output) != 0,
+                     CLOVE_FAIL(), "expected='%s', got='%s'",
+                     _it->expected_output, program->text);
+
+        DNode* statement1 = dn_child(program, 0);
+        DNode* function = dn_child(statement1, 0);
+
+        dc_action_on(dn_child_count(function) != _it->expected_param_count + 1,
+                     CLOVE_FAIL(),
+                     "function node must have %" PRIuMAX
+                     " children, got=%" PRIuMAX,
+                     _it->expected_param_count, dn_child_count(function));
+
+        for (usize i = 0; i < _it->expected_param_count; ++i)
+        {
+            dc_action_on(
+                dn_child(function, i)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                "Expected child %" PRIuMAX " to be identifier but got='%s'", i,
+                tostr_DNType(dn_child(function, i)->type));
+
+            dc_action_on(!dc_sv_str_eq(dn_text(dn_child(function, i)),
+                                       _it->expected_params[i]),
+                         CLOVE_FAIL(),
+                         "Expected identifier to be '" DCPRIsv "' but got='%s'",
+                         dc_sv_fmt(dn_text(dn_child(function, i))),
+                         _it->expected_params[i]);
+        }
+
+        dc_action_on(
+            dn_child(function, _it->expected_param_count)->type !=
+                DN_BLOCK_STATEMENT,
+            CLOVE_FAIL(),
+            "Expected last child to be block statement but got='%s'",
+            tostr_DNType(dn_child(function, _it->expected_param_count)->type));
+
+        dn_program_free(program);
+        parser_free(&p);
+    }
+
+    CLOVE_PASS();
+}
