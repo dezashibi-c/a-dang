@@ -2,8 +2,6 @@
 
 #include "clove-unit/clove-unit.h"
 
-#define DC_DEBUG
-
 #include "dcommon/dcommon.h"
 #include "parser.h"
 #include "scanner.h"
@@ -629,6 +627,62 @@ CLOVE_TEST(if_else_statement)
 
     dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(),
                  "expected='%s', got='%s'", expected, program->text);
+
+    dn_program_free(program);
+    parser_free(&p);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(function_literal)
+{
+    const string input = "fn(x, y z) {x+y-z;}";
+
+    Scanner s;
+    scanner_init(&s, input);
+
+    Parser p;
+    parser_init(&p, &s);
+
+    ResultDNode program_res = parser_parse_program(&p);
+
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+
+    DNode* program = dc_res_val2(program_res);
+
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(),
+                 "program is not valid");
+
+    dn_string_init(program);
+
+    const string expected = "fn (x, y, z) { ((x + y) - z); }\n";
+
+    dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(),
+                 "expected='%s', got='%s'", expected, program->text);
+
+    DNode* statement1 = dn_child(program, 0);
+    DNode* function = dn_child(statement1, 0);
+
+    dc_action_on(dn_child_count(function) != 4, CLOVE_FAIL(),
+                 "function node must have 4 children, got=%" PRIuMAX,
+                 dn_child_count(function));
+
+    dc_action_on(dn_child(function, 0)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                 "Expected child 0 to be identifier but got='%s'",
+                 tostr_DNType(dn_child(function, 0)->type));
+
+    dc_action_on(dn_child(function, 1)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                 "Expected child 1 to be identifier but got='%s'",
+                 tostr_DNType(dn_child(function, 1)->type));
+
+    dc_action_on(dn_child(function, 2)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                 "Expected child 2 to be identifier but got='%s'",
+                 tostr_DNType(dn_child(function, 2)->type));
+
+    dc_action_on(dn_child(function, 3)->type != DN_BLOCK_STATEMENT,
+                 CLOVE_FAIL(),
+                 "Expected child 3 to be block statement but got='%s'",
+                 tostr_DNType(dn_child(function, 3)->type));
 
     dn_program_free(program);
     parser_free(&p);

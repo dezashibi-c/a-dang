@@ -13,6 +13,7 @@
 // ***************************************************************************************
 // *  Description: parsing structs and related functionalities
 // ***************************************************************************************
+#define DC_DEBUG
 
 #include "parser.h"
 
@@ -157,6 +158,83 @@ static ResultDNode parse_boolean_literal(Parser* p)
         dc_res_err_dbg_log2(res, "could not push the value to expression");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    dc_res_ret();
+}
+
+static DCResultVoid parse_function_params(Parser* p, DNode* parent_node)
+{
+    DC_RES_void();
+
+    if (peek_token_is(p, TOK_RPAREN))
+    {
+        dc_try_fail(next_token(p));
+        dc_res_ret();
+    }
+
+    dc_try_fail(next_token(p));
+
+    while (true)
+    {
+        ResultDNode ident = parse_identifier(p);
+        dc_res_ret_if_err2(ident, {});
+
+        DCResultVoid res = dn_child_push(parent_node, dc_res_val2(ident));
+        dc_res_ret_if_err2(res, dc_try_fail(dn_free(dc_res_val2(ident))));
+
+        dc_try_fail(next_token(p));
+        if (current_token_is(p, TOK_COMMA))
+            dc_try_fail(next_token(p));
+        else if (current_token_is(p, TOK_RPAREN) ||
+                 current_token_is(p, TOK_EOF))
+            break;
+    }
+
+    if (current_token_is_not(p, TOK_RPAREN))
+        dc_res_ret_ea(-1, token_err_fmt(p, TOK_RPAREN));
+
+    dc_res_ret();
+}
+
+static ResultDNode parse_function_literal(Parser* p)
+{
+    DC_RES2(ResultDNode);
+
+    DToken* tok = p->current_token;
+
+    dc_try_fail_temp(DCResultVoid, move_if_peek_token_is(p, TOK_LPAREN));
+
+    dc_try_fail(dn_new(DN_FUNCTION_LITERAL, tok, true));
+
+    DCResultVoid res = parse_function_params(p, dc_res_val());
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not parse function literal params");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    res = move_if_peek_token_is(p, TOK_LBRACE);
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "function literal needs body");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    ResultDNode body = parse_block_statement(p);
+    dc_res_ret_if_err2(body, {
+        dc_res_err_dbg_log2(body, "could not parse function literal body");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    res = dn_child_push(dc_res_val(), dc_res_val2(body));
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res,
+                            "could not push the body to the function literal");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(body)));
     });
 
     dc_res_ret();
@@ -345,7 +423,7 @@ static ResultDNode parse_let_statement(Parser* p)
 
     ResultDNode name = dn_new(DN_IDENTIFIER, p->current_token, false);
     dc_res_ret_if_err2(name, {
-        dc_res_err_dbg_log2(right, "could not parse name");
+        dc_res_err_dbg_log2(name, "could not parse name");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
@@ -478,7 +556,7 @@ static ResultDNode parse_expression_statement(Parser* p)
 
     ResultDNode expression = parse_expression(p, PREC_LOWEST);
     dc_res_ret_if_err2(expression, {
-        dc_res_err_dbg_log2(res, "could not parse expression");
+        dc_res_err_dbg_log2(expression, "could not parse expression");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
@@ -553,6 +631,7 @@ DCResultVoid parser_init(Parser* p, Scanner* s)
     p->parse_prefix_fns[TOK_FALSE] = parse_boolean_literal;
     p->parse_prefix_fns[TOK_LPAREN] = parse_grouped_expression;
     p->parse_prefix_fns[TOK_IF] = parse_if_expression;
+    p->parse_prefix_fns[TOK_FUNCTION] = parse_function_literal;
 
     p->parse_infix_fns[TOK_PLUS] = parse_infix_expression;
     p->parse_infix_fns[TOK_MINUS] = parse_infix_expression;
