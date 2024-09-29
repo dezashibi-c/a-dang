@@ -13,8 +13,6 @@
 // ***************************************************************************************
 // *  Description: parsing structs and related functionalities
 // ***************************************************************************************
-#define DC_DEBUG
-
 #include "parser.h"
 
 #include "common.h"
