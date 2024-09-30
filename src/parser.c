@@ -649,8 +649,6 @@ static ResultDNode parse_expression_statement(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(expression)));
     });
 
-    dc_try_fail_temp(DCResultVoid, parse_call_params(p, dc_res_val(), false));
-
     if (peek_token_is(p, TOK_NEWLINE) || peek_token_is(p, TOK_SEMICOLON))
     {
         res = next_token(p);
