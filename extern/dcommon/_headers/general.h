@@ -19,8 +19,7 @@
 #define DCOMMON_GENERAL_H
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
-#error                                                                         \
-    "You cannot use this header (general.h) directly, please consider including dcommon.h"
+#error "You cannot use this header (general.h) directly, please consider including dcommon.h"
 #endif
 
 #include <assert.h>

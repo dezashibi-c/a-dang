@@ -17,8 +17,7 @@
 // ***************************************************************************************
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
-#error                                                                         \
-    "You cannot link to this source (_string_view.c) directly, please consider including dcommon.h"
+#error "You cannot link to this source (_string_view.c) directly, please consider including dcommon.h"
 #endif
 
 #include "_headers/aliases.h"

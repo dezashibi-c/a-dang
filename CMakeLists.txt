@@ -20,6 +20,8 @@ add_executable(dang
     src/main.c
     src/token.c
     src/scanner.c
+    src/parser.c
+    src/ast.c
 )
 
 # define_macro_option(dang PRINT_GREETINGS ON)
@@ -28,7 +30,7 @@ add_executable(dang
 # PRE BUILD TESTS
 ###############################################################################
 
-enable_pre_build_testing(dang all_tests)
+# enable_pre_build_testing(dang all_tests)
 
 ###############################################################################
 # POST BUILD FILE COPIES

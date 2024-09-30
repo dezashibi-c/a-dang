@@ -17,8 +17,7 @@
 // ***************************************************************************************
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
-#error                                                                         \
-    "You cannot link to this source (_lit_val.c) directly, please consider including dcommon.h"
+#error "You cannot link to this source (_lit_val.c) directly, please consider including dcommon.h"
 #endif
 
 #include "dcommon.h"
@@ -49,8 +48,7 @@ DCResultI8 dc_str_to_i8(const string str)
 
     if (val < INT8_MIN || val > INT8_MAX || errno == ERANGE)
     {
-        dc_dbg_log("result is not within the 'i8' range: %" PRId8 ", %" PRId8,
-                   INT8_MIN, INT8_MAX);
+        dc_dbg_log("result is not within the 'i8' range: %" PRId8 ", %" PRId8, INT8_MIN, INT8_MAX);
 
         dc_res_ret_e(1, "result is not within the 'i8' range");
     }
@@ -84,9 +82,7 @@ DCResultI16 dc_str_to_i16(const string str)
 
     if (val < INT16_MIN || val > INT16_MAX || errno == ERANGE)
     {
-        dc_dbg_log("result is not within the 'i16' range: %" PRId16
-                   ", %" PRId16,
-                   INT16_MIN, INT16_MAX);
+        dc_dbg_log("result is not within the 'i16' range: %" PRId16 ", %" PRId16, INT16_MIN, INT16_MAX);
 
         dc_res_ret_e(1, "result is not within the 'i16' range");
     }
@@ -111,9 +107,7 @@ DCResultI32 dc_str_to_i32(const string str)
 
     if (val < INT32_MIN || val > INT32_MAX || errno == ERANGE)
     {
-        dc_dbg_log("result is not within the 'i32' range: %" PRId32
-                   ", %" PRId32,
-                   INT32_MIN, INT32_MAX);
+        dc_dbg_log("result is not within the 'i32' range: %" PRId32 ", %" PRId32, INT32_MIN, INT32_MAX);
 
         dc_res_ret_e(1, "result is not within the 'i32' range");
     }
@@ -138,9 +132,7 @@ DCResultI64 dc_str_to_i64(const string str)
 
     if (val < INT64_MIN || val > INT64_MAX || errno == ERANGE)
     {
-        dc_dbg_log("result is not within the 'i64' range: %" PRId64
-                   ", %" PRId64,
-                   INT64_MIN, INT64_MAX);
+        dc_dbg_log("result is not within the 'i64' range: %" PRId64 ", %" PRId64, INT64_MIN, INT64_MAX);
 
         dc_res_ret_e(1, "result is not within the 'i64' range");
     }
@@ -165,8 +157,7 @@ DCResultU8 dc_str_to_u8(const string str)
 
     if (val > UINT8_MAX || errno == ERANGE)
     {
-        dc_dbg_log("result is not within the 'u8' range: 0, %" PRIu8,
-                   UINT8_MAX);
+        dc_dbg_log("result is not within the 'u8' range: 0, %" PRIu8, UINT8_MAX);
 
         dc_res_ret_e(1, "result is not within the 'u8' range");
     }
@@ -191,8 +182,7 @@ DCResultU16 dc_str_to_u16(const string str)
 
     if (val > UINT16_MAX || errno == ERANGE)
     {
-        dc_dbg_log("result is not within the 'u16' range: 0, %" PRIu16,
-                   UINT16_MAX);
+        dc_dbg_log("result is not within the 'u16' range: 0, %" PRIu16, UINT16_MAX);
 
         dc_res_ret_e(1, "result is not within the 'u16' range");
     }
@@ -217,8 +207,7 @@ DCResultU32 dc_str_to_u32(const string str)
 
     if (val > UINT32_MAX || errno == ERANGE)
     {
-        dc_dbg_log("result is not within the 'u32' range: 0, %" PRIu32,
-                   UINT32_MAX);
+        dc_dbg_log("result is not within the 'u32' range: 0, %" PRIu32, UINT32_MAX);
 
         dc_res_ret_e(1, "result is not within the 'u32' range");
     }
@@ -243,8 +232,7 @@ DCResultU64 dc_str_to_u64(const string str)
 
     if (val > UINT64_MAX || errno == ERANGE)
     {
-        dc_dbg_log("result is not within the 'u64' range: 0, %" PRIu64,
-                   UINT64_MAX);
+        dc_dbg_log("result is not within the 'u64' range: 0, %" PRIu64, UINT64_MAX);
 
         dc_res_ret_e(1, "result is not within the 'u64' range");
     }

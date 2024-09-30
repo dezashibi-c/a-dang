@@ -54,8 +54,7 @@ string tostr_DNType(DNType dnt)
 
 void dn_string_init(DNode* dn)
 {
-    dc_action_on(!dn_type_is_valid(dn->type), exit(-1),
-                 "got wrong node type: %s", tostr_DNType(dn->type));
+    dc_action_on(!dn_type_is_valid(dn->type), exit(-1), "got wrong node type: %s", tostr_DNType(dn->type));
 
     if (dn->text != NULL) return;
 
@@ -80,8 +79,7 @@ void dn_string_init(DNode* dn)
                 value = dn_child(dn, 1)->text;
             }
 
-            dc_sprintf(&dn->text, DCPRIsv " %s %s", dc_sv_fmt(dn_text(dn)),
-                       dn_child(dn, 0)->text, value);
+            dc_sprintf(&dn->text, DCPRIsv " %s %s", dc_sv_fmt(dn_text(dn)), dn_child(dn, 0)->text, value);
 
             break;
         }
@@ -94,8 +92,7 @@ void dn_string_init(DNode* dn)
                 dn_string_init(dn_child(dn, 0));
                 value = dn_child(dn, 0)->text;
             }
-            dc_sprintf(&dn->text, DCPRIsv " %s", dc_sv_fmt(dn_text(dn)),
-                       (value == NULL ? "" : value));
+            dc_sprintf(&dn->text, DCPRIsv " %s", dc_sv_fmt(dn_text(dn)), (value == NULL ? "" : value));
             break;
         }
 
@@ -113,15 +110,13 @@ void dn_string_init(DNode* dn)
 
         case DN_PREFIX_EXPRESSION:
             dn_string_init(dn_child(dn, 0));
-            dc_sprintf(&dn->text, "(" DCPRIsv "%s)", dc_sv_fmt(dn_text(dn)),
-                       dn_child(dn, 0)->text);
+            dc_sprintf(&dn->text, "(" DCPRIsv "%s)", dc_sv_fmt(dn_text(dn)), dn_child(dn, 0)->text);
             break;
 
         case DN_INFIX_EXPRESSION:
             dn_string_init(dn_child(dn, 0));
             dn_string_init(dn_child(dn, 1));
-            dc_sprintf(&dn->text, "(%s " DCPRIsv " %s)", dn_child(dn, 0)->text,
-                       dc_sv_fmt(dn_text(dn)), dn_child(dn, 1)->text);
+            dc_sprintf(&dn->text, "(%s " DCPRIsv " %s)", dn_child(dn, 0)->text, dc_sv_fmt(dn_text(dn)), dn_child(dn, 1)->text);
             break;
 
         case DN_IF_EXPRESSION:
@@ -135,8 +130,7 @@ void dn_string_init(DNode* dn)
                 value = dn_child(dn, 2)->text;
             }
 
-            dc_sprintf(&dn->text, DCPRIsv " %s %s %s%s", dc_sv_fmt(dn_text(dn)),
-                       dn_child(dn, 0)->text, dn_child(dn, 1)->text,
+            dc_sprintf(&dn->text, DCPRIsv " %s %s %s%s", dc_sv_fmt(dn_text(dn)), dn_child(dn, 0)->text, dn_child(dn, 1)->text,
                        (value ? "else " : ""), (value ? value : ""));
 
             break;
@@ -163,12 +157,10 @@ void dn_string_init(DNode* dn)
 
                 dc_sappend(&dn->text, "%s", dn_child(dn, _idx)->text);
 
-                if (_idx < dn_child_count(dn) - 2)
-                    dc_sappend(&dn->text, "%s", ", ");
+                if (_idx < dn_child_count(dn) - 2) dc_sappend(&dn->text, "%s", ", ");
             }
 
-            dc_sappend(&dn->text, "%s %s", ")",
-                       dn_child(dn, dn_child_count(dn) - 1)->text);
+            dc_sappend(&dn->text, "%s %s", ")", dn_child(dn, dn_child_count(dn) - 1)->text);
 
             break;
 
@@ -185,8 +177,7 @@ void dn_string_init(DNode* dn)
 
                 dc_sappend(&dn->text, "%s", dn_child(dn, _idx)->text);
 
-                if (_idx < dn_child_count(dn) - 1)
-                    dc_sappend(&dn->text, "%s", ", ");
+                if (_idx < dn_child_count(dn) - 1) dc_sappend(&dn->text, "%s", ", ");
             }
 
             dc_sappend(&dn->text, "%s", ")");
@@ -229,9 +220,7 @@ ResultDNode dn_new(DNType type, DToken* token, bool has_children)
 
     node->children = (DCDynArr){0};
 
-    if (has_children)
-        dc_try_fail_temp(DCResultVoid,
-                         dc_da_init(&node->children, dn_child_free));
+    if (has_children) dc_try_fail_temp(DCResultVoid, dc_da_init(&node->children, dn_child_free));
 
     dc_res_ret_ok(node);
 }
@@ -264,8 +253,7 @@ DCResultVoid dn_child_free(DCDynVal* child)
 {
     DC_RES_void();
 
-    if (dc_dv_is(*child, voidptr))
-        dc_try(dn_free((DNode*)dc_dv_as(*child, voidptr)));
+    if (dc_dv_is(*child, voidptr)) dc_try(dn_free((DNode*)dc_dv_as(*child, voidptr)));
 
     dc_res_ret();
 }

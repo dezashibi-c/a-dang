@@ -20,8 +20,7 @@
 // * PRIVATE FUNCTIONS
 // ***************************************************************************************
 
-#define is_letter(C)                                                           \
-    (('a' <= (C) && (C) <= 'z') || ('A' <= (C) && (C) <= 'Z') || (C) == '_')
+#define is_letter(C) (('a' <= (C) && (C) <= 'z') || ('A' <= (C) && (C) <= 'Z') || (C) == '_')
 
 #define is_digit(C) ('0' <= (C) && (C) <= '9')
 
@@ -249,8 +248,7 @@ ResultToken scanner_next_token(Scanner* s)
                     }
                     else if (s->c == 0 || s->c == '\n')
                     {
-                        token_create(TOK_ILLEGAL, s->input, start,
-                                     s->pos - start);
+                        token_create(TOK_ILLEGAL, s->input, start, s->pos - start);
                         break;
                     }
                     read_char(s);
@@ -322,9 +320,12 @@ ResultToken scanner_next_token(Scanner* s)
         break;
     }
 
+
     read_char(s);
 
     dc_da_push(&s->tokens, dc_dva(voidptr, token));
+
+    if (token->type == TOK_ILLEGAL) dc_res_ret_ea(-1, "Illegal token at: " DCPRIsv, dc_sv_fmt(token->text));
 
     dc_res_ret_ok(token);
 }

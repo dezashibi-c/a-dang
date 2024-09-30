@@ -15,49 +15,57 @@
 // ***************************************************************************************
 
 #define DCOMMON_IMPL
-#include "scanner.h"
+#include "parser.h"
 
 #define DANG_REPL_EXIT ":q"
 
 static void repl()
 {
     puts("" dc_colorize_fg(LGREEN, "dang") " REPL");
-    printf("Hi %s! Type '%s' to exit.\n", dc_get_username(),
-           dc_colorize_bg(RED, DANG_REPL_EXIT));
+    printf("Hi %s! Type '%s' to exit.\n", dc_get_username(), dc_colorize_bg(RED, DANG_REPL_EXIT));
 
     char line[1024];
 
-    // while (true)
-    // {
-    //     printf("%s", dc_colorize_fg(LGREEN, "> "));
+    while (true)
+    {
+        printf("%s", dc_colorize_fg(LGREEN, "> "));
 
-    //     if (!fgets(line, sizeof(line), stdin))
-    //     {
-    //         puts("");
-    //         break;
-    //     }
+        if (!fgets(line, sizeof(line), stdin))
+        {
+            puts("");
+            break;
+        }
 
-    //     if (strncmp(line, DANG_REPL_EXIT, strlen(DANG_REPL_EXIT)) == 0)
-    //     break;
+        if (strncmp(line, DANG_REPL_EXIT, strlen(DANG_REPL_EXIT)) == 0) break;
 
-    //     Scanner s;
-    //     scanner_init(&s, line);
+        Scanner s;
+        scanner_init(&s, line);
 
-    //     Token* token;
+        Parser p;
+        DCResultVoid res = parser_init(&p, &s);
 
-    //     token = scanner_next_token(&s);
+        if (dc_res_is_err2(res))
+        {
+            printf("Parser initialization error: %s\n", dc_res_err_msg2(res));
 
-    //     u8 i = 0;
-    //     while (token->type != TOK_EOF)
-    //     {
-    //         printf("[%d] '" DC_SV_FMT "' (%s)\n", i,
-    //         dc_sv_fmt_val(token->text),
-    //                tostr_DTokenType(token->type));
+            parser_free(&p);
+            continue;
+        }
 
-    //         token = scanner_next_token(&s);
-    //         ++i;
-    //     }
-    // }
+        ResultDNode program_res = parser_parse_program(&p);
+
+        if (dc_res_is_err2(program_res))
+            parser_log_errors(&p);
+        else
+        {
+            dn_string_init(dc_res_val2(program_res));
+
+            printf("Evaluated text: " dc_colorize_fg(LGREEN, "%s") "\n", dc_res_val2(program_res)->text);
+        }
+
+        dn_program_free(dc_res_val2(program_res));
+        parser_free(&p);
+    }
 }
 
 int main(int argc, string argv[])

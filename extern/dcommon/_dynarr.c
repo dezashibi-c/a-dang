@@ -17,8 +17,7 @@
 // ***************************************************************************************
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
-#error                                                                         \
-    "You cannot link to this source (_da.c) directly, please consider including dcommon.h"
+#error "You cannot link to this source (_da.c) directly, please consider including dcommon.h"
 #endif
 
 #include "_headers/aliases.h"
@@ -32,8 +31,8 @@ DCResultBool dc_dv_as_bool(DCDynVal* dv)
     // NULL DCDynVal is going to turn into false value
     if (!dv) dc_res_ret_ok(false);
 
-#define type_to_bool(TYPE)                                                     \
-    case dc_dvt(TYPE):                                                         \
+#define type_to_bool(TYPE)                                                                                                     \
+    case dc_dvt(TYPE):                                                                                                         \
         dc_res_ret_ok(dc_as_bool(TYPE, dv->value.TYPE##_val));
 
     switch (dv->type)
@@ -93,9 +92,7 @@ DCResultVoid dc_da_init(DCDynArr* darr, DCDynValFreeFn element_free_fn)
     dc_res_ret();
 }
 
-DCResultVoid dc_da_init2(DCDynArr* darr, usize capacity,
-                         usize capacity_grow_multiplier,
-                         DCDynValFreeFn element_free_fn)
+DCResultVoid dc_da_init2(DCDynArr* darr, usize capacity, usize capacity_grow_multiplier, DCDynValFreeFn element_free_fn)
 {
     DC_RES_void();
 
@@ -142,8 +139,7 @@ DCResultDa dc_da_new(DCDynValFreeFn element_free_fn)
     dc_res_ret_ok(darr);
 }
 
-DCResultDa dc_da_new2(usize capacity, usize capacity_grow_multiplier,
-                      DCDynValFreeFn element_free_fn)
+DCResultDa dc_da_new2(usize capacity, usize capacity_grow_multiplier, DCDynValFreeFn element_free_fn)
 {
     DC_RES_da();
 
@@ -155,16 +151,12 @@ DCResultDa dc_da_new2(usize capacity, usize capacity_grow_multiplier,
         dc_res_ret_e(2, "Memory allocation failed");
     }
 
-    dc_try_fail_temp(
-        DCResultVoid,
-        dc_da_init2(darr, capacity, capacity_grow_multiplier, element_free_fn));
+    dc_try_fail_temp(DCResultVoid, dc_da_init2(darr, capacity, capacity_grow_multiplier, element_free_fn));
 
     dc_res_ret_ok(darr);
 }
 
-DCResultVoid __dc_da_init_with_values(DCDynArr* darr, usize count,
-                                      DCDynValFreeFn element_free_fn,
-                                      DCDynVal values[])
+DCResultVoid __dc_da_init_with_values(DCDynArr* darr, usize count, DCDynValFreeFn element_free_fn, DCDynVal values[])
 {
     DC_RES_void();
 
@@ -181,8 +173,7 @@ DCResultVoid __dc_da_init_with_values(DCDynArr* darr, usize count,
 
     darr->element_free_fn = element_free_fn;
 
-    darr->elements =
-        malloc((count == 0 ? DC_DA_INITIAL_CAP : count) * sizeof(DCDynVal));
+    darr->elements = malloc((count == 0 ? DC_DA_INITIAL_CAP : count) * sizeof(DCDynVal));
     if (darr->elements == NULL)
     {
         dc_dbg_log("Memory allocation failed");
@@ -218,8 +209,7 @@ DCResultVoid dc_da_grow(DCDynArr* darr)
 
     // Resize the array if needed (double the capacity by default or custom
     // multiplier of provided beforehand)
-    DCDynVal* resized = realloc(darr->elements, darr->cap * darr->multiplier *
-                                                    sizeof(DCDynVal));
+    DCDynVal* resized = realloc(darr->elements, darr->cap * darr->multiplier * sizeof(DCDynVal));
     if (resized == NULL)
     {
         dc_dbg_log("Memory re-allocation failed");
@@ -244,8 +234,7 @@ DCResultVoid dc_da_grow_by(DCDynArr* darr, usize amount)
         dc_res_ret_e(1, "got NULL DCDynArr");
     }
 
-    DCDynVal* resized =
-        realloc(darr->elements, (darr->cap + amount) * sizeof(DCDynVal));
+    DCDynVal* resized = realloc(darr->elements, (darr->cap + amount) * sizeof(DCDynVal));
 
     if (resized == NULL)
     {
@@ -299,8 +288,7 @@ DCResultVoid dc_da_trunc(DCDynArr* darr)
 
     if (darr->count < darr->cap)
     {
-        DCDynVal* resized =
-            realloc(darr->elements, darr->count * sizeof(DCDynVal));
+        DCDynVal* resized = realloc(darr->elements, darr->count * sizeof(DCDynVal));
 
         if (resized == NULL)
         {
@@ -316,8 +304,7 @@ DCResultVoid dc_da_trunc(DCDynArr* darr)
     dc_res_ret();
 }
 
-DCResultVoid dc_da_pop(DCDynArr* darr, usize count, DCDynVal** out_popped,
-                       bool truncate)
+DCResultVoid dc_da_pop(DCDynArr* darr, usize count, DCDynVal** out_popped, bool truncate)
 {
     DC_RES_void();
 
@@ -332,8 +319,7 @@ DCResultVoid dc_da_pop(DCDynArr* darr, usize count, DCDynVal** out_popped,
     {
         dc_dbg_log("Try to pop elements more than actual number of elements");
 
-        dc_res_ret_e(4,
-                     "Try to pop elements more than actual number of elements");
+        dc_res_ret_e(4, "Try to pop elements more than actual number of elements");
     }
 
     if (out_popped != NULL)
@@ -354,8 +340,7 @@ DCResultVoid dc_da_pop(DCDynArr* darr, usize count, DCDynVal** out_popped,
     {
         if (out_popped) (*out_popped)[i] = darr->elements[last_item_index - i];
 
-        dc_try_fail(dc_dv_free(&darr->elements[last_item_index - i],
-                               darr->element_free_fn));
+        dc_try_fail(dc_dv_free(&darr->elements[last_item_index - i], darr->element_free_fn));
 
         darr->count--;
     }
@@ -385,8 +370,7 @@ DCResultVoid dc_da_push(DCDynArr* darr, DCDynVal value)
     dc_res_ret();
 }
 
-DCResultVoid __dc_da_append_values(DCDynArr* darr, usize count,
-                                   DCDynVal values[])
+DCResultVoid __dc_da_append_values(DCDynArr* darr, usize count, DCDynVal values[])
 {
     DC_RES_void();
 
@@ -397,8 +381,7 @@ DCResultVoid __dc_da_append_values(DCDynArr* darr, usize count,
         dc_res_ret_e(1, "got NULL DCDynArr");
     }
 
-    if ((count + darr->count) > darr->cap)
-        dc_try_fail(dc_da_grow_to(darr, count + darr->count));
+    if ((count + darr->count) > darr->cap) dc_try_fail(dc_da_grow_to(darr, count + darr->count));
 
     for (usize i = 0; i < count; ++i)
     {
@@ -437,9 +420,8 @@ DCResultDv dc_da_get(DCDynArr* darr, usize index)
 
     if (index >= darr->count)
     {
-        dc_dbg_log("Index out of bound - try to get index='%" PRIuMAX
-                   "' out of actual '%" PRIuMAX "' elements.",
-                   index, darr->count);
+        dc_dbg_log("Index out of bound - try to get index='%" PRIuMAX "' out of actual '%" PRIuMAX "' elements.", index,
+                   darr->count);
 
         dc_res_ret_e(4, "Index out of bound");
     }
@@ -460,10 +442,9 @@ DCResultBool dc_dv_eq(DCDynVal* dv1, DCDynVal* dv2)
 
     if (dv1->type != dv2->type) dc_res_ret_ok(false);
 
-#define check_eq(TYPE)                                                         \
-    case dc_dvt(TYPE):                                                         \
-        if (dv1->value.TYPE##_val == dv2->value.TYPE##_val)                    \
-            dc_res_ret_ok(true);                                               \
+#define check_eq(TYPE)                                                                                                         \
+    case dc_dvt(TYPE):                                                                                                         \
+        if (dv1->value.TYPE##_val == dv2->value.TYPE##_val) dc_res_ret_ok(true);                                               \
         break
 
     switch (dv1->type)
@@ -486,8 +467,7 @@ DCResultBool dc_dv_eq(DCDynVal* dv1, DCDynVal* dv2)
 
         case dc_dvt(string):
         {
-            if (strcmp(dv1->value.string_val, dv2->value.string_val) == 0)
-                dc_res_ret_ok(true);
+            if (strcmp(dv1->value.string_val, dv2->value.string_val) == 0) dc_res_ret_ok(true);
             break;
         }
 
@@ -518,10 +498,9 @@ DCResultUsize dc_da_findp(DCDynArr* darr, DCDynVal* el)
         dc_res_ret_e(1, "got NULL DCDynArr");
     }
 
-#define find_if(TYPE, INDEX)                                                   \
-    case dc_dvt(TYPE):                                                         \
-        if (element->value.TYPE##_val == el->value.TYPE##_val)                 \
-            dc_res_ret_ok(INDEX);                                              \
+#define find_if(TYPE, INDEX)                                                                                                   \
+    case dc_dvt(TYPE):                                                                                                         \
+        if (element->value.TYPE##_val == el->value.TYPE##_val) dc_res_ret_ok(INDEX);                                           \
         break
 
     for (usize i = 0; i < darr->count; i++)
@@ -553,9 +532,7 @@ DCResultUsize dc_da_findp(DCDynArr* darr, DCDynVal* el)
 
             case dc_dvt(string):
             {
-                if (strcmp(element->value.string_val, el->value.string_val) ==
-                    0)
-                    dc_res_ret_ok(i);
+                if (strcmp(element->value.string_val, el->value.string_val) == 0) dc_res_ret_ok(i);
                 break;
             }
 
@@ -593,12 +570,9 @@ DCResultVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn)
     {
         case DC_DYN_VAL_TYPE_string:
         {
-            if (custom_free_fn)
-                dc_try_fail_temp(DCResultVoid, custom_free_fn(element));
+            if (custom_free_fn) dc_try_fail_temp(DCResultVoid, custom_free_fn(element));
 
-            if (dc_dv_is_allocated(*element) &&
-                dc_dv_as(*element, string) != NULL)
-                free(dc_dv_as(*element, string));
+            if (dc_dv_is_allocated(*element) && dc_dv_as(*element, string) != NULL) free(dc_dv_as(*element, string));
 
             dc_dv_set(*element, string, "");
             break;
@@ -606,12 +580,9 @@ DCResultVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn)
 
         case DC_DYN_VAL_TYPE_fileptr:
         {
-            if (custom_free_fn)
-                dc_try_fail_temp(DCResultVoid, custom_free_fn(element));
+            if (custom_free_fn) dc_try_fail_temp(DCResultVoid, custom_free_fn(element));
 
-            if (dc_dv_is_allocated(*element) &&
-                dc_dv_as(*element, fileptr) != NULL)
-                fclose(dc_dv_as(*element, fileptr));
+            if (dc_dv_is_allocated(*element) && dc_dv_as(*element, fileptr) != NULL) fclose(dc_dv_as(*element, fileptr));
 
             dc_dv_set(*element, fileptr, NULL);
             break;
@@ -619,12 +590,9 @@ DCResultVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn)
 
         case DC_DYN_VAL_TYPE_voidptr:
         {
-            if (custom_free_fn)
-                dc_try_fail_temp(DCResultVoid, custom_free_fn(element));
+            if (custom_free_fn) dc_try_fail_temp(DCResultVoid, custom_free_fn(element));
 
-            if (dc_dv_is_allocated(*element) &&
-                dc_dv_as(*element, voidptr) != NULL)
-                free(dc_dv_as(*element, voidptr));
+            if (dc_dv_is_allocated(*element) && dc_dv_as(*element, voidptr) != NULL) free(dc_dv_as(*element, voidptr));
 
             dc_dv_set(*element, voidptr, NULL);
             break;
@@ -661,8 +629,7 @@ DCResultVoid dc_da_free(DCDynArr* darr)
 
     for (usize i = 0; i < darr->count; ++i)
     {
-        dc_try_fail_temp(DCResultVoid,
-                         dc_dv_free(&darr->elements[i], darr->element_free_fn));
+        dc_try_fail_temp(DCResultVoid, dc_dv_free(&darr->elements[i], darr->element_free_fn));
     }
 
     free(darr->elements);
@@ -701,20 +668,17 @@ DCResultVoid dc_da_delete(DCDynArr* darr, usize index)
 
     if (index >= darr->count)
     {
-        dc_dbg_log("Index out of bound - try to get index='%" PRIuMAX
-                   "' out of actual '%" PRIuMAX "' elements.",
-                   index, darr->count);
+        dc_dbg_log("Index out of bound - try to get index='%" PRIuMAX "' out of actual '%" PRIuMAX "' elements.", index,
+                   darr->count);
 
         dc_res_ret_e(4, "Index out of bound");
     }
 
     // Free the element at the specified index
-    dc_try_fail_temp(DCResultVoid,
-                     dc_dv_free(&darr->elements[index], darr->element_free_fn));
+    dc_try_fail_temp(DCResultVoid, dc_dv_free(&darr->elements[index], darr->element_free_fn));
 
     // Shift the elements after the deleted one to fill the gap
-    memmove(&darr->elements[index], &darr->elements[index + 1],
-            (darr->count - index - 1) * sizeof(DCDynVal));
+    memmove(&darr->elements[index], &darr->elements[index + 1], (darr->count - index - 1) * sizeof(DCDynVal));
 
     darr->count--;
 
@@ -759,22 +723,19 @@ DCResultVoid dc_da_insert(DCDynArr* darr, usize index, DCDynVal value)
 
     if (index > darr->count)
     {
-        dc_dbg_log("Index out of bound - try to get index='%" PRIuMAX
-                   "' out of actual '%" PRIuMAX "' elements.",
-                   index, darr->count);
+        dc_dbg_log("Index out of bound - try to get index='%" PRIuMAX "' out of actual '%" PRIuMAX "' elements.", index,
+                   darr->count);
 
         dc_res_ret_e(4, "Index out of bound");
     }
 
-    if (darr->count >= darr->cap)
-        dc_try_fail_temp(DCResultVoid, dc_da_grow(darr));
+    if (darr->count >= darr->cap) dc_try_fail_temp(DCResultVoid, dc_da_grow(darr));
 
     // No need to memmove if inserting at the end
     if (index < darr->count)
     {
         // Shift elements starting from index to index + 1
-        memmove(&darr->elements[index + 1], &darr->elements[index],
-                (darr->count - index) * sizeof(DCDynVal));
+        memmove(&darr->elements[index + 1], &darr->elements[index], (darr->count - index) * sizeof(DCDynVal));
     }
 
     // Add the new value at the desired index
@@ -784,8 +745,7 @@ DCResultVoid dc_da_insert(DCDynArr* darr, usize index, DCDynVal value)
     dc_res_ret();
 }
 
-DCResultVoid __dc_da_insert_values(DCDynArr* darr, usize start_index,
-                                   usize count, DCDynVal values[])
+DCResultVoid __dc_da_insert_values(DCDynArr* darr, usize start_index, usize count, DCDynVal values[])
 {
     DC_RES_void();
 
@@ -798,23 +758,19 @@ DCResultVoid __dc_da_insert_values(DCDynArr* darr, usize start_index,
 
     if (start_index > darr->count)
     {
-        dc_dbg_log("Index out of bound - try to get index='%" PRIuMAX
-                   "' out of actual '%" PRIuMAX "' elements.",
-                   start_index, darr->count);
+        dc_dbg_log("Index out of bound - try to get index='%" PRIuMAX "' out of actual '%" PRIuMAX "' elements.", start_index,
+                   darr->count);
 
         dc_res_ret_e(4, "Index out of bound");
     }
 
-    if ((count + darr->count) > darr->cap)
-        dc_try_fail_temp(DCResultVoid,
-                         dc_da_grow_to(darr, count + darr->count));
+    if ((count + darr->count) > darr->cap) dc_try_fail_temp(DCResultVoid, dc_da_grow_to(darr, count + darr->count));
 
     // No need to memmove if inserting at the end
     if (start_index < darr->count)
     {
         // Shift elements starting from index to index + 1
-        memmove(&darr->elements[start_index + count],
-                &darr->elements[start_index],
+        memmove(&darr->elements[start_index + count], &darr->elements[start_index],
                 (darr->count - start_index) * sizeof(DCDynVal));
     }
 
@@ -828,8 +784,7 @@ DCResultVoid __dc_da_insert_values(DCDynArr* darr, usize start_index,
     dc_res_ret();
 }
 
-DCResultVoid dc_da_insert_from(DCDynArr* darr, usize start_index,
-                               DCDynArr* from)
+DCResultVoid dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from)
 {
     DC_RES_void();
 
@@ -840,8 +795,7 @@ DCResultVoid dc_da_insert_from(DCDynArr* darr, usize start_index,
         dc_res_ret_e(1, "got NULL DCDynArr");
     }
 
-    dc_try_fail(
-        __dc_da_insert_values(darr, start_index, from->count, from->elements));
+    dc_try_fail(__dc_da_insert_values(darr, start_index, from->count, from->elements));
 
     dc_res_ret();
 }
@@ -851,20 +805,17 @@ DCResultUsize dc_i8_da_to_flat_arr(DCDynArr* arr, i8** out_arr, _Bool must_fail)
     __DC_DA_CONVERT_IMPL(i8);
 }
 
-DCResultUsize dc_i16_da_to_flat_arr(DCDynArr* arr, i16** out_arr,
-                                    _Bool must_fail)
+DCResultUsize dc_i16_da_to_flat_arr(DCDynArr* arr, i16** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(i16);
 }
 
-DCResultUsize dc_i32_da_to_flat_arr(DCDynArr* arr, i32** out_arr,
-                                    _Bool must_fail)
+DCResultUsize dc_i32_da_to_flat_arr(DCDynArr* arr, i32** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(i32);
 }
 
-DCResultUsize dc_i64_da_to_flat_arr(DCDynArr* arr, i64** out_arr,
-                                    _Bool must_fail)
+DCResultUsize dc_i64_da_to_flat_arr(DCDynArr* arr, i64** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(i64);
 }
@@ -874,74 +825,62 @@ DCResultUsize dc_u8_da_to_flat_arr(DCDynArr* arr, u8** out_arr, _Bool must_fail)
     __DC_DA_CONVERT_IMPL(u8);
 }
 
-DCResultUsize dc_u16_da_to_flat_arr(DCDynArr* arr, u16** out_arr,
-                                    _Bool must_fail)
+DCResultUsize dc_u16_da_to_flat_arr(DCDynArr* arr, u16** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(u16);
 }
 
-DCResultUsize dc_u32_da_to_flat_arr(DCDynArr* arr, u32** out_arr,
-                                    _Bool must_fail)
+DCResultUsize dc_u32_da_to_flat_arr(DCDynArr* arr, u32** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(u32);
 }
 
-DCResultUsize dc_u64_da_to_flat_arr(DCDynArr* arr, u64** out_arr,
-                                    _Bool must_fail)
+DCResultUsize dc_u64_da_to_flat_arr(DCDynArr* arr, u64** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(u64);
 }
 
-DCResultUsize dc_f32_da_to_flat_arr(DCDynArr* arr, f32** out_arr,
-                                    _Bool must_fail)
+DCResultUsize dc_f32_da_to_flat_arr(DCDynArr* arr, f32** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(f32);
 }
 
-DCResultUsize dc_f64_da_to_flat_arr(DCDynArr* arr, f64** out_arr,
-                                    _Bool must_fail)
+DCResultUsize dc_f64_da_to_flat_arr(DCDynArr* arr, f64** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(f64);
 }
 
-DCResultUsize dc_uptr_da_to_flat_arr(DCDynArr* arr, uptr** out_arr,
-                                     _Bool must_fail)
+DCResultUsize dc_uptr_da_to_flat_arr(DCDynArr* arr, uptr** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(uptr);
 }
 
-DCResultUsize dc_char_da_to_flat_arr(DCDynArr* arr, char** out_arr,
-                                     _Bool must_fail)
+DCResultUsize dc_char_da_to_flat_arr(DCDynArr* arr, char** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(char);
 }
 
-DCResultUsize dc_size_da_to_flat_arr(DCDynArr* arr, size** out_arr,
-                                     _Bool must_fail)
+DCResultUsize dc_size_da_to_flat_arr(DCDynArr* arr, size** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(size);
 }
 
-DCResultUsize dc_usize_da_to_flat_arr(DCDynArr* arr, usize** out_arr,
-                                      _Bool must_fail)
+DCResultUsize dc_usize_da_to_flat_arr(DCDynArr* arr, usize** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(usize);
 }
 
-DCResultUsize dc_string_da_to_flat_arr(DCDynArr* arr, string** out_arr,
-                                       _Bool must_fail)
+DCResultUsize dc_string_da_to_flat_arr(DCDynArr* arr, string** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(string);
 }
 
-DCResultUsize dc_voidptr_da_to_flat_arr(DCDynArr* arr, voidptr** out_arr,
-                                        _Bool must_fail)
+DCResultUsize dc_voidptr_da_to_flat_arr(DCDynArr* arr, voidptr** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(voidptr);
 }
 
-DCResultUsize dc_fileptr_da_to_flat_arr(DCDynArr* arr, fileptr** out_arr,
-                                        _Bool must_fail)
+DCResultUsize dc_fileptr_da_to_flat_arr(DCDynArr* arr, fileptr** out_arr, _Bool must_fail)
 {
     __DC_DA_CONVERT_IMPL(fileptr);
 }

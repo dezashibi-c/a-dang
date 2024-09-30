@@ -17,14 +17,13 @@
 // ***************************************************************************************
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
-#error                                                                         \
-    "You cannot link to this source (_dynht.c) directly, please consider including dcommon.h"
+#error "You cannot link to this source (_dynht.c) directly, please consider including dcommon.h"
 #endif
 
 #include "dcommon.h"
 
-DCResultVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn,
-                        DCKeyCompFn key_cmp_fn, DCDynValFreeFn element_free_fn)
+DCResultVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn,
+                        DCDynValFreeFn element_free_fn)
 {
     DC_RES_void();
 
@@ -54,8 +53,7 @@ DCResultVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn,
     dc_res_ret();
 }
 
-DCResultHt dc_ht_new(usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn,
-                     DCDynValFreeFn element_free_fn)
+DCResultHt dc_ht_new(usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn, DCDynValFreeFn element_free_fn)
 {
     DC_RES_ht();
 
@@ -68,8 +66,7 @@ DCResultHt dc_ht_new(usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn,
         dc_res_ret_e(2, "Memory allocation failed");
     }
 
-    dc_try_fail_temp(DCResultVoid, dc_ht_init(ht, capacity, hash_fn, key_cmp_fn,
-                                              element_free_fn));
+    dc_try_fail_temp(DCResultVoid, dc_ht_init(ht, capacity, hash_fn, key_cmp_fn, element_free_fn));
 
     dc_res_ret_ok(ht);
 }
@@ -121,8 +118,7 @@ DCResultVoid __dc_ht_free(voidptr ht)
     dc_res_ret();
 }
 
-DCResultUsize dc_ht_find_by_key(DCHashTable* ht, voidptr key,
-                                DCDynVal** out_result)
+DCResultUsize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynVal** out_result)
 {
     DC_RES_usize();
 
@@ -207,8 +203,7 @@ DCResultVoid dc_ht_set(DCHashTable* ht, voidptr key, DCDynVal value)
 
     if (existed != NULL)
     {
-        dc_try_fail(
-            dc_dv_free(&current->elements[existed_index], ht->element_free_fn));
+        dc_try_fail(dc_dv_free(&current->elements[existed_index], ht->element_free_fn));
 
         current->elements[existed_index] = dc_dva(voidptr, new_entry);
 
@@ -221,8 +216,7 @@ DCResultVoid dc_ht_set(DCHashTable* ht, voidptr key, DCDynVal value)
     dc_res_ret();
 }
 
-DCResultVoid __dc_ht_set_multiple(DCHashTable* ht, usize count,
-                                  DCHashEntry entries[])
+DCResultVoid __dc_ht_set_multiple(DCHashTable* ht, usize count, DCHashEntry entries[])
 {
     DC_RES_void();
 
@@ -326,12 +320,9 @@ DCResultUsize dc_ht_keys(DCHashTable* ht, voidptr** out_arr)
             {
                 free(*out_arr);
                 *out_arr = NULL;
-                dc_dbg_log(
-                    "Bad type, DCHashTable elements must be of type voidptr");
+                dc_dbg_log("Bad type, DCHashTable elements must be of type voidptr");
 
-                dc_res_ret_e(
-                    3,
-                    "Bad type, DCHashTable elements must be of type voidptr");
+                dc_res_ret_e(3, "Bad type, DCHashTable elements must be of type voidptr");
             }
 
             voidptr element_key = ((DCHashEntry*)elem->value.voidptr_val)->key;

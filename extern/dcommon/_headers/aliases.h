@@ -19,8 +19,7 @@
 #define DC_ALIASES_H
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
-#error                                                                         \
-    "You cannot use this header (aliases.h) directly, please consider including dcommon.h"
+#error "You cannot use this header (aliases.h) directly, please consider including dcommon.h"
 #endif
 
 #include <limits.h>
@@ -96,15 +95,15 @@ typedef struct
  *
  * NOTE: See (alias.h) for usage in definition of default result types
  */
-#define DCResultType(TYPE, NAME)                                               \
-    typedef struct                                                             \
-    {                                                                          \
-        DCResultStatus status;                                                 \
-        union                                                                  \
-        {                                                                      \
-            DCError e;                                                         \
-            TYPE v;                                                            \
-        } data;                                                                \
+#define DCResultType(TYPE, NAME)                                                                                               \
+    typedef struct                                                                                                             \
+    {                                                                                                                          \
+        DCResultStatus status;                                                                                                 \
+        union                                                                                                                  \
+        {                                                                                                                      \
+            DCError e;                                                                                                         \
+            TYPE v;                                                                                                            \
+        } data;                                                                                                                \
     } NAME
 
 /**

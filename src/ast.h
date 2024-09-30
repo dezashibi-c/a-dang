@@ -57,33 +57,27 @@ typedef enum
     DN__MAX,
 } DNType;
 
-#define __dn_group_is(NODE_TYPE, GROUP)                                        \
-    (NODE_TYPE > DN__START_##GROUP && NODE_TYPE < DN__END_##GROUP)
+#define __dn_group_is(NODE_TYPE, GROUP) (NODE_TYPE > DN__START_##GROUP && NODE_TYPE < DN__END_##GROUP)
 #define dn_group_is_statement(NODE_TYPE) __dn_group_is(NODE_TYPE, STATEMENT)
 #define dn_group_is_expression(NODE_TYPE) __dn_group_is(NODE_TYPE, EXPRESSION)
 #define dn_group_is_literal(NODE_TYPE) __dn_group_is(NODE_TYPE, LITERAL)
-#define dn_type_is_valid(NODE_TYPE)                                            \
-    ((NODE_TYPE) == DN_PROGRAM || dn_group_is_expression(NODE_TYPE) ||         \
-     dn_group_is_statement(NODE_TYPE) || dn_group_is_literal(NODE_TYPE))
+#define dn_type_is_valid(NODE_TYPE)                                                                                            \
+    ((NODE_TYPE) == DN_PROGRAM || dn_group_is_expression(NODE_TYPE) || dn_group_is_statement(NODE_TYPE) ||                     \
+     dn_group_is_literal(NODE_TYPE))
 
-#define dn_child(NODE, INDEX)                                                  \
-    ((DNode*)dc_da_get_as(NODE->children, INDEX, voidptr))
+#define dn_child(NODE, INDEX) ((DNode*)dc_da_get_as(NODE->children, INDEX, voidptr))
 
-#define dn_child_as(NODE, INDEX, TYPE)                                         \
-    (dc_da_get_as(((NODE)->children), INDEX, TYPE))
+#define dn_child_as(NODE, INDEX, TYPE) (dc_da_get_as(((NODE)->children), INDEX, TYPE))
 
 #define dn_child_count(NODE) ((NODE)->children.count)
 
 #define dn_text(NODE) (NODE)->token->text
 
-#define dn_child_push(NODE, CHILD)                                             \
-    dc_da_push(&NODE->children, dc_dva(voidptr, CHILD))
+#define dn_child_push(NODE, CHILD) dc_da_push(&NODE->children, dc_dva(voidptr, CHILD))
 
-#define dn_val_push(NODE, TYPE, VALUE)                                         \
-    dc_da_push(&NODE->children, dc_dv(TYPE, VALUE))
+#define dn_val_push(NODE, TYPE, VALUE) dc_da_push(&NODE->children, dc_dv(TYPE, VALUE))
 
-#define dn_vala_push(NODE, TYPE, VALUE)                                        \
-    dc_da_push(&NODE->children, dc_dva(TYPE, VALUE))
+#define dn_vala_push(NODE, TYPE, VALUE) dc_da_push(&NODE->children, dc_dva(TYPE, VALUE))
 
 typedef struct
 {

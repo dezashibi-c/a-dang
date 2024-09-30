@@ -36,9 +36,8 @@ CLOVE_TEST(node_string)
 
     dn_string_init(program);
 
-    dc_action_on(strcmp(program->text, "let my_var another_var\n(-1)\n") != 0,
-                 CLOVE_FAIL(), "wrong string for program, got='%s'",
-                 program->text);
+    dc_action_on(strcmp(program->text, "let my_var another_var\n(-1)\n") != 0, CLOVE_FAIL(),
+                 "wrong string for program, got='%s'", program->text);
 
     dn_program_free(program);
 
