@@ -172,6 +172,27 @@ void dn_string_init(DNode* dn)
 
             break;
 
+        case DN_CALL_EXPRESSION:
+            dc_da_for(dn->children)
+            {
+                dn_string_init(dn_child(dn, _idx));
+
+                if (_idx == 0)
+                {
+                    dc_sappend(&dn->text, "%s(", dn_child(dn, _idx)->text);
+                    continue;
+                }
+
+                dc_sappend(&dn->text, "%s", dn_child(dn, _idx)->text);
+
+                if (_idx < dn_child_count(dn) - 1)
+                    dc_sappend(&dn->text, "%s", ", ");
+            }
+
+            dc_sappend(&dn->text, "%s", ")");
+
+            break;
+
         default:
             dc_sprintf(&dn->text, DCPRIsv, dc_sv_fmt(dn_text(dn)));
             break;
@@ -179,7 +200,6 @@ void dn_string_init(DNode* dn)
 
             // DN_IDENTIFIER,
             // DN_WHILE_EXPRESSION,
-            // DN_CALL_EXPRESSION,
             // DN_INDEX_EXPRESSION,
 
             // DN_ARRAY_LITERAL,

@@ -43,8 +43,8 @@ static ResultDNode parse_statement(Parser* p);
 #define peek_token_is_not(P, TYPE) ((P)->peek_token->type != TYPE)
 
 #define peek_token_is_end_of_stmt(P)                                           \
-    (peek_token_is(P, TOK_SEMICOLON) || peek_token_is(P, TOK_NEWLINE) ||       \
-     peek_token_is(P, TOK_EOF))
+    (peek_token_is(P, TOK_COMMA) || peek_token_is(P, TOK_SEMICOLON) ||         \
+     peek_token_is(P, TOK_NEWLINE) || peek_token_is(P, TOK_EOF))
 
 #define peek_prec(P) get_precedence((P)->peek_token->type)
 #define current_prec(P) get_precedence((P)->current_token->type)
@@ -238,6 +238,44 @@ static ResultDNode parse_function_literal(Parser* p)
     dc_res_ret();
 }
 
+static DCResultVoid parse_call_params(Parser* p, DNode* parent_node,
+                                      bool is_call_expr)
+{
+    DC_RES_void();
+
+    if (peek_token_is(p, TOK_RPAREN))
+    {
+        dc_try_fail(next_token(p));
+        dc_res_ret();
+    }
+
+    dc_try_fail(next_token(p));
+
+    while (true)
+    {
+        ResultDNode param = parse_expression(p, PREC_LOWEST);
+        dc_res_ret_if_err2(param, {});
+
+        DCResultVoid res = dn_child_push(parent_node, dc_res_val2(param));
+        dc_res_ret_if_err2(res, dc_try_fail(dn_free(dc_res_val2(param))));
+
+        dc_try_fail(next_token(p));
+
+        if (current_token_is(p, TOK_COMMA))
+            dc_try_fail(next_token(p));
+        else if (current_token_is(p, TOK_EOF) ||
+                 (is_call_expr && current_token_is(p, TOK_RPAREN)) ||
+                 (!is_call_expr && current_token_is(p, TOK_SEMICOLON)) ||
+                 (!is_call_expr && current_token_is(p, TOK_NEWLINE)))
+            break;
+    }
+
+    // if (is_call_expr && current_token_is_not(p, TOK_RPAREN))
+    //     dc_res_ret_ea(-1, token_err_fmt(p, TOK_RPAREN));
+
+    dc_res_ret();
+}
+
 static ResultDNode parse_grouped_expression(Parser* p)
 {
     DC_RES2(ResultDNode);
@@ -246,9 +284,29 @@ static ResultDNode parse_grouped_expression(Parser* p)
 
     dc_try_fail(parse_expression(p, PREC_LOWEST));
 
-    dc_try_fail_temp(DCResultVoid, move_if_peek_token_is(p, TOK_RPAREN));
+    // Check if it's a grouped expression
+    if (dc_res_val()->type != DN_CALL_EXPRESSION &&
+        dc_res_val()->type != DN_IDENTIFIER)
+    {
+        dc_try_fail_temp(DCResultVoid, move_if_peek_token_is(p, TOK_RPAREN));
+        dc_res_ret();
+    }
 
-    dc_res_ret();
+    ResultDNode call_node = dn_new(DN_CALL_EXPRESSION, NULL, true);
+    dc_res_ret_if_err2(call_node,
+                       dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val())));
+
+    DCResultVoid res = dn_child_push(dc_res_val2(call_node), dc_res_val());
+    dc_res_ret_if_err2(res, {
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call_node)));
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    // Otherwise it's a function call
+    dc_try_fail_temp(DCResultVoid,
+                     parse_call_params(p, dc_res_val2(call_node), true));
+
+    return call_node;
 }
 
 static ResultDNode parse_if_expression(Parser* p)
