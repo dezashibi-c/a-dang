@@ -780,7 +780,7 @@ CLOVE_TEST(function_literal_params)
 
 CLOVE_TEST(call_expression)
 {
-    const string input = "(add 1 2 * 3, -4 $1)";
+    const string input = "(add 1 a * b, -4 $1)";
 
     Scanner s;
     scanner_init(&s, input);
@@ -799,7 +799,7 @@ CLOVE_TEST(call_expression)
 
     dn_string_init(program);
 
-    const string expected = "add(1, (2 * 3), (-4), 1)\n";
+    const string expected = "add(1, (a * b), (-4), 1)\n";
 
     dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(),
                  "expected='%s', got='%s'", expected, program->text);

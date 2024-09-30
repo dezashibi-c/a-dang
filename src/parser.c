@@ -243,15 +243,11 @@ static DCResultVoid parse_call_params(Parser* p, DNode* parent_node,
 {
     DC_RES_void();
 
-    if (peek_token_is(p, TOK_RPAREN))
-    {
-        dc_try_fail(next_token(p));
-        dc_res_ret();
-    }
+    if (is_call_expr && peek_token_is(p, TOK_RPAREN)) dc_res_ret();
 
     dc_try_fail(next_token(p));
 
-    while (true)
+    while (current_token_is_not(p, TOK_EOF))
     {
         ResultDNode param = parse_expression(p, PREC_LOWEST);
         dc_res_ret_if_err2(param, {});
@@ -259,19 +255,19 @@ static DCResultVoid parse_call_params(Parser* p, DNode* parent_node,
         DCResultVoid res = dn_child_push(parent_node, dc_res_val2(param));
         dc_res_ret_if_err2(res, dc_try_fail(dn_free(dc_res_val2(param))));
 
-        dc_try_fail(next_token(p));
+        dc_dbg_log("curr tt=%s, next tt=%s, nt=%s",
+                   tostr_DTokenType(p->current_token->type),
+                   tostr_DTokenType(p->peek_token->type),
+                   tostr_DNType(dc_res_val2(param)->type));
 
-        if (current_token_is(p, TOK_COMMA))
-            dc_try_fail(next_token(p));
-        else if (current_token_is(p, TOK_EOF) ||
-                 (is_call_expr && current_token_is(p, TOK_RPAREN)) ||
-                 (!is_call_expr && current_token_is(p, TOK_SEMICOLON)) ||
-                 (!is_call_expr && current_token_is(p, TOK_NEWLINE)))
+        dc_try_fail(next_token(p));
+        if (current_token_is(p, TOK_COMMA)) dc_try_fail(next_token(p));
+
+        if ((is_call_expr && current_token_is(p, TOK_RPAREN)) ||
+            (!is_call_expr && current_token_is(p, TOK_SEMICOLON)) ||
+            (!is_call_expr && current_token_is(p, TOK_NEWLINE)))
             break;
     }
-
-    // if (is_call_expr && current_token_is_not(p, TOK_RPAREN))
-    //     dc_res_ret_ea(-1, token_err_fmt(p, TOK_RPAREN));
 
     dc_res_ret();
 }
@@ -305,6 +301,9 @@ static ResultDNode parse_grouped_expression(Parser* p)
     // Otherwise it's a function call
     dc_try_fail_temp(DCResultVoid,
                      parse_call_params(p, dc_res_val2(call_node), true));
+
+    if (current_token_is_not(p, TOK_RPAREN))
+        dc_res_ret_ea(-1, token_err_fmt(p, TOK_RPAREN));
 
     return call_node;
 }

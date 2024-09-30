@@ -225,8 +225,8 @@ ResultToken scanner_next_token(Scanner* s)
                 read_char(s); // bypass '$'
 
                 usize start = s->pos;
-                while (is_digit(s->c)) read_char(s);
-                usize len = s->pos - start;
+                while (is_digit(peek(s))) read_char(s);
+                usize len = s->pos - start + 1;
 
                 dc_try_fail(token_create(TOK_IDENT, s->input, start, len));
                 token = dc_res_val();
