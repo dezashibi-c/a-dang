@@ -46,6 +46,10 @@ static ResultDNode parse_statement(Parser* p);
     (peek_token_is(P, TOK_COMMA) || peek_token_is(P, TOK_SEMICOLON) ||         \
      peek_token_is(P, TOK_NEWLINE) || peek_token_is(P, TOK_EOF))
 
+#define peek_token_is_end_of_stmt2(P)                                          \
+    (peek_token_is(P, TOK_SEMICOLON) || peek_token_is(P, TOK_NEWLINE) ||       \
+     peek_token_is(P, TOK_EOF))
+
 #define peek_prec(P) get_precedence((P)->peek_token->type)
 #define current_prec(P) get_precedence((P)->current_token->type)
 
@@ -476,22 +480,56 @@ static ResultDNode parse_let_statement(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
-    ResultDNode name = dn_new(DN_IDENTIFIER, p->current_token, false);
-    dc_res_ret_if_err2(name, {
-        dc_res_err_dbg_log2(name, "could not parse name");
+    ResultDNode temp_node = dn_new(DN_IDENTIFIER, p->current_token, false);
+    dc_res_ret_if_err2(temp_node, {
+        dc_res_err_dbg_log2(temp_node, "could not parse name");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
-    res = dn_child_push(dc_res_val(), dc_res_val2(name));
+    res = dn_child_push(dc_res_val(), dc_res_val2(temp_node));
     dc_res_ret_if_err2(res, {
         dc_res_err_dbg_log2(res, "could not push the name to statement");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
-        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(name)));
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
     });
 
-    while (!current_token_is_end_of_stmt(p))
+    if (peek_token_is_end_of_stmt2(p))
+    {
+        res = next_token(p);
+        dc_res_ret_if_err2(res, {
+            dc_res_err_dbg_log2(res, "could not move to the next token");
+
+            dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        });
+
+        dc_res_ret();
+    }
+
+    res = next_token(p);
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not move to the next token");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    temp_node = parse_expression(p, PREC_LOWEST);
+    dc_res_ret_if_err2(temp_node, {
+        dc_res_err_dbg_log2(temp_node, "could not parse value");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    res = dn_child_push(dc_res_val(), dc_res_val2(temp_node));
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the value to statement");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
+    });
+
+    if (peek_token_is_end_of_stmt2(p))
     {
         res = next_token(p);
         dc_res_ret_if_err2(res, {
@@ -507,7 +545,19 @@ static ResultDNode parse_let_statement(Parser* p)
 static ResultDNode parse_return_statement(Parser* p)
 {
     DC_TRY_DEF2(ResultDNode,
-                dn_new(DN_RETURN_STATEMENT, p->current_token, false));
+                dn_new(DN_RETURN_STATEMENT, p->current_token, true));
+
+    if (peek_token_is_end_of_stmt2(p))
+    {
+        DCResultVoid res = next_token(p);
+        dc_res_ret_if_err2(res, {
+            dc_res_err_dbg_log2(res, "could not move to the next token");
+
+            dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        });
+
+        dc_res_ret();
+    }
 
     DCResultVoid res = next_token(p);
     dc_res_ret_if_err2(res, {
@@ -516,7 +566,26 @@ static ResultDNode parse_return_statement(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
-    while (!current_token_is_end_of_stmt(p))
+    ResultDNode value = parse_expression(p, PREC_LOWEST);
+    dc_res_ret_if_err2(value, {
+        dc_res_err_dbg_log2(res, "could not parse value");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    dc_dbg_log("token=%s, next_tok=%s",
+               tostr_DTokenType(p->current_token->type),
+               tostr_DTokenType(p->peek_token->type));
+
+    res = dn_child_push(dc_res_val(), dc_res_val2(value));
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the value to statement");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(value)));
+    });
+
+    if (peek_token_is_end_of_stmt2(p))
     {
         res = next_token(p);
         dc_res_ret_if_err2(res, {

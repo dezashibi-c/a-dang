@@ -37,32 +37,51 @@ static bool program_is_valid(DNode* program,
     return node_is_valid(program, DN_PROGRAM, number_of_expected_statements);
 }
 
-static bool test_DNodeLetStatement(DNode* stmt, string* name)
+static bool test_DNodeLetStatement(DNode* stmt, string* name, string* value,
+                                   DNType value_type)
 {
     dc_action_on(!dc_sv_str_eq(stmt->token->text, "let"), return false,
-                 "---- Token text must be 'let', got='" DCPRIsv "'",
+                 "Token text must be 'let', got='" DCPRIsv "'",
                  dc_sv_fmt(stmt->token->text));
 
-    dc_action_on(
-        stmt->type != DN_LET_STATEMENT, return false,
-        "---- Wrong statement node type, expected type='%s' but got='%s'",
-        tostr_DNType(DN_LET_STATEMENT), tostr_DNType(stmt->type));
+    dc_action_on(stmt->type != DN_LET_STATEMENT, return false,
+                 "Wrong statement node type, expected type='%s' but got='%s'",
+                 tostr_DNType(DN_LET_STATEMENT), tostr_DNType(stmt->type));
 
-    dc_action_on(stmt->children.count != 1, return false,
-                 "---- Wrong number of children expected '1' but got='%zu'",
-                 stmt->children.count);
+    usize expected_count = value ? 2 : 1;
 
-    DNode* stmt_name = dc_da_get_as(stmt->children, 0, voidptr);
+    dc_action_on(dn_child_count(stmt) != expected_count, return false,
+                 "Wrong number of children expected '%" PRIuMAX
+                 "' but got='%zu'",
+                 expected_count, dn_child_count(stmt));
+
+    DNode* stmt_name = dn_child(stmt, 0);
 
     dc_action_on(stmt_name->type != DN_IDENTIFIER, return false,
-                 "---- Wrong name node type, expected type='%s' but got = '%s'",
+                 "Wrong name node type, expected type='%s' but got = '%s'",
                  tostr_DNType(DN_IDENTIFIER), tostr_DNType(stmt_name->type));
 
     dc_action_on(!dc_sv_str_eq(stmt_name->token->text, *name), return false,
-                 " ---- Wrong text for statement's name token text, expected "
+                 "Wrong text for statement's name token text, expected "
                  "text = '%s' but "
                  "got = '" DCPRIsv "' ",
                  *name, dc_sv_fmt(stmt_name->token->text));
+
+    if (value)
+    {
+        DNode* stmt_value = dn_child(stmt, 1);
+
+        dc_action_on(stmt_value->type != value_type, return false,
+                     "Wrong value node type, expected type='%s' but got = '%s'",
+                     tostr_DNType(value_type), tostr_DNType(stmt_value->type));
+
+        dc_action_on(!dc_sv_str_eq(stmt_value->token->text, *value),
+                     return false,
+                     "Wrong text for statement's value token text, expected "
+                     "text = '%s' but "
+                     "got = '" DCPRIsv "' ",
+                     *value, dc_sv_fmt(stmt_value->token->text));
+    }
 
     return true;
 }
@@ -132,8 +151,8 @@ static bool test_Literal(DNode* literal_node, string expected, i64 expected_val)
 
 CLOVE_TEST(let_statements)
 {
-    const string input = "let $1 5; let $\"some long variable name\" 10\n"
-                         "let foobar 838383";
+    const string input = "let $1 5; let $\"some long variable name\" true\n"
+                         "let foobar y";
 
     Scanner s;
     scanner_init(&s, input);
@@ -152,12 +171,17 @@ CLOVE_TEST(let_statements)
                  "program is not valid");
 
     string expected_identifiers[] = {"1", "some long variable name", "foobar"};
+    string expected_values[] = {"5", "true", "y"};
+    DNType expected_value_types[] = {DN_INTEGER_LITERAL, DN_BOOLEAN_LITERAL,
+                                     DN_IDENTIFIER};
 
     for (usize i = 0; i < dc_count(expected_identifiers); ++i)
     {
-        DNode* stmt = dc_da_get_as(program->children, i, voidptr);
+        DNode* stmt = dn_child(program, i);
 
-        dc_action_on(!test_DNodeLetStatement(stmt, &expected_identifiers[i]),
+        dc_action_on(!test_DNodeLetStatement(stmt, &expected_identifiers[i],
+                                             &expected_values[i],
+                                             expected_value_types[i]),
                      CLOVE_FAIL(),
                      "Test failed on item #%zu check reasons above", i);
     }
@@ -170,8 +194,8 @@ CLOVE_TEST(let_statements)
 
 CLOVE_TEST(return_statement)
 {
-    const string input = "return 5; return 10\n"
-                         "return 838383";
+    const string input = "return; return 5; return true\n"
+                         "return y";
 
     Scanner s;
     scanner_init(&s, input);
@@ -185,12 +209,15 @@ CLOVE_TEST(return_statement)
 
     DNode* program = dc_res_val2(program_res);
 
-    dc_action_on(!program_is_valid(program, 3), CLOVE_FAIL(),
+    dc_action_on(!program_is_valid(program, 4), CLOVE_FAIL(),
                  "program is not valid");
+
+    usize expected_children[] = {0, 1, 1, 1};
+    string expected_children_values[] = {"", "5", "true", "y"};
 
     for (usize i = 0; i < program->children.count; ++i)
     {
-        DNode* stmt = dc_da_get_as(program->children, i, voidptr);
+        DNode* stmt = dn_child(program, i);
 
         dc_action_on(!dc_sv_str_eq(stmt->token->text, "return"), CLOVE_FAIL(),
                      "Token text must be 'return', got='" DCPRIsv "'",
@@ -200,6 +227,22 @@ CLOVE_TEST(return_statement)
             stmt->type != DN_RETURN_STATEMENT, CLOVE_FAIL(),
             "Wrong statement node type, expected type='%s' but got='%s'",
             tostr_DNType(DN_RETURN_STATEMENT), tostr_DNType(stmt->type));
+
+        dc_action_on(dn_child_count(stmt) != expected_children[i], CLOVE_FAIL(),
+                     "expected %" PRIuMAX " children got=%" PRIuMAX,
+                     expected_children[i], dn_child_count(stmt));
+
+        if (expected_children[i])
+        {
+            DNode* value = dn_child(stmt, 0);
+            dc_action_on(
+                !dc_sv_str_eq(value->token->text, expected_children_values[i]),
+                CLOVE_FAIL(),
+                "Wrong text for statement's value token text, expected "
+                "text = '%s' but "
+                "got = '" DCPRIsv "' ",
+                expected_children_values[i], dc_sv_fmt(value->token->text));
+        }
     }
 
     dn_program_free(program);
