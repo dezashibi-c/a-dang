@@ -280,9 +280,15 @@ static ResultDNode parse_grouped_expression(Parser* p)
     });
 
     // Otherwise it's a function call
+    // It continues until it gets EOF or RPAREN
     dc_try_fail_temp(DCResultVoid, parse_call_params(p, dc_res_val2(call_node), true));
 
-    if (current_token_is_not(p, TOK_RPAREN)) dc_res_ret_ea(-1, token_err_fmt(p, TOK_RPAREN));
+    // In case it hasn't got RPAREN it's wrong (unclosed paren group)
+    if (current_token_is_not(p, TOK_RPAREN))
+    {
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call_node)));
+        dc_res_ret_ea(-1, token_err_fmt(p, TOK_RPAREN));
+    }
 
     return call_node;
 }
