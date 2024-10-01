@@ -50,8 +50,11 @@ static ResultDNode parse_statement(Parser* p);
 #define peek_prec(P) get_precedence((P)->peek_token->type)
 #define current_prec(P) get_precedence((P)->current_token->type)
 
-#define token_err_fmt(P, TYPE)                                                                                                 \
+#define next_token_err_fmt(P, TYPE)                                                                                            \
     "expected next token to be %s, got %s instead.", tostr_DTokenType(TYPE), tostr_DTokenType(P->peek_token->type)
+
+#define current_token_err_fmt(P, TYPE)                                                                                         \
+    "expected current token to be %s, got %s instead.", tostr_DTokenType(TYPE), tostr_DTokenType(P->current_token->type)
 
 #define no_prefix_fn_err_fmt(TYPE) "no prefix parse function for '%s' is declared.", tostr_DTokenType(TYPE)
 
@@ -80,7 +83,7 @@ static DCResultVoid move_if_peek_token_is(Parser* p, DTokenType type)
 
     if (peek_token_is(p, type)) return next_token(p);
 
-    dc_res_ret_ea(-2, token_err_fmt(p, type));
+    dc_res_ret_ea(-2, next_token_err_fmt(p, type));
 }
 
 static Precedence get_precedence(DTokenType type)
@@ -178,7 +181,7 @@ static DCResultVoid parse_function_params(Parser* p, DNode* parent_node)
             break;
     }
 
-    if (current_token_is_not(p, TOK_RPAREN)) dc_res_ret_ea(-1, token_err_fmt(p, TOK_RPAREN));
+    if (current_token_is_not(p, TOK_RPAREN)) dc_res_ret_ea(-1, current_token_err_fmt(p, TOK_RPAREN));
 
     dc_res_ret();
 }
@@ -281,13 +284,14 @@ static ResultDNode parse_grouped_expression(Parser* p)
 
     // Otherwise it's a function call
     // It continues until it gets EOF or RPAREN
-    dc_try_fail_temp(DCResultVoid, parse_call_params(p, dc_res_val2(call_node), true));
+    res = parse_call_params(p, dc_res_val2(call_node), true);
+    dc_res_ret_if_err2(res, dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call_node))));
 
     // In case it hasn't got RPAREN it's wrong (unclosed paren group)
     if (current_token_is_not(p, TOK_RPAREN))
     {
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call_node)));
-        dc_res_ret_ea(-1, token_err_fmt(p, TOK_RPAREN));
+        dc_res_ret_ea(-1, current_token_err_fmt(p, TOK_RPAREN));
     }
 
     return call_node;
