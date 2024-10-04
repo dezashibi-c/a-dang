@@ -95,6 +95,7 @@ void dn_string_init(DNode* dn);
 ResultDNode dn_new(DNType type, DToken* token, bool has_children);
 DCResultVoid dn_program_free(DNode* program);
 DCResultVoid dn_free(DNode* dn);
+DC_CLEANUP_FN_DECL(dn_cleanup);
 DCResultVoid dn_child_free(DCDynVal* child);
 
 #endif // DANG_AST_H

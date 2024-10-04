@@ -72,9 +72,79 @@ static DCResultVoid next_token(Parser* p)
     dc_res_ret();
 }
 
+static DCResultVoid next_token_if_not_eof(Parser* p)
+{
+    DC_RES_void();
+
+    if (current_token_is_not(p, TOK_EOF)) return next_token(p);
+
+    dc_res_ret();
+}
+
 static void add_error(Parser* p, DCError* err)
 {
     dc_da_push(&p->errors, (err->allocated ? dc_dva(string, err->message) : dc_dv(string, err->message)));
+}
+
+static DCResultBool is_current_token_end_of_statement(Parser* p)
+{
+    DC_RES_bool();
+
+    bool is_cur_tok_terminator = false;
+    for (DTokenType* dtt = p->terminators[p->current_loc]; *dtt != TOK_TYPE_MAX; ++dtt)
+    {
+        if (current_token_is(p, *dtt))
+        {
+            is_cur_tok_terminator = true;
+            break;
+        }
+    }
+
+    dc_res_ret_ok(is_cur_tok_terminator);
+}
+
+static bool is_peek_token_end_of_statement(Parser* p)
+{
+    bool is_cur_tok_terminator = false;
+    for (DTokenType* dtt = p->terminators[p->current_loc]; *dtt != TOK_TYPE_MAX; ++dtt)
+    {
+        if (peek_token_is(p, *dtt))
+        {
+            is_cur_tok_terminator = true;
+            break;
+        }
+    }
+
+    return is_cur_tok_terminator;
+}
+
+static DCResultVoid bypass_to_first_token_after_terminators(Parser* p)
+{
+    DC_RES_void();
+
+    while (true)
+    {
+        bool is_cur_tok_terminator = false;
+        for (DTokenType* dtt = p->terminators[p->current_loc]; *dtt != TOK_TYPE_MAX; ++dtt)
+        {
+            if (current_token_is(p, *dtt))
+            {
+                is_cur_tok_terminator = true;
+                break;
+            }
+        }
+
+        if (is_cur_tok_terminator)
+        {
+            dc_try_fail(next_token(p));
+
+            continue;
+        }
+
+        break;
+    }
+
+    dc_res_ret();
 }
 
 static DCResultVoid move_if_peek_token_is(Parser* p, DTokenType type)
@@ -441,36 +511,54 @@ static ResultDNode parse_infix_expression(Parser* p, DNode* left)
     dc_res_ret();
 }
 
+/**
+ * Let Statement: 'let' identifier expression? StatementTerminator
+ */
 static ResultDNode parse_let_statement(Parser* p)
 {
-    DC_TRY_DEF2(ResultDNode, dn_new(DN_LET_STATEMENT, p->current_token, true));
+    DC_RES2(ResultDNode);
 
-    DCResultVoid res = move_if_peek_token_is(p, TOK_IDENT);
-    dc_res_ret_if_err2(res, {
+    DToken* tok = p->current_token; // capturing current token 'let'
+
+    /* Parsing identifier for let statement */
+
+    // Check if the next token is an identifier or not
+    dc_res_try_or_fail_with3(DCResultVoid, res, move_if_peek_token_is(p, TOK_IDENT), {
         dc_res_err_dbg_log2(res, "Identifier needed");
 
-        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, bypass_to_first_token_after_terminators(p));
     });
 
-    ResultDNode temp_node = dn_new(DN_IDENTIFIER, p->current_token, false);
-    dc_res_ret_if_err2(temp_node, {
+    // Try to create a new identifier node
+    dc_res_try_or_fail_with3(ResultDNode, temp_node, dn_new(DN_IDENTIFIER, p->current_token, false), {
         dc_res_err_dbg_log2(temp_node, "could not parse name");
 
-        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, bypass_to_first_token_after_terminators(p));
     });
 
-    res = dn_child_push(dc_res_val(), dc_res_val2(temp_node));
-    dc_res_ret_if_err2(res, {
+    // Try to create a new let statement node
+    // If successful it will be saved in the main result variable
+    dc_res_try_or_fail_with(dn_new(DN_LET_STATEMENT, tok, true), {
+        dc_res_err_dbg_log("could not create let statement node");
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
+
+        dc_try_fail_temp(DCResultVoid, bypass_to_first_token_after_terminators(p));
+    });
+
+    // Try to push the identifier to the let statement as the first child
+    dc_res_try_or_fail_with2(res, dn_child_push(dc_res_val(), dc_res_val2(temp_node)), {
         dc_res_err_dbg_log2(res, "could not push the name to statement");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
+
+        dc_try_fail_temp(DCResultVoid, bypass_to_first_token_after_terminators(p));
     });
 
-    if (peek_token_is_end_of_stmt2(p))
+    // If the let statement doesn't have initial value just return.
+    if (is_peek_token_end_of_statement(p))
     {
-        res = next_token(p);
-        dc_res_ret_if_err2(res, {
+        dc_res_try_or_fail_with2(res, next_token(p), {
             dc_res_err_dbg_log2(res, "could not move to the next token");
 
             dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
@@ -479,39 +567,43 @@ static ResultDNode parse_let_statement(Parser* p)
         dc_res_ret();
     }
 
-    res = next_token(p);
-    dc_res_ret_if_err2(res, {
+    /* Parsing initial value */
+
+    // Move to the next token
+    dc_res_try_or_fail_with2(res, next_token(p), {
         dc_res_err_dbg_log2(res, "could not move to the next token");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
-    temp_node = parse_expression(p, PREC_LOWEST);
-    dc_res_ret_if_err2(temp_node, {
+    // Try to parse expression as initial value
+    dc_res_try_or_fail_with2(temp_node, parse_expression(p, PREC_LOWEST), {
         dc_res_err_dbg_log2(temp_node, "could not parse value");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
-    res = dn_child_push(dc_res_val(), dc_res_val2(temp_node));
-    dc_res_ret_if_err2(res, {
+    // Try to push the initial value expression
+    dc_res_try_or_fail_with2(res, dn_child_push(dc_res_val(), dc_res_val2(temp_node)), {
         dc_res_err_dbg_log2(res, "could not push the value to statement");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
     });
 
-    if (peek_token_is_end_of_stmt2(p))
+    // Based on the current location a proper terminator must be seen
+    if (is_peek_token_end_of_statement(p))
     {
-        res = next_token(p);
-        dc_res_ret_if_err2(res, {
+        dc_res_try_or_fail_with2(res, next_token(p), {
             dc_res_err_dbg_log2(res, "could not move to the next token");
 
             dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         });
+
+        dc_res_ret(); // Successful Result
     }
 
-    dc_res_ret();
+    dc_res_ret_e(-1, "end of statement needed");
 }
 
 static ResultDNode parse_return_statement(Parser* p)
@@ -672,6 +764,12 @@ static ResultDNode parse_expression_statement(Parser* p)
     dc_res_ret();
 }
 
+/**
+ * Parses an statement to its proper statement terminator
+ * ';' '\n' '}' ')', etc.
+ *
+ * They suppose to move to the next token after their terminator already
+ */
 static ResultDNode parse_statement(Parser* p)
 {
     switch (p->current_token->type)
@@ -708,6 +806,28 @@ DCResultVoid parser_init(Parser* p, Scanner* s)
     p->peek_token = NULL;
 
     dc_try(dc_da_init(&p->errors, NULL));
+
+    // Initialize parsing location
+    memset(p->terminators, 0, sizeof(p->terminators));
+
+    p->current_loc = LOC_BODY;
+
+    p->terminators[LOC_BODY][0] = TOK_SEMICOLON;
+    p->terminators[LOC_BODY][1] = TOK_NEWLINE;
+    p->terminators[LOC_BODY][2] = TOK_EOF;
+    p->terminators[LOC_BODY][3] = TOK_TYPE_MAX;
+
+    p->terminators[LOC_BLOCK][0] = TOK_SEMICOLON;
+    p->terminators[LOC_BLOCK][1] = TOK_NEWLINE;
+    p->terminators[LOC_BLOCK][2] = TOK_RBRACE;
+    p->terminators[LOC_BLOCK][3] = TOK_EOF;
+    p->terminators[LOC_BLOCK][4] = TOK_TYPE_MAX;
+
+    p->terminators[LOC_GROUP][0] = TOK_SEMICOLON;
+    p->terminators[LOC_GROUP][1] = TOK_NEWLINE;
+    p->terminators[LOC_GROUP][2] = TOK_RPAREN;
+    p->terminators[LOC_GROUP][3] = TOK_EOF;
+    p->terminators[LOC_GROUP][4] = TOK_TYPE_MAX;
 
     // Initialize function pointers
     memset(p->parse_prefix_fns, 0, sizeof(p->parse_prefix_fns));
@@ -750,40 +870,56 @@ DCResultVoid parser_free(Parser* p)
     dc_res_ret();
 }
 
+/**
+ * Program: one or more statement
+ *
+ * On each loop it tries to parse one statement and save it if it's a success otherwise
+ * It already has logged its corresponding error(s)
+ *
+ * On each iteration the cursor must be at the very first token after the current statement
+ */
 ResultDNode parser_parse_program(Parser* p)
 {
     DC_TRY_DEF2(ResultDNode, dn_new(DN_PROGRAM, NULL, true));
 
     DCResultVoid res;
 
-    while (p->current_token->type != TOK_EOF)
+    while (true)
     {
-        ResultDNode stmt = parse_statement(p);
-        if (dc_res_is_err2(stmt))
+        /* Bypassing all the meaningless newlines and semicolons */
+        while (current_token_is_nl_or_sc(p))
         {
-            dc_res_err_dbg_log2(stmt, "could not parse statement");
+            res = next_token_if_not_eof(p);
+            if (dc_res_is_err2(res))
+            {
+                dc_res_err_dbg_log2(res, "could not move to the next token");
 
-            add_error(p, &dc_res_err2(stmt));
+                add_error(p, &dc_res_err2(res));
+
+                break;
+            }
         }
-        else
+
+        /* Break out of the loop if the cursor is at the end */
+        if (current_token_is(p, TOK_EOF)) break;
+
+        /* Do actual statement parsing */
+        ResultDNode stmt = parse_statement(p);
+
+        // revert back to the body statement
+        p->current_loc = LOC_BODY;
+
+        if (dc_res_is_ok2(stmt))
         {
             res = dn_child_push(dc_res_val(), dc_res_val2(stmt));
             if (dc_res_is_err2(res))
             {
-                dc_res_err_dbg_log2(res, "could not push statement to program");
+                dc_res_err_dbg_log2(res, "could not push the statement to program");
 
                 add_error(p, &dc_res_err2(res));
 
                 dn_free(dc_res_val2(stmt));
             }
-        }
-
-        res = next_token(p);
-        if (dc_res_is_err2(res))
-        {
-            dc_res_err_dbg_log2(res, "could not move to the next token");
-
-            add_error(p, &dc_res_err2(res));
         }
     }
 

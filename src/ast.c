@@ -249,6 +249,11 @@ DCResultVoid dn_free(DNode* dn)
     dc_res_ret();
 }
 
+DC_CLEANUP_FN_DECL(dn_cleanup)
+{
+    return dn_free((DNode*)_value);
+}
+
 DCResultVoid dn_child_free(DCDynVal* child)
 {
     DC_RES_void();

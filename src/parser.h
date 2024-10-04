@@ -36,6 +36,15 @@ typedef enum
     PREC_CALL
 } Precedence;
 
+typedef enum
+{
+    LOC_BODY,
+    LOC_BLOCK,
+    LOC_GROUP,
+
+    LOC_MAX,
+} ParserStatementLoc;
+
 typedef struct Parser
 {
     Scanner* scanner;
@@ -44,6 +53,9 @@ typedef struct Parser
     DToken* peek_token;
 
     DCDynArr errors;
+
+    DTokenType terminators[LOC_MAX][5];
+    ParserStatementLoc current_loc;
 
     ParsePrefixFn parse_prefix_fns[DN__MAX];
     ParseInfixFn parse_infix_fns[DN__MAX];

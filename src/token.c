@@ -49,6 +49,9 @@ string tostr_DTokenType(DTokenType dtt)
         dc_str_case(TOK_IF);
         dc_str_case(TOK_ELSE);
         dc_str_case(TOK_RET);
+
+        default:
+            break;
     };
 
     return NULL;

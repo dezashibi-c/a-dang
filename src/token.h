@@ -55,8 +55,9 @@ typedef enum
     TOK_FALSE,
     TOK_IF,
     TOK_ELSE,
-    TOK_RET
+    TOK_RET,
 
+    TOK_TYPE_MAX,
 } DTokenType;
 
 typedef struct

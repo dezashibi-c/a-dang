@@ -19,8 +19,7 @@
 #define DC_MACROS_H
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
-#error                                                                         \
-    "You cannot use this header (macros.h) directly, please consider including dcommon.h"
+#error "You cannot use this header (macros.h) directly, please consider including dcommon.h"
 #endif
 
 // ***************************************************************************************
@@ -200,34 +199,32 @@
 #endif
 
 
-#define __BASE_FILE                                                            \
-    (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#define __BASE_FILE (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 
 /**
  * General macro that returns current __FILE__ filename only
  */
-#define __FILENAME__                                                           \
-    (strrchr(__BASE_FILE, '/') ? strrchr(__BASE_FILE, '/') + 1 : __BASE_FILE)
+#define __FILENAME__ (strrchr(__BASE_FILE, '/') ? strrchr(__BASE_FILE, '/') + 1 : __BASE_FILE)
 
 /**
  * Creates temporary string of given format and data and runs it under the
  * system and keeps the returned value in the OUT_VAL
  */
-#define dc_system(OUT_VAL, ...)                                                \
-    do                                                                         \
-    {                                                                          \
-        string __cmd_string;                                                   \
-        dc_sprintf(&__cmd_string, __VA_ARGS__);                                \
-        OUT_VAL = system(__cmd_string);                                        \
-        free(__cmd_string);                                                    \
+#define dc_system(OUT_VAL, ...)                                                                                                \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        string __cmd_string;                                                                                                   \
+        dc_sprintf(&__cmd_string, __VA_ARGS__);                                                                                \
+        OUT_VAL = system(__cmd_string);                                                                                        \
+        free(__cmd_string);                                                                                                    \
     } while (0)
 
 /**
  * Simple macro to create a switch case for an enum and returning the string
  * literal of it
  */
-#define dc_str_case(ITEM)                                                      \
-    case ITEM:                                                                 \
+#define dc_str_case(ITEM)                                                                                                      \
+    case ITEM:                                                                                                                 \
         return #ITEM
 
 /**
@@ -239,37 +236,37 @@
 // * INTERNAL LOG MACROS MACROS
 // ***************************************************************************************
 
-#define __dc_log(CAT, ...)                                                     \
-    do                                                                         \
-    {                                                                          \
-        fileptr __dc_stream = (dc_error_logs ? dc_error_logs : stderr);        \
-        fprintf(__dc_stream, "[%s] (", CAT);                                   \
-        dc_now(__dc_stream);                                                   \
-        fprintf(__dc_stream, ") \"%s:%d\" ", __FILENAME__, __LINE__);          \
-        fprintf(__dc_stream, __VA_ARGS__);                                     \
-        fprintf(__dc_stream, "\n");                                            \
+#define __dc_log(CAT, ...)                                                                                                     \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        fileptr __dc_stream = (dc_error_logs ? dc_error_logs : stderr);                                                        \
+        fprintf(__dc_stream, "[%s] (", CAT);                                                                                   \
+        dc_now(__dc_stream);                                                                                                   \
+        fprintf(__dc_stream, ") \"%s:%d\" ", __FILENAME__, __LINE__);                                                          \
+        fprintf(__dc_stream, __VA_ARGS__);                                                                                     \
+        fprintf(__dc_stream, "\n");                                                                                            \
     } while (0)
 
-#define __dc_log_if(CAT, CONDITION, ...)                                       \
-    do                                                                         \
-    {                                                                          \
-        if (CONDITION)                                                         \
-        {                                                                      \
-            __dc_log(CAT, __VA_ARGS__);                                        \
-        }                                                                      \
+#define __dc_log_if(CAT, CONDITION, ...)                                                                                       \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        if (CONDITION)                                                                                                         \
+        {                                                                                                                      \
+            __dc_log(CAT, __VA_ARGS__);                                                                                        \
+        }                                                                                                                      \
     } while (0)
 
-#define __dc_action_on(CAT, CONDITION, FAILURE_ACTION, ...)                    \
-    do                                                                         \
-    {                                                                          \
-        if (CONDITION)                                                         \
-        {                                                                      \
-            __dc_log(CAT, __VA_ARGS__);                                        \
-            do                                                                 \
-            {                                                                  \
-                FAILURE_ACTION;                                                \
-            } while (0);                                                       \
-        }                                                                      \
+#define __dc_action_on(CAT, CONDITION, FAILURE_ACTION, ...)                                                                    \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        if (CONDITION)                                                                                                         \
+        {                                                                                                                      \
+            __dc_log(CAT, __VA_ARGS__);                                                                                        \
+            do                                                                                                                 \
+            {                                                                                                                  \
+                FAILURE_ACTION;                                                                                                \
+            } while (0);                                                                                                       \
+        }                                                                                                                      \
     } while (0)
 
 
@@ -281,16 +278,16 @@
  * Defines the main result variable (__dc_res) as DCResult and initiates it as
  * DC_RES_OK
  */
-#define DC_RES()                                                               \
-    DCResult __dc_res;                                                         \
+#define DC_RES()                                                                                                               \
+    DCResult __dc_res;                                                                                                         \
     __dc_res.status = DC_RES_OK
 
 /**
  * Defines the main result variable (__dc_res) as the given result type and
  * initiates it as DC_RES_OK
  */
-#define DC_RES2(DC_RESULT_TYPE)                                                \
-    DC_RESULT_TYPE __dc_res;                                                   \
+#define DC_RES2(DC_RESULT_TYPE)                                                                                                \
+    DC_RESULT_TYPE __dc_res;                                                                                                   \
     __dc_res.status = DC_RES_OK
 
 /**
@@ -438,11 +435,11 @@
  * NOTE: MSG must be literal string not an allocated string variable (see
  * dc_res_ea)
  */
-#define dc_res_e(NUM, MSG)                                                     \
-    do                                                                         \
-    {                                                                          \
-        __dc_res.status = DC_RES_ERR;                                          \
-        __dc_res.data.e = (DCError){NUM, MSG, 0};                              \
+#define dc_res_e(NUM, MSG)                                                                                                     \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        __dc_res.status = DC_RES_ERR;                                                                                          \
+        __dc_res.data.e = (DCError){NUM, MSG, 0};                                                                              \
     } while (0)
 
 /**
@@ -452,13 +449,13 @@
  *
  * NOTE: Allocates memory
  */
-#define dc_res_ea(NUM, ...)                                                    \
-    do                                                                         \
-    {                                                                          \
-        string __err;                                                          \
-        dc_sprintf(&__err, __VA_ARGS__);                                       \
-        __dc_res.status = DC_RES_ERR;                                          \
-        __dc_res.data.e = (DCError){NUM, __err, 1};                            \
+#define dc_res_ea(NUM, ...)                                                                                                    \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        string __err;                                                                                                          \
+        dc_sprintf(&__err, __VA_ARGS__);                                                                                       \
+        __dc_res.status = DC_RES_ERR;                                                                                          \
+        __dc_res.data.e = (DCError){NUM, __err, 1};                                                                            \
     } while (0)
 
 /**
@@ -469,14 +466,14 @@
  *
  * NOTE: Does Nothing on successful results
  */
-#define dc_res_err_cpy2(RES1, RES2)                                            \
-    do                                                                         \
-    {                                                                          \
-        if ((RES2).status == DC_RES_ERR)                                       \
-        {                                                                      \
-            (RES1).status = DC_RES_ERR;                                        \
-            (RES1).data.e = (RES2).data.e;                                     \
-        }                                                                      \
+#define dc_res_err_cpy2(RES1, RES2)                                                                                            \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        if ((RES2).status == DC_RES_ERR)                                                                                       \
+        {                                                                                                                      \
+            (RES1).status = DC_RES_ERR;                                                                                        \
+            (RES1).data.e = (RES2).data.e;                                                                                     \
+        }                                                                                                                      \
     } while (0)
 
 /**
@@ -493,11 +490,11 @@
  * Sets the main result variable (__dc_res) status to DC_RES_OK and also
  * initiates the value with the given VALUE
  */
-#define dc_res_ok(VALUE)                                                       \
-    do                                                                         \
-    {                                                                          \
-        __dc_res.status = DC_RES_OK;                                           \
-        __dc_res.data.v = VALUE;                                               \
+#define dc_res_ok(VALUE)                                                                                                       \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        __dc_res.status = DC_RES_OK;                                                                                           \
+        __dc_res.data.v = VALUE;                                                                                               \
     } while (0)
 
 /**
@@ -527,11 +524,11 @@
  * NOTE: MSG must be literal string not an allocated string variable
  * (see dc_res_ret_ea)
  */
-#define dc_res_ret_e(NUM, MSG)                                                 \
-    do                                                                         \
-    {                                                                          \
-        dc_res_e(NUM, MSG);                                                    \
-        dc_res_ret();                                                          \
+#define dc_res_ret_e(NUM, MSG)                                                                                                 \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_res_e(NUM, MSG);                                                                                                    \
+        dc_res_ret();                                                                                                          \
     } while (0)
 
 /**
@@ -539,22 +536,22 @@
  *
  * NOTE: Allocates memory (see dc_res_ret_e)
  */
-#define dc_res_ret_ea(NUM, ...)                                                \
-    do                                                                         \
-    {                                                                          \
-        dc_res_ea(NUM, __VA_ARGS__);                                           \
-        dc_res_ret();                                                          \
+#define dc_res_ret_ea(NUM, ...)                                                                                                \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_res_ea(NUM, __VA_ARGS__);                                                                                           \
+        dc_res_ret();                                                                                                          \
     } while (0)
 
 /**
  * Sets the main result variable (__dc_res) to success and returns it right
  * away.
  */
-#define dc_res_ret_ok(VALUE)                                                   \
-    do                                                                         \
-    {                                                                          \
-        dc_res_ok(VALUE);                                                      \
-        dc_res_ret();                                                          \
+#define dc_res_ret_ok(VALUE)                                                                                                   \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_res_ok(VALUE);                                                                                                      \
+        dc_res_ret();                                                                                                          \
     } while (0)
 
 /**
@@ -565,11 +562,11 @@
  *
  * NOTE: The VALUE must not be allocated (see dc_res_ret_ok_dva)
  */
-#define dc_res_ret_ok_dv(TYPE, VALUE)                                          \
-    do                                                                         \
-    {                                                                          \
-        dc_res_ok_dv(TYPE, VALUE);                                             \
-        dc_res_ret();                                                          \
+#define dc_res_ret_ok_dv(TYPE, VALUE)                                                                                          \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_res_ok_dv(TYPE, VALUE);                                                                                             \
+        dc_res_ret();                                                                                                          \
     } while (0)
 
 /**
@@ -580,35 +577,57 @@
  *
  * NOTE: The VALUE must be allocated (see dc_res_ret_ok_dv)
  */
-#define dc_res_ret_ok_dva(TYPE, VALUE)                                         \
-    do                                                                         \
-    {                                                                          \
-        dc_res_ok_dva(TYPE, VALUE);                                            \
-        dc_res_ret();                                                          \
+#define dc_res_ret_ok_dva(TYPE, VALUE)                                                                                         \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_res_ok_dva(TYPE, VALUE);                                                                                            \
+        dc_res_ret();                                                                                                          \
     } while (0)
 
 /**
  * Renders an if statements that checks if main result variable (__dc_res)
  * status is error and if so returns it
  */
-#define dc_res_fail_if_err()                                                   \
+#define dc_res_fail_if_err()                                                                                                   \
     if (__dc_res.status == DC_RES_ERR) return __dc_res
+
+/**
+ * Expands to a new result variable declaration initialized with the CALL
+ * and returning error with failure actions in case of errors
+ */
+#define dc_res_try_or_fail_with3(RES_TYPE, RES, CALL, FAILURE_ACTIONS)                                                         \
+    RES_TYPE RES = CALL;                                                                                                       \
+    dc_res_ret_if_err2(RES, FAILURE_ACTIONS)
+
+/**
+ * Expands to assigning an existing result variable with the CALL
+ * and returning error with failure actions in case of errors
+ */
+#define dc_res_try_or_fail_with2(RES, CALL, FAILURE_ACTIONS)                                                                   \
+    RES = CALL;                                                                                                                \
+    dc_res_ret_if_err2(RES, FAILURE_ACTIONS)
+
+/**
+ * Expands to assigning main result variable (__dc_res) to the CALL
+ * and returning error with failure actions in case of errors
+ */
+#define dc_res_try_or_fail_with(CALL, FAILURE_ACTIONS) dc_res_try_or_fail_with2(__dc_res, CALL, FAILURE_ACTIONS)
 
 /**
  * Checks if the main result variable (__dc_result) is error does
  * PRE_RETURN_ACTIONS and then return __dc_res
  */
-#define dc_res_ret_if_err(PRE_RETURN_ACTIONS)                                  \
-    do                                                                         \
-    {                                                                          \
-        if (dc_res_is_err())                                                   \
-        {                                                                      \
-            do                                                                 \
-            {                                                                  \
-                PRE_RETURN_ACTIONS;                                            \
-            } while (0);                                                       \
-            return __dc_res;                                                   \
-        }                                                                      \
+#define dc_res_ret_if_err(PRE_RETURN_ACTIONS)                                                                                  \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        if (dc_res_is_err())                                                                                                   \
+        {                                                                                                                      \
+            do                                                                                                                 \
+            {                                                                                                                  \
+                PRE_RETURN_ACTIONS;                                                                                            \
+            } while (0);                                                                                                       \
+            return __dc_res;                                                                                                   \
+        }                                                                                                                      \
     } while (0)
 
 /**
@@ -620,43 +639,43 @@
  * First it assigns the main result variable (__dc_res) to the provided function
  * call then it checks if it has error and in that case will return __dc_res
  */
-#define dc_try_fail(CALL)                                                      \
-    do                                                                         \
-    {                                                                          \
-        __dc_res = CALL;                                                       \
-        dc_res_fail_if_err();                                                  \
+#define dc_try_fail(CALL)                                                                                                      \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        __dc_res = CALL;                                                                                                       \
+        dc_res_fail_if_err();                                                                                                  \
     } while (0)
 
 /**
  * Checks provided result variable and if its status is error populates the main
  * result variable (__dc_res) error and returns it
  */
-#define dc_res_fail_if_err2(RES)                                               \
-    do                                                                         \
-    {                                                                          \
-        if ((RES).status == DC_RES_ERR)                                        \
-        {                                                                      \
-            dc_res_err_cpy(RES);                                               \
-            dc_res_ret();                                                      \
-        }                                                                      \
+#define dc_res_fail_if_err2(RES)                                                                                               \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        if ((RES).status == DC_RES_ERR)                                                                                        \
+        {                                                                                                                      \
+            dc_res_err_cpy(RES);                                                                                               \
+            dc_res_ret();                                                                                                      \
+        }                                                                                                                      \
     } while (0)
 
 /**
  * Checks if the given result variable is error copies the error data and does
  * PRE_RETURN_ACTIONS and then return __dc_res
  */
-#define dc_res_ret_if_err2(RES, PRE_RETURN_ACTIONS)                            \
-    do                                                                         \
-    {                                                                          \
-        if (dc_res_is_err2(RES))                                               \
-        {                                                                      \
-            do                                                                 \
-            {                                                                  \
-                PRE_RETURN_ACTIONS;                                            \
-            } while (0);                                                       \
-            dc_res_err_cpy(RES);                                               \
-            return __dc_res;                                                   \
-        }                                                                      \
+#define dc_res_ret_if_err2(RES, PRE_RETURN_ACTIONS)                                                                            \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        if (dc_res_is_err2(RES))                                                                                               \
+        {                                                                                                                      \
+            do                                                                                                                 \
+            {                                                                                                                  \
+                PRE_RETURN_ACTIONS;                                                                                            \
+            } while (0);                                                                                                       \
+            dc_res_err_cpy(RES);                                                                                               \
+            return __dc_res;                                                                                                   \
+        }                                                                                                                      \
     } while (0)
 
 /**
@@ -668,11 +687,11 @@
  * @brief Creates temporary result type assign it with the function call (CALL)
  * and return of the temporary result is an error
  */
-#define dc_try_fail_temp(RES_TYPE, CALL)                                       \
-    do                                                                         \
-    {                                                                          \
-        RES_TYPE __temp_res = CALL;                                            \
-        dc_res_fail_if_err2(__temp_res);                                       \
+#define dc_try_fail_temp(RES_TYPE, CALL)                                                                                       \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        RES_TYPE __temp_res = CALL;                                                                                            \
+        dc_res_fail_if_err2(__temp_res);                                                                                       \
     } while (0)
 
 /**
@@ -684,8 +703,8 @@
  * @brief First initialize the main result variable with DCResult then try
  * calling the CALL and fail if it has error
  */
-#define DC_TRY_DEF(CALL)                                                       \
-    DC_RES();                                                                  \
+#define DC_TRY_DEF(CALL)                                                                                                       \
+    DC_RES();                                                                                                                  \
     dc_try_fail(CALL)
 
 /**
@@ -697,8 +716,8 @@
  * @brief First initialize the main result variable with given result type then
  * try calling the CALL and fail if it has error
  */
-#define DC_TRY_DEF2(DC_RESULT_TYPE, CALL)                                      \
-    DC_RES2(DC_RESULT_TYPE);                                                   \
+#define DC_TRY_DEF2(DC_RESULT_TYPE, CALL)                                                                                      \
+    DC_RES2(DC_RESULT_TYPE);                                                                                                   \
     dc_try_fail(CALL)
 
 /**
@@ -802,9 +821,7 @@
  *
  * NOTE: The result must be error
  */
-#define dc_res_err_dbg_log2(RES, PRE_MSG)                                      \
-    dc_dbg_log(PRE_MSG ": (code %d) %s", dc_res_err_code2(RES),                \
-               dc_res_err_msg2(RES))
+#define dc_res_err_dbg_log2(RES, PRE_MSG) dc_dbg_log(PRE_MSG ": (code %d) %s", dc_res_err_code2(RES), dc_res_err_msg2(RES))
 
 /**
  * Debug logs main result variable (__dc_res) with provided string literal
@@ -820,9 +837,7 @@
  *
  * NOTE: The result must be error
  */
-#define dc_res_err_log2(RES, PRE_MSG)                                          \
-    dc_log(PRE_MSG ": (code %d) %s", dc_res_err_code2(RES),                    \
-           dc_res_err_msg2(RES))
+#define dc_res_err_log2(RES, PRE_MSG) dc_log(PRE_MSG ": (code %d) %s", dc_res_err_code2(RES), dc_res_err_msg2(RES))
 
 /**
  * Logs main result variable (__dc_res) with provided string literal
@@ -854,8 +869,7 @@
  * logs to `stderr` or global `dc_error_logs` if not `NULL` with `["LOG"]`
  * prefix
  */
-#define dc_action_on(CONDITION, FAILURE_ACTION, ...)                           \
-    __dc_action_on("LOG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
+#define dc_action_on(CONDITION, FAILURE_ACTION, ...) __dc_action_on("LOG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
 
 
 #ifdef DC_DEBUG
@@ -870,8 +884,7 @@
  * If `DC_DEBUG` is defined logs to `stderr` or global `dc_error_logs` if not
  * `NULL` with `["LOG"]` prefix if the CONDITION is met
  */
-#define dc_dbg_log_if(CONDITION, ...)                                          \
-    __dc_log_if("DEBUG", CONDITION, __VA_ARGS__)
+#define dc_dbg_log_if(CONDITION, ...) __dc_log_if("DEBUG", CONDITION, __VA_ARGS__)
 
 /**
  * If `DC_DEBUG` is defined checks whether the CONDITION is true and performs
@@ -881,8 +894,7 @@
  * NOTE: It doesn't do anything when `DC_DEBUG` is not defined, not that it
  * won't just output anything
  */
-#define dc_dbg_action_on(CONDITION, FAILURE_ACTION, ...)                       \
-    __dc_action_on("DEBUG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
+#define dc_dbg_action_on(CONDITION, FAILURE_ACTION, ...) __dc_action_on("DEBUG", CONDITION, FAILURE_ACTION, __VA_ARGS__)
 
 #else
 
@@ -918,10 +930,10 @@
  * Creates a literal array of the given type that is terminated by the specific
  * stopper for that type
  */
-#define dc_arr_lit(TYPE, ...)                                                  \
-    (TYPE[])                                                                   \
-    {                                                                          \
-        __VA_ARGS__, dc_stopper(TYPE)                                          \
+#define dc_arr_lit(TYPE, ...)                                                                                                  \
+    (TYPE[])                                                                                                                   \
+    {                                                                                                                          \
+        __VA_ARGS__, dc_stopper(TYPE)                                                                                          \
     }
 
 /**
@@ -951,8 +963,7 @@
  * Iterator in a stopper terminated array provided with pointer to the current
  * element in each iteration as `_it`
  */
-#define dc_foreach(ARR, TYPE)                                                  \
-    for (TYPE* _it = ARR; !dc_is_arr_terminator(TYPE, *_it); ++_it)
+#define dc_foreach(ARR, TYPE) for (TYPE* _it = ARR; !dc_is_arr_terminator(TYPE, *_it); ++_it)
 
 /**
  * Iterator that perform given `FN` on each element in a stopper terminated
@@ -966,9 +977,7 @@
  *
  * @example dc_foreach_lit(u8, 1, 2, 3, 4) printf("%d\n", *_it);
  */
-#define dc_foreach_lit(TYPE, ...)                                              \
-    for (TYPE* _it = dc_arr_lit(TYPE, __VA_ARGS__);                            \
-         !dc_is_arr_terminator(TYPE, *_it); ++_it)
+#define dc_foreach_lit(TYPE, ...) for (TYPE* _it = dc_arr_lit(TYPE, __VA_ARGS__); !dc_is_arr_terminator(TYPE, *_it); ++_it)
 
 /**
  * Iterator that performs given `FN` on each provided element
@@ -987,10 +996,10 @@
  *
  * NOTE: You need to include `*` in the type
  */
-#define dc_parr_lit(TYPE, ...)                                                 \
-    (TYPE[])                                                                   \
-    {                                                                          \
-        __VA_ARGS__, DC_STOPPER_voidptr                                        \
+#define dc_parr_lit(TYPE, ...)                                                                                                 \
+    (TYPE[])                                                                                                                   \
+    {                                                                                                                          \
+        __VA_ARGS__, DC_STOPPER_voidptr                                                                                        \
     }
 
 /**
@@ -1008,8 +1017,7 @@
  *
  * NOTE: You don't need to include `*` in the type
  */
-#define dc_pforeach(ARR, TYPE)                                                 \
-    for (TYPE** _it = ARR; !DC_IS_ARR_TERMINATOR_voidptr(*_it); ++_it)
+#define dc_pforeach(ARR, TYPE) for (TYPE** _it = ARR; !DC_IS_ARR_TERMINATOR_voidptr(*_it); ++_it)
 
 /**
  * Iterates over the given pointer array of `TYPE` and pass each
@@ -1021,17 +1029,14 @@
  * Iterates over the given pointers of `TYPE` and provide pointer to the current
  * element as `_it`
  */
-#define dc_pforeach_lit(TYPE, ...)                                             \
-    for (TYPE* _it = dc_parr_lit(TYPE, __VA_ARGS__);                           \
-         !DC_IS_ARR_TERMINATOR_voidptr(*_it); ++_it)
+#define dc_pforeach_lit(TYPE, ...) for (TYPE* _it = dc_parr_lit(TYPE, __VA_ARGS__); !DC_IS_ARR_TERMINATOR_voidptr(*_it); ++_it)
 
 /**
  * Iterates over the given pointers of `TYPE` and pass them to `FN`
  *
  * @example dc_poneach_lit(MyStruct, print_my_struct, &m1, &m2, &m3);
  */
-#define dc_poneach_lit(TYPE, FN, ...)                                          \
-    dc_pforeach_lit(TYPE*, __VA_ARGS__) FN(*_it)
+#define dc_poneach_lit(TYPE, FN, ...) dc_pforeach_lit(TYPE*, __VA_ARGS__) FN(*_it)
 
 // ***************************************************************************************
 // * STRUCT ARRAY MACROS
@@ -1042,10 +1047,10 @@
  *
  * NOTE: The array is not terminated with stoppers
  */
-#define dc_sarr_lit(TYPE, ...)                                                 \
-    (TYPE[])                                                                   \
-    {                                                                          \
-        __VA_ARGS__                                                            \
+#define dc_sarr_lit(TYPE, ...)                                                                                                 \
+    (TYPE[])                                                                                                                   \
+    {                                                                                                                          \
+        __VA_ARGS__                                                                                                            \
     }
 
 /**
@@ -1063,8 +1068,7 @@
  *
  * NOTE: You can use `_it` in the condition as well
  */
-#define dc_sforeach(ARR, TYPE, TERMINATION_CONDITION)                          \
-    for (TYPE* _it = ARR; TERMINATION_CONDITION; ++_it)
+#define dc_sforeach(ARR, TYPE, TERMINATION_CONDITION) for (TYPE* _it = ARR; TERMINATION_CONDITION; ++_it)
 
 /**
  * Iterates over an array of structs and pass pointer to each element to `FN`
@@ -1075,8 +1079,7 @@
  *
  * NOTE: You can use `_it` in the condition as well
  */
-#define dc_soneach(ARR, TYPE, TERMINATION_CONDITION, FN)                       \
-    dc_sforeach(ARR, TYPE, TERMINATION_CONDITION) FN(_it)
+#define dc_soneach(ARR, TYPE, TERMINATION_CONDITION, FN) dc_sforeach(ARR, TYPE, TERMINATION_CONDITION) FN(_it)
 
 /**
  * Iterates over given struct items of same TYPE and stops when the
@@ -1086,9 +1089,8 @@
  *
  * NOTE: You can use `_it` in the condition as well
  */
-#define dc_sforeach_lit(TYPE, TERMINATION_CONDITION, ...)                      \
-    for (TYPE* _it = dc_sarr_lit(TYPE, __VA_ARGS__); TERMINATION_CONDITION;    \
-         ++_it)
+#define dc_sforeach_lit(TYPE, TERMINATION_CONDITION, ...)                                                                      \
+    for (TYPE* _it = dc_sarr_lit(TYPE, __VA_ARGS__); TERMINATION_CONDITION; ++_it)
 
 /**
  * Iterates over given struct items of same TYPE and pass pointer to each
@@ -1100,8 +1102,7 @@
  *
  * NOTE: You can use `_it` in the condition as well
  */
-#define dc_soneach_lit(TYPE, TERMINATION_CONDITION, FN, ...)                   \
-    dc_sforeach_lit(TYPE, TERMINATION_CONDITION, __VA_ARGS__) FN(_it)
+#define dc_soneach_lit(TYPE, TERMINATION_CONDITION, FN, ...) dc_sforeach_lit(TYPE, TERMINATION_CONDITION, __VA_ARGS__) FN(_it)
 
 // ***************************************************************************************
 // * DYNAMIC ARRAY MACROS
@@ -1145,10 +1146,10 @@
  *
  * NOTE: The value must not be an allocated value
  */
-#define dc_dv(TYPE, VALUE)                                                     \
-    (DCDynVal)                                                                 \
-    {                                                                          \
-        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE, .allocated = false    \
+#define dc_dv(TYPE, VALUE)                                                                                                     \
+    (DCDynVal)                                                                                                                 \
+    {                                                                                                                          \
+        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE, .allocated = false                                                    \
     }
 
 /**
@@ -1157,18 +1158,17 @@
  *
  * NOTE: The value must be an allocated value
  */
-#define dc_dva(TYPE, VALUE)                                                    \
-    (DCDynVal)                                                                 \
-    {                                                                          \
-        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE, .allocated = true     \
+#define dc_dva(TYPE, VALUE)                                                                                                    \
+    (DCDynVal)                                                                                                                 \
+    {                                                                                                                          \
+        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE, .allocated = true                                                     \
     }
 
 /**
  * Defines new variable of NAME with given type, value and allocation status
  */
-#define DC_DV_DEF(NAME, TYPE, VALUE, ALLOC)                                    \
-    DCDynVal NAME = {                                                          \
-        .type = dc_dvt(TYPE), .value.TYPE##_val = VALUE, .allocated = ALLOC}
+#define DC_DV_DEF(NAME, TYPE, VALUE, ALLOC)                                                                                    \
+    DCDynVal NAME = {.type = dc_dvt(TYPE), .value.TYPE##_val = VALUE, .allocated = ALLOC}
 
 /**
  * Expands to setting type and value of an existing dynamic value variable and
@@ -1176,12 +1176,12 @@
  *
  * NOTE: The VALUE must not be allocated
  */
-#define dc_dv_set(NAME, TYPE, VALUE)                                           \
-    do                                                                         \
-    {                                                                          \
-        (NAME).type = dc_dvt(TYPE);                                            \
-        (NAME).allocated = false;                                              \
-        (NAME).value.TYPE##_val = VALUE;                                       \
+#define dc_dv_set(NAME, TYPE, VALUE)                                                                                           \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        (NAME).type = dc_dvt(TYPE);                                                                                            \
+        (NAME).allocated = false;                                                                                              \
+        (NAME).value.TYPE##_val = VALUE;                                                                                       \
     } while (0)
 
 /**
@@ -1195,11 +1195,11 @@
  *
  * NOTE: The VALUE must be allocated
  */
-#define dc_dv_seta(NAME, TYPE, VALUE)                                          \
-    do                                                                         \
-    {                                                                          \
-        dc_dv_set(NAME, TYPE, VALUE);                                          \
-        dc_dv_mark_alloc(NAME);                                                \
+#define dc_dv_seta(NAME, TYPE, VALUE)                                                                                          \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_dv_set(NAME, TYPE, VALUE);                                                                                          \
+        dc_dv_mark_alloc(NAME);                                                                                                \
     } while (0)
 
 /**
@@ -1247,8 +1247,7 @@
  *
  * NOTE: There is no boundary check in this macro, you have to do it beforehand
  */
-#define dc_da_is_not(DARR, INDEX, TYPE)                                        \
-    dc_dv_is_not((DARR).elements[INDEX], TYPE)
+#define dc_da_is_not(DARR, INDEX, TYPE) dc_dv_is_not((DARR).elements[INDEX], TYPE)
 
 /**
  * Expands to a for loop for the given dynamic array, index can be accessed by
@@ -1262,12 +1261,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_da_init_with_values(DARRPTR, FREE_FUNC, ...)                        \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        __dc_da_init_with_values(DARRPTR, dc_count(__initial_values),          \
-                                 FREE_FUNC, __initial_values);                 \
+#define dc_da_init_with_values(DARRPTR, FREE_FUNC, ...)                                                                        \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        __dc_da_init_with_values(DARRPTR, dc_count(__initial_values), FREE_FUNC, __initial_values);                            \
     } while (0)
 
 /**
@@ -1276,12 +1274,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_try_da_init_with_values(RES, DARRPTR, FREE_FUNC, ...)               \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        RES = __dc_da_init_with_values(DARRPTR, dc_count(__initial_values),    \
-                                       FREE_FUNC, __initial_values);           \
+#define dc_try_da_init_with_values(RES, DARRPTR, FREE_FUNC, ...)                                                               \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        RES = __dc_da_init_with_values(DARRPTR, dc_count(__initial_values), FREE_FUNC, __initial_values);                      \
     } while (0)
 
 /**
@@ -1291,13 +1288,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_try_fail_da_init_with_values(DARRPTR, FREE_FUNC, ...)               \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        dc_try_fail(__dc_da_init_with_values(DARRPTR,                          \
-                                             dc_count(__initial_values),       \
-                                             FREE_FUNC, __initial_values));    \
+#define dc_try_fail_da_init_with_values(DARRPTR, FREE_FUNC, ...)                                                               \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        dc_try_fail(__dc_da_init_with_values(DARRPTR, dc_count(__initial_values), FREE_FUNC, __initial_values));               \
     } while (0)
 
 /**
@@ -1307,14 +1302,12 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_try_fail_temp_da_init_with_values(DARRPTR, FREE_FUNC, ...)          \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        dc_try_fail_temp(                                                      \
-            DCResultVoid,                                                      \
-            __dc_da_init_with_values(DARRPTR, dc_count(__initial_values),      \
-                                     FREE_FUNC, __initial_values));            \
+#define dc_try_fail_temp_da_init_with_values(DARRPTR, FREE_FUNC, ...)                                                          \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        dc_try_fail_temp(DCResultVoid,                                                                                         \
+                         __dc_da_init_with_values(DARRPTR, dc_count(__initial_values), FREE_FUNC, __initial_values));          \
     } while (0)
 
 /**
@@ -1322,12 +1315,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_da_append_values(DARRPTR, ...)                                      \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        __dc_da_append_values(DARRPTR, dc_count(__initial_values),             \
-                              __initial_values);                               \
+#define dc_da_append_values(DARRPTR, ...)                                                                                      \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        __dc_da_append_values(DARRPTR, dc_count(__initial_values), __initial_values);                                          \
     } while (0)
 
 /**
@@ -1336,12 +1328,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_try_da_append_values(RES, DARRPTR, ...)                             \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        RES = __dc_da_append_values(DARRPTR, dc_count(__initial_values),       \
-                                    __initial_values);                         \
+#define dc_try_da_append_values(RES, DARRPTR, ...)                                                                             \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        RES = __dc_da_append_values(DARRPTR, dc_count(__initial_values), __initial_values);                                    \
     } while (0)
 
 /**
@@ -1351,12 +1342,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_try_fail_da_append_values(DARRPTR, ...)                             \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        dc_try_fail(__dc_da_append_values(DARRPTR, dc_count(__initial_values), \
-                                          __initial_values));                  \
+#define dc_try_fail_da_append_values(DARRPTR, ...)                                                                             \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        dc_try_fail(__dc_da_append_values(DARRPTR, dc_count(__initial_values), __initial_values));                             \
     } while (0)
 
 /**
@@ -1366,14 +1356,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_try_fail_temp_da_append_values(DARRPTR, ...)                        \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        dc_try_fail_temp(DCResultVoid,                                         \
-                         __dc_da_append_values(DARRPTR,                        \
-                                               dc_count(__initial_values),     \
-                                               __initial_values));             \
+#define dc_try_fail_temp_da_append_values(DARRPTR, ...)                                                                        \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        dc_try_fail_temp(DCResultVoid, __dc_da_append_values(DARRPTR, dc_count(__initial_values), __initial_values));          \
     } while (0)
 
 /**
@@ -1382,12 +1369,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_da_insert_values(DARRPTR, INDEX, ...)                               \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        __dc_da_insert_values(DARRPTR, INDEX, dc_count(__initial_values),      \
-                              __initial_values);                               \
+#define dc_da_insert_values(DARRPTR, INDEX, ...)                                                                               \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        __dc_da_insert_values(DARRPTR, INDEX, dc_count(__initial_values), __initial_values);                                   \
     } while (0)
 
 /**
@@ -1396,12 +1382,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_try_da_insert_values(RES, DARRPTR, INDEX, ...)                      \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        RES = __dc_da_insert_values(                                           \
-            DARRPTR, INDEX, dc_count(__initial_values), __initial_values);     \
+#define dc_try_da_insert_values(RES, DARRPTR, INDEX, ...)                                                                      \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        RES = __dc_da_insert_values(DARRPTR, INDEX, dc_count(__initial_values), __initial_values);                             \
     } while (0)
 
 /**
@@ -1411,12 +1396,11 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_try_fail_da_insert_values(DARRPTR, INDEX, ...)                      \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        dc_try_fail(__dc_da_insert_values(                                     \
-            DARRPTR, INDEX, dc_count(__initial_values), __initial_values));    \
+#define dc_try_fail_da_insert_values(DARRPTR, INDEX, ...)                                                                      \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        dc_try_fail(__dc_da_insert_values(DARRPTR, INDEX, dc_count(__initial_values), __initial_values));                      \
     } while (0)
 
 /**
@@ -1426,55 +1410,50 @@
  *
  * @param DARRPTR address of the array to be initialized (DCDynArr*)
  */
-#define dc_try_fail_temp_da_insert_values(DARRPTR, INDEX, ...)                 \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                    \
-        dc_try_fail_temp(DCResultVoid,                                         \
-                         __dc_da_insert_values(DARRPTR, INDEX,                 \
-                                               dc_count(__initial_values),     \
-                                               __initial_values));             \
+#define dc_try_fail_temp_da_insert_values(DARRPTR, INDEX, ...)                                                                 \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCDynVal, __VA_ARGS__);                                                                    \
+        dc_try_fail_temp(DCResultVoid, __dc_da_insert_values(DARRPTR, INDEX, dc_count(__initial_values), __initial_values));   \
     } while (0)
 
 /**
  * Internal macro to generate code for dynamic array to flat array conversion
  */
-#define __DC_DA_CONVERT_IMPL(TYPE)                                             \
-    DC_RES_usize();                                                            \
-    if (!arr || arr->count == 0 || !out_arr)                                   \
-    {                                                                          \
-        dc_dbg_log("arr is empty or not provided/initialized or out_var is "   \
-                   "not provided");                                            \
-        dc_res_ret_e(1,                                                        \
-                     "arr is empty or not provided/initialized or out_var is " \
-                     "not provided");                                          \
-    }                                                                          \
-    *out_arr = (TYPE*)malloc((arr->count + 1) * sizeof(TYPE));                 \
-    if (!(*out_arr))                                                           \
-    {                                                                          \
-        dc_dbg_log("memory allocation failed");                                \
-        dc_res_ret_e(2, "memory allocation failed");                           \
-    }                                                                          \
-    usize dest_index = 0;                                                      \
-    for (usize i = 0; i < arr->count; ++i)                                     \
-    {                                                                          \
-        DCDynVal* elem = &arr->elements[i];                                    \
-        if (elem->type != dc_dvt(TYPE))                                        \
-        {                                                                      \
-            if (must_fail)                                                     \
-            {                                                                  \
-                free(*out_arr);                                                \
-                *out_arr = NULL;                                               \
-                dc_dbg_log("failed as it got type other than '" #TYPE "'");    \
-                dc_res_ret_e(3,                                                \
-                             "failed as it got type other than '" #TYPE "'");  \
-            }                                                                  \
-            continue;                                                          \
-        }                                                                      \
-        (*out_arr)[dest_index] = dc_dv_as((*elem), TYPE);                      \
-        dest_index++;                                                          \
-    }                                                                          \
-    (*out_arr)[dest_index] = dc_stopper(TYPE);                                 \
+#define __DC_DA_CONVERT_IMPL(TYPE)                                                                                             \
+    DC_RES_usize();                                                                                                            \
+    if (!arr || arr->count == 0 || !out_arr)                                                                                   \
+    {                                                                                                                          \
+        dc_dbg_log("arr is empty or not provided/initialized or out_var is "                                                   \
+                   "not provided");                                                                                            \
+        dc_res_ret_e(1, "arr is empty or not provided/initialized or out_var is "                                              \
+                        "not provided");                                                                                       \
+    }                                                                                                                          \
+    *out_arr = (TYPE*)malloc((arr->count + 1) * sizeof(TYPE));                                                                 \
+    if (!(*out_arr))                                                                                                           \
+    {                                                                                                                          \
+        dc_dbg_log("memory allocation failed");                                                                                \
+        dc_res_ret_e(2, "memory allocation failed");                                                                           \
+    }                                                                                                                          \
+    usize dest_index = 0;                                                                                                      \
+    for (usize i = 0; i < arr->count; ++i)                                                                                     \
+    {                                                                                                                          \
+        DCDynVal* elem = &arr->elements[i];                                                                                    \
+        if (elem->type != dc_dvt(TYPE))                                                                                        \
+        {                                                                                                                      \
+            if (must_fail)                                                                                                     \
+            {                                                                                                                  \
+                free(*out_arr);                                                                                                \
+                *out_arr = NULL;                                                                                               \
+                dc_dbg_log("failed as it got type other than '" #TYPE "'");                                                    \
+                dc_res_ret_e(3, "failed as it got type other than '" #TYPE "'");                                               \
+            }                                                                                                                  \
+            continue;                                                                                                          \
+        }                                                                                                                      \
+        (*out_arr)[dest_index] = dc_dv_as((*elem), TYPE);                                                                      \
+        dest_index++;                                                                                                          \
+    }                                                                                                                          \
+    (*out_arr)[dest_index] = dc_stopper(TYPE);                                                                                 \
     dc_res_ret_ok(dest_index)
 
 // ***************************************************************************************
@@ -1489,8 +1468,7 @@
 /**
  * Expands to standard hash key comparison function declaration
  */
-#define DC_HT_KEY_CMP_FN_DECL(NAME)                                            \
-    DCResultBool NAME(voidptr _key1, voidptr _key2)
+#define DC_HT_KEY_CMP_FN_DECL(NAME) DCResultBool NAME(voidptr _key1, voidptr _key2)
 
 /**
  * Gets the results of hash table's hash function for the given key
@@ -1501,12 +1479,12 @@
  *
  * NOTE: This assumes operations in the hash function is always OK not error
  */
-#define dc_ht_get_hash(VAR_NAME, HT, KEY)                                      \
-    u32 VAR_NAME;                                                              \
-    do                                                                         \
-    {                                                                          \
-        DCResultU32 __hash_res = (HT).hash_fn((KEY));                          \
-        VAR_NAME = (__hash_res.data.v) % (HT).cap;                             \
+#define dc_ht_get_hash(VAR_NAME, HT, KEY)                                                                                      \
+    u32 VAR_NAME;                                                                                                              \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DCResultU32 __hash_res = (HT).hash_fn((KEY));                                                                          \
+        VAR_NAME = (__hash_res.data.v) % (HT).cap;                                                                             \
     } while (0)
 
 /**
@@ -1516,13 +1494,13 @@
  * extracts the u32 value of it only checking if the result was an OK otherwise
  * it will return the error
  */
-#define dc_try_fail_ht_get_hash(VAR_NAME, HT, KEY)                             \
-    u32 VAR_NAME;                                                              \
-    do                                                                         \
-    {                                                                          \
-        __dc_res = (HT).hash_fn((KEY));                                        \
-        dc_res_fail_if_err2(__dc_res);                                         \
-        VAR_NAME = (__dc_res.data.v) % (HT).cap;                               \
+#define dc_try_fail_ht_get_hash(VAR_NAME, HT, KEY)                                                                             \
+    u32 VAR_NAME;                                                                                                              \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        __dc_res = (HT).hash_fn((KEY));                                                                                        \
+        dc_res_fail_if_err2(__dc_res);                                                                                         \
+        VAR_NAME = (__dc_res.data.v) % (HT).cap;                                                                               \
     } while (0)
 
 /**
@@ -1532,13 +1510,13 @@
  * extracts the u32 value of it only checking if the result was an OK otherwise
  * it will return the error
  */
-#define dc_try_fail_temp_ht_get_hash(VAR_NAME, HT, KEY)                        \
-    u32 VAR_NAME;                                                              \
-    do                                                                         \
-    {                                                                          \
-        DCResultU32 __hash_res = (HT).hash_fn((KEY));                          \
-        dc_res_fail_if_err2(__hash_res);                                       \
-        VAR_NAME = (__hash_res.data.v) % (HT).cap;                             \
+#define dc_try_fail_temp_ht_get_hash(VAR_NAME, HT, KEY)                                                                        \
+    u32 VAR_NAME;                                                                                                              \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DCResultU32 __hash_res = (HT).hash_fn((KEY));                                                                          \
+        dc_res_fail_if_err2(__hash_res);                                                                                       \
+        VAR_NAME = (__hash_res.data.v) % (HT).cap;                                                                             \
     } while (0)
 
 /**
@@ -1547,16 +1525,15 @@
  *
  * NOTE: VAR_NAME would be DCDynArr*
  */
-#define dc_ht_get_container_row(VAR_NAME, HT, HASH)                            \
-    DCDynArr* VAR_NAME = &((HT).container[HASH])
+#define dc_ht_get_container_row(VAR_NAME, HT, HASH) DCDynArr* VAR_NAME = &((HT).container[HASH])
 
 /**
  * Creates a literal hash table key/value pair (entry)
  */
-#define dc_ht_entry(KEY, VAL)                                                  \
-    (DCHashEntry)                                                              \
-    {                                                                          \
-        .key = (KEY), .value = (VAL)                                           \
+#define dc_ht_entry(KEY, VAL)                                                                                                  \
+    (DCHashEntry)                                                                                                              \
+    {                                                                                                                          \
+        .key = (KEY), .value = (VAL)                                                                                           \
     }
 
 /**
@@ -1564,12 +1541,11 @@
  *
  * NOTE: It does not check whether the result of the success is OK or error
  */
-#define dc_ht_set_multiple(HT, ...)                                            \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCHashEntry, __VA_ARGS__);                 \
-        __dc_ht_set_multiple(HT, dc_count(__initial_values),                   \
-                             __initial_values);                                \
+#define dc_ht_set_multiple(HT, ...)                                                                                            \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCHashEntry, __VA_ARGS__);                                                                 \
+        __dc_ht_set_multiple(HT, dc_count(__initial_values), __initial_values);                                                \
     } while (0)
 
 /**
@@ -1579,12 +1555,11 @@
  *
  * NOTE: It does not check whether the result of the success is OK or error
  */
-#define dc_try_ht_set_multiple(RES, HT, ...)                                   \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCHashEntry, __VA_ARGS__);                 \
-        RES = __dc_ht_set_multiple(HT, dc_count(__initial_values),             \
-                                   __initial_values);                          \
+#define dc_try_ht_set_multiple(RES, HT, ...)                                                                                   \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCHashEntry, __VA_ARGS__);                                                                 \
+        RES = __dc_ht_set_multiple(HT, dc_count(__initial_values), __initial_values);                                          \
     } while (0)
 
 /**
@@ -1592,12 +1567,11 @@
  * count and saves the result in the given main result variable (__dc_res) and
  * returns if the result is a failure
  */
-#define dc_try_fail_ht_set_multiple(HT, ...)                                   \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCHashEntry, __VA_ARGS__);                 \
-        dc_try_fail(__dc_ht_set_multiple(HT, dc_count(__initial_values),       \
-                                         __initial_values));                   \
+#define dc_try_fail_ht_set_multiple(HT, ...)                                                                                   \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCHashEntry, __VA_ARGS__);                                                                 \
+        dc_try_fail(__dc_ht_set_multiple(HT, dc_count(__initial_values), __initial_values));                                   \
     } while (0)
 
 /**
@@ -1605,12 +1579,11 @@
  * count and saves the result in a temporary variable of type DCResultVoid) and
  * returns if the result is a failure
  */
-#define dc_try_fail_temp_ht_set_multiple(HT, ...)                              \
-    do                                                                         \
-    {                                                                          \
-        DC_SARRAY(__initial_values, DCHashEntry, __VA_ARGS__);                 \
-        dc_try_fail_temp(__dc_ht_set_multiple(HT, dc_count(__initial_values),  \
-                                              __initial_values));              \
+#define dc_try_fail_temp_ht_set_multiple(HT, ...)                                                                              \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        DC_SARRAY(__initial_values, DCHashEntry, __VA_ARGS__);                                                                 \
+        dc_try_fail_temp(__dc_ht_set_multiple(HT, dc_count(__initial_values), __initial_values));                              \
     } while (0)
 
 // ***************************************************************************************
@@ -1638,15 +1611,12 @@
 /**
  * Checks if a string view and a given string are equal or not
  */
-#define dc_sv_str_eq(SV, STR)                                                  \
-    ((strlen(STR) == (SV).len) && (strncmp((SV).str, STR, (SV).len) == 0))
+#define dc_sv_str_eq(SV, STR) ((strlen(STR) == (SV).len) && (strncmp((SV).str, STR, (SV).len) == 0))
 
 /**
  * Checks if two given string views are equal
  */
-#define dc_sv_sv_eq(SV1, SV2)                                                  \
-    (((SV1).len == (SV2).len) &&                                               \
-     (strncmp((SV1).str, (SV2).str, (SV1).len) == 0))
+#define dc_sv_sv_eq(SV1, SV2) (((SV1).len == (SV2).len) && (strncmp((SV1).str, (SV2).str, (SV1).len) == 0))
 
 // ***************************************************************************************
 // * COLOR MACROS
@@ -1697,8 +1667,7 @@
  * NOTE: This is not a string allocation process this is simply putting string
  * literals together
  */
-#define dc_colorize(BG_COLOR, FG_COLOR, TEXT)                                  \
-    DC_BG_##BG_COLOR operator DC_FG_##FG_COLOR TEXT operator DC_COLOR_RESET
+#define dc_colorize(BG_COLOR, FG_COLOR, TEXT) DC_BG_##BG_COLOR operator DC_FG_##FG_COLOR TEXT operator DC_COLOR_RESET
 
 /**
  * Colorizes given literal string by adding foreground string at
@@ -1756,23 +1725,21 @@
  * Initializes a cleanup batch with batch capacity only if it is not initialized
  * yet
  */
-#define DC_CLEANUP_BATCH_INIT(CLEANUP_BATCH, BATCH_CAPACITY)                   \
-    if ((CLEANUP_BATCH).cap == 0)                                              \
-    dc_da_init2(&(CLEANUP_BATCH), BATCH_CAPACITY, 3, NULL)
+#define DC_CLEANUP_BATCH_INIT(CLEANUP_BATCH, BATCH_CAPACITY)                                                                   \
+    if ((CLEANUP_BATCH).cap == 0) dc_da_init2(&(CLEANUP_BATCH), BATCH_CAPACITY, 3, NULL)
 
 /**
  * Internal macro to register the signals
  */
-#define __DC_CLEANUP_REGISTER_SIGNALS                                          \
-    signal(SIGINT, __dc_handle_signal);                                        \
-    signal(SIGTERM, __dc_handle_signal);                                       \
+#define __DC_CLEANUP_REGISTER_SIGNALS                                                                                          \
+    signal(SIGINT, __dc_handle_signal);                                                                                        \
+    signal(SIGTERM, __dc_handle_signal);                                                                                       \
     signal(SIGSEGV, __dc_handle_signal)
 
 /**
  * Expands to initializing pool with one default batch
  */
-#define dc_cleanup_pool_init(BATCH_CAPACITY)                                   \
-    dc_cleanup_pool_init2(1, BATCH_CAPACITY)
+#define dc_cleanup_pool_init(BATCH_CAPACITY) dc_cleanup_pool_init2(1, BATCH_CAPACITY)
 
 /**
  * Declares __dc_res with given type and initial value
@@ -1780,20 +1747,17 @@
  * NOTE: This is useful for non-result types, for result type you can use
  * DC_RES() or DC_RES_<type>()
  */
-#define DC_RET_VAL_INIT(RETVAL_TYPE, RETVAL_INIT)                              \
-    RETVAL_TYPE __dc_res = RETVAL_INIT
+#define DC_RET_VAL_INIT(RETVAL_TYPE, RETVAL_INIT) RETVAL_TYPE __dc_res = RETVAL_INIT
 
 /**
  * Pushes an allocated memory address (ELEMENT) and its corresponding cleanup
  * function pointer to the given batch index
  */
-#define dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, CLEAN_FUNC)                 \
-    do                                                                         \
-    {                                                                          \
-        dc_dbg_log("cleanup push to batch index [%d]: %p", BATCH_INDEX,        \
-                   (voidptr)ELEMENT);                                          \
-        dc_cleanup_push2(&dc_cleanup_pool.pool[BATCH_INDEX], ELEMENT,          \
-                         CLEAN_FUNC);                                          \
+#define dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, CLEAN_FUNC)                                                                 \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_dbg_log("cleanup push to batch index [%d]: %p", BATCH_INDEX, (voidptr)ELEMENT);                                     \
+        dc_cleanup_push2(&dc_cleanup_pool.pool[BATCH_INDEX], ELEMENT, CLEAN_FUNC);                                             \
     } while (0)
 
 /**
@@ -1803,8 +1767,7 @@
  *
  * @return nothing or error
  */
-#define dc_cleanup_batch_flush(BATCH_INDEX)                                    \
-    dc_da_free(&dc_cleanup_pool.pool[BATCH_INDEX])
+#define dc_cleanup_batch_flush(BATCH_INDEX) dc_da_free(&dc_cleanup_pool.pool[BATCH_INDEX])
 
 /**
  * Pops last n elements from the selected batch index
@@ -1813,43 +1776,37 @@
  *
  * @return nothing or error
  */
-#define dc_cleanup_batch_pop(BATCH_INDEX, COUNT)                               \
-    dc_da_pop(&dc_cleanup_pool.pool[BATCH_INDEX], COUNT, NULL, false)
+#define dc_cleanup_batch_pop(BATCH_INDEX, COUNT) dc_da_pop(&dc_cleanup_pool.pool[BATCH_INDEX], COUNT, NULL, false)
 
 /**
  * Pushes an allocated memory address (ELEMENT) and its corresponding cleanup
  * function pointer to the default batch index which is 0
  */
-#define dc_cleanup_default_pool_push(ELEMENT, CLEAN_FUNC)                      \
-    dc_cleanup_pool_push(0, ELEMENT, CLEAN_FUNC)
+#define dc_cleanup_default_pool_push(ELEMENT, CLEAN_FUNC) dc_cleanup_pool_push(0, ELEMENT, CLEAN_FUNC)
 
 /**
  * Pushes given hash table address with default standard hash table cleanup in
  * the default batch (index 0)
  */
-#define dc_cleanup_push_ht(ELEMENT)                                            \
-    dc_cleanup_default_pool_push(ELEMENT, __dc_ht_free)
+#define dc_cleanup_push_ht(ELEMENT) dc_cleanup_default_pool_push(ELEMENT, __dc_ht_free)
 
 /**
  * Pushes given hash table address with default standard hash table cleanup in
  * the given batch index
  */
-#define dc_cleanup_push_ht2(BATCH_INDEX, ELEMENT)                              \
-    dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, __dc_ht_free)
+#define dc_cleanup_push_ht2(BATCH_INDEX, ELEMENT) dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, __dc_ht_free)
 
 /**
  * Pushes given dynamic array address with default standard dynamic array
  * cleanup in the default batch (index 0)
  */
-#define dc_cleanup_push_da(ELEMENT)                                            \
-    dc_cleanup_default_pool_push(ELEMENT, __dc_da_free)
+#define dc_cleanup_push_da(ELEMENT) dc_cleanup_default_pool_push(ELEMENT, __dc_da_free)
 
 /**
  * Pushes given dynamic array address with default standard dynamic array
  * cleanup in the given batch index
  */
-#define dc_cleanup_push_da2(BATCH_INDEX, ELEMENT)                              \
-    dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, __dc_da_free)
+#define dc_cleanup_push_da2(BATCH_INDEX, ELEMENT) dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, __dc_da_free)
 
 /**
  * Pushes given dynamic value address with default standard dynamic value
@@ -1859,8 +1816,7 @@
  * your own standard cleanup function for that and use regular cleanup push or
  * push2 for it
  */
-#define dc_cleanup_push_dv(ELEMENT)                                            \
-    dc_cleanup_default_pool_push(ELEMENT, __dc_dv_free)
+#define dc_cleanup_push_dv(ELEMENT) dc_cleanup_default_pool_push(ELEMENT, __dc_dv_free)
 
 /**
  * Pushes given dynamic value address with default standard dynamic value
@@ -1870,49 +1826,42 @@
  * your own standard cleanup function for that and use regular cleanup push or
  * push2 for it
  */
-#define dc_cleanup_push_dv2(BATCH_INDEX, ELEMENT)                              \
-    dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, __dc_dv_free)
+#define dc_cleanup_push_dv2(BATCH_INDEX, ELEMENT) dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, __dc_dv_free)
 
 /**
  * Pushes given result variable address with default standard result variable
  * cleanup in the default batch (index 0)
  */
-#define dc_cleanup_push_res(ELEMENT)                                           \
-    dc_cleanup_default_pool_push(ELEMENT, dc_result_free)
+#define dc_cleanup_push_res(ELEMENT) dc_cleanup_default_pool_push(ELEMENT, dc_result_free)
 
 /**
  * Pushes given result variable address with default standard result variable
  * cleanup in the given batch index
  */
-#define dc_cleanup_push_res2(BATCH_INDEX, ELEMENT)                             \
-    dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, dc_result_free)
+#define dc_cleanup_push_res2(BATCH_INDEX, ELEMENT) dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, dc_result_free)
 
 /**
  * Pushes given allocated memory address with default standard allocated memory
  * cleanup (free) in the default batch (index 0)
  */
-#define dc_cleanup_push_free(ELEMENT)                                          \
-    dc_cleanup_default_pool_push(ELEMENT, dc_free)
+#define dc_cleanup_push_free(ELEMENT) dc_cleanup_default_pool_push(ELEMENT, dc_free)
 
 /**
  * Pushes given allocated memory address with default standard allocated memory
  * cleanup (free) in the given batch index
  */
-#define dc_cleanup_push_free2(BATCH_INDEX, ELEMENT)                            \
-    dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, dc_free)
+#define dc_cleanup_push_free2(BATCH_INDEX, ELEMENT) dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, dc_free)
 
 /**
  * Pushes given allocated memory address with `fclose` in the default batch
  * (index 0)
  */
-#define dc_cleanup_push_file(ELEMENT)                                          \
-    dc_cleanup_default_pool_push(ELEMENT, dc_free_file)
+#define dc_cleanup_push_file(ELEMENT) dc_cleanup_default_pool_push(ELEMENT, dc_free_file)
 
 /**
  * Pushes given allocated memory address with `fclose` in the given batch index
  */
-#define dc_cleanup_push_file2(BATCH_INDEX, ELEMENT)                            \
-    dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, dc_free_file)
+#define dc_cleanup_push_file2(BATCH_INDEX, ELEMENT) dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, dc_free_file)
 
 /**
  * Defines a label that first triggers the cleanup of choice and then returns
@@ -1927,9 +1876,9 @@
  * choose to set a valid index for a batch like 0, 1, ... (as long as you've
  * already initialized the pool with correct number of batches)
  */
-#define DC_EXIT_SECTION(SELECTION)                                             \
-    __dc_exit_label:                                                           \
-    dc_cleanup_pool_run(SELECTION);                                            \
+#define DC_EXIT_SECTION(SELECTION)                                                                                             \
+    __dc_exit_label:                                                                                                           \
+    dc_cleanup_pool_run(SELECTION);                                                                                            \
     return __dc_res;
 
 /**
@@ -1944,11 +1893,11 @@
  *
  * NOTE: DC_EXIT_SECTION must also be used at the end of current scope
  */
-#define dc_return_with_val(RETVAL)                                             \
-    do                                                                         \
-    {                                                                          \
-        __dc_res = RETVAL;                                                     \
-        dc_return();                                                           \
+#define dc_return_with_val(RETVAL)                                                                                             \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        __dc_res = RETVAL;                                                                                                     \
+        dc_return();                                                                                                           \
     } while (0)
 
 /**
@@ -1957,18 +1906,18 @@
  *
  * NOTE: DC_EXIT_SECTION must also be used at the end of current scope
  */
-#define dc_return_if_err(RES, PRE_RETURN_ACTIONS)                              \
-    do                                                                         \
-    {                                                                          \
-        if (dc_res_is_err2(RES))                                               \
-        {                                                                      \
-            do                                                                 \
-            {                                                                  \
-                PRE_RETURN_ACTIONS;                                            \
-            } while (0);                                                       \
-            dc_res_err_cpy(RES);                                               \
-            dc_return();                                                       \
-        }                                                                      \
+#define dc_return_if_err(RES, PRE_RETURN_ACTIONS)                                                                              \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        if (dc_res_is_err2(RES))                                                                                               \
+        {                                                                                                                      \
+            do                                                                                                                 \
+            {                                                                                                                  \
+                PRE_RETURN_ACTIONS;                                                                                            \
+            } while (0);                                                                                                       \
+            dc_res_err_cpy(RES);                                                                                               \
+            dc_return();                                                                                                       \
+        }                                                                                                                      \
     } while (0)
 
 /**
@@ -1977,17 +1926,17 @@
  *
  * NOTE: DC_EXIT_SECTION must also be used at the end of current scope
  */
-#define dc_return_if_err2(RES, RET_VAL, PRE_RETURN_ACTIONS)                    \
-    do                                                                         \
-    {                                                                          \
-        if (dc_res_is_err2(RES))                                               \
-        {                                                                      \
-            do                                                                 \
-            {                                                                  \
-                PRE_RETURN_ACTIONS;                                            \
-            } while (0);                                                       \
-            dc_return_with_val(RET_VAL);                                       \
-        }                                                                      \
+#define dc_return_if_err2(RES, RET_VAL, PRE_RETURN_ACTIONS)                                                                    \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        if (dc_res_is_err2(RES))                                                                                               \
+        {                                                                                                                      \
+            do                                                                                                                 \
+            {                                                                                                                  \
+                PRE_RETURN_ACTIONS;                                                                                            \
+            } while (0);                                                                                                       \
+            dc_return_with_val(RET_VAL);                                                                                       \
+        }                                                                                                                      \
     } while (0)
 
 #endif // DC_MACROS_H
