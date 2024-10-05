@@ -325,7 +325,7 @@ ResultToken scanner_next_token(Scanner* s)
 
     dc_da_push(&s->tokens, dc_dva(voidptr, token));
 
-    if (token->type == TOK_ILLEGAL) dc_res_ret_ea(-1, "Illegal token at: " DCPRIsv, dc_sv_fmt(token->text));
+    if (token->type == TOK_ILLEGAL) dc_res_ret_ea(-1, "Scanner error - illegal character at " DCPRIsv, dc_sv_fmt(token->text));
 
     dc_res_ret_ok(token);
 }
