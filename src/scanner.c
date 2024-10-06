@@ -257,6 +257,13 @@ ResultToken scanner_next_token(Scanner* s)
                 dc_try_fail(token_create(TOK_IDENT, s->input, start, len));
                 token = dc_res_val();
             }
+            else if (peek(s) == '{')
+            {
+                // ${
+                dc_try_fail(token_create(TOK_DOLLAR_LBRACE, s->input, s->pos, 2));
+                token = dc_res_val();
+                read_char(s);
+            }
             else
             {
                 dc_try_fail(token_create(TOK_ILLEGAL, s->input, s->pos, 1));

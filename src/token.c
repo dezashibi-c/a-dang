@@ -31,6 +31,7 @@ string tostr_DTokenType(DTokenType dtt)
         dc_str_case(TOK_ASTERISK);
         dc_str_case(TOK_SLASH);
         dc_str_case(TOK_DOLLAR);
+        dc_str_case(TOK_DOLLAR_LBRACE);
         dc_str_case(TOK_LT);
         dc_str_case(TOK_GT);
         dc_str_case(TOK_EQ);

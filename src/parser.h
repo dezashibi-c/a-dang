@@ -40,7 +40,7 @@ typedef enum
 {
     LOC_BODY,
     LOC_BLOCK,
-    LOC_GROUP,
+    LOC_CALL,
 
     LOC_MAX,
 } ParserStatementLoc;
@@ -55,7 +55,7 @@ typedef struct Parser
     DCDynArr errors;
 
     DTokenType terminators[LOC_MAX][5];
-    ParserStatementLoc current_loc;
+    ParserStatementLoc loc;
 
     ParsePrefixFn parse_prefix_fns[DN__MAX];
     ParseInfixFn parse_infix_fns[DN__MAX];

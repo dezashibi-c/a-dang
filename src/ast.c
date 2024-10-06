@@ -258,7 +258,7 @@ DCResultVoid dn_child_free(DCDynVal* child)
 {
     DC_RES_void();
 
-    if (dc_dv_is(*child, voidptr)) dc_try(dn_free((DNode*)dc_dv_as(*child, voidptr)));
+    if (dc_dv_is(*child, voidptr) && dc_dv_as(*child, voidptr) != NULL) dc_try(dn_free((DNode*)dc_dv_as(*child, voidptr)));
 
     dc_res_ret();
 }

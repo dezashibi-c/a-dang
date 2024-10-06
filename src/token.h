@@ -34,6 +34,7 @@ typedef enum
     TOK_ASTERISK,
     TOK_SLASH,
     TOK_DOLLAR,
+    TOK_DOLLAR_LBRACE,
 
     TOK_LT,
     TOK_GT,

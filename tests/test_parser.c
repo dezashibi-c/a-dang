@@ -215,39 +215,6 @@ CLOVE_TEST(return_statement)
     CLOVE_PASS();
 }
 
-CLOVE_TEST(identifier)
-{
-    const string input = "foobar";
-
-    Scanner s;
-    scanner_init(&s, input);
-
-    Parser p;
-    parser_init(&p, &s);
-
-    ResultDNode program_res = parser_parse_program(&p);
-
-    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
-
-    DNode* program = dc_res_val2(program_res);
-
-    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
-
-    DNode* statement1 = dn_child(program, 0);
-    dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1), CLOVE_FAIL(), "statement is not valid");
-
-    DNode* expression = dn_child(statement1, 0);
-    dc_action_on(!node_is_valid(expression, DN_IDENTIFIER, 0), CLOVE_FAIL(), "expression is not valid");
-
-    dc_action_on(!dc_sv_str_eq(expression->token->text, "foobar"), CLOVE_FAIL(),
-                 "identifier value is not '%s', got='" DCPRIsv "'", "foobar", dc_sv_fmt(expression->token->text));
-
-    dn_program_free(program);
-    parser_free(&p);
-
-    CLOVE_PASS();
-}
-
 CLOVE_TEST(boolean_literal)
 {
     const string input = "true";
@@ -445,7 +412,7 @@ CLOVE_TEST(operator_precedence)
         "a + b * c + d / e - f",
         "(((a + (b * c)) + (d / e)) - f)\n",
 
-        "3 + 4; -5 * 5",
+        "3 + 4\n -5 * 5",
         "(3 + 4)\n((-5) * 5)\n",
 
         "5 > 4 == 3 < 4",
@@ -484,17 +451,29 @@ CLOVE_TEST(operator_precedence)
         "!(true == true)",
         "(!(true == true))\n",
 
-        "(add 1 2 3)",
+        "add 1 2 3",
         "add(1, 2, 3)\n",
 
-        // "a + (add b * c) + d",
-        // "((a + add((b * c))) + d)\n",
+        "${add 1 2 3}",
+        "add(1, 2, 3)()\n",
 
-        // "(add a b 1 2*3, 4+5 (add 6 7 * 8))",
-        // "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))\n",
+        "add ${add 1 2 3} 3 x",
+        "add(add(1, 2, 3), 3, x)\n",
 
-        // "(add a + b + c * d / f + g)",
-        // "add((((a + b) + ((c * d) / f)) + g))\n",
+        "a + ${add b * c} + d",
+        "((a + add((b * c))) + d)\n",
+
+        "add a b 1 2*3, 4+5 ${add 6 7 * 8}",
+        "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))\n",
+
+        "${add a b 1 2*3, 4+5 ${add 6 7 * 8}}",
+        "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))()\n",
+
+        "add a + b + c * d / f + g",
+        "add((((a + b) + ((c * d) / f)) + g))\n",
+
+        "${add a + b + c * d / f + g}",
+        "add((((a + b) + ((c * d) / f)) + g))()\n",
     };
 
     for (usize i = 0; i < dc_count(tests) / 2; ++i)
@@ -525,264 +504,267 @@ CLOVE_TEST(operator_precedence)
     CLOVE_PASS();
 }
 
-// CLOVE_TEST(if_statement)
-// {
-//     const string input = "if (x < y) { x }";
+CLOVE_TEST(if_statement)
+{
+    const string input = "if x < y { x }";
 
-//     Scanner s;
-//     scanner_init(&s, input);
+    Scanner s;
+    scanner_init(&s, input);
 
-//     Parser p;
-//     parser_init(&p, &s);
+    Parser p;
+    parser_init(&p, &s);
 
-//     ResultDNode program_res = parser_parse_program(&p);
+    ResultDNode program_res = parser_parse_program(&p);
 
-//     dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
-//     DNode* program = dc_res_val2(program_res);
+    DNode* program = dc_res_val2(program_res);
 
-//     dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
 
-//     DNode* statement1 = dn_child(program, 0);
-//     dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1), CLOVE_FAIL(), "statement is not valid");
+    DNode* statement1 = dn_child(program, 0);
+    dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1), CLOVE_FAIL(), "statement is not valid");
 
-//     DNode* if_expr = dn_child(statement1, 0);
-//     dc_action_on(!node_is_valid(if_expr, DN_IF_EXPRESSION, 2), CLOVE_FAIL(), "expression is not if expression");
+    DNode* if_expr = dn_child(statement1, 0);
+    dc_action_on(!node_is_valid(if_expr, DN_IF_EXPRESSION, 2), CLOVE_FAIL(), "expression is not if expression");
 
-//     // TEST IF CONDITION
-//     DNode* if_condition = dn_child(if_expr, 0);
-//     dc_action_on(!node_is_valid(if_condition, DN_INFIX_EXPRESSION, 2), CLOVE_FAIL(), "if_condition expression is not valid");
+    // TEST IF CONDITION
+    DNode* if_condition = dn_child(if_expr, 0);
+    dc_action_on(!node_is_valid(if_condition, DN_INFIX_EXPRESSION, 2), CLOVE_FAIL(), "if_condition expression is not valid");
 
-//     dc_action_on(!dc_sv_str_eq(if_condition->token->text, "<"), CLOVE_FAIL(), "operator is not '%s', got='" DCPRIsv "'", "<",
-//                  dc_sv_fmt(if_condition->token->text));
+    dc_action_on(!dc_sv_str_eq(if_condition->token->text, "<"), CLOVE_FAIL(), "operator is not '%s', got='" DCPRIsv "'", "<",
+                 dc_sv_fmt(if_condition->token->text));
 
-//     DNode* lval = dn_child(if_condition, 0);
-//     dc_action_on(!node_is_valid(lval, DN_IDENTIFIER, 0), CLOVE_FAIL(), "lval is not valid");
+    DNode* lval = dn_child(if_condition, 0);
+    dc_action_on(!node_is_valid(lval, DN_IDENTIFIER, 0), CLOVE_FAIL(), "lval is not valid");
 
-//     dc_action_on(!dc_sv_str_eq(lval->token->text, "x"), CLOVE_FAIL(), "identifier value is not '%s', got='" DCPRIsv "'", "x",
-//                  dc_sv_fmt(lval->token->text));
+    dc_action_on(!dc_sv_str_eq(lval->token->text, "x"), CLOVE_FAIL(), "identifier value is not '%s', got='" DCPRIsv "'", "x",
+                 dc_sv_fmt(lval->token->text));
 
-//     DNode* rval = dn_child(if_condition, 1);
-//     dc_action_on(!node_is_valid(rval, DN_IDENTIFIER, 0), CLOVE_FAIL(), "rval is not valid");
+    DNode* rval = dn_child(if_condition, 1);
+    dc_action_on(!node_is_valid(rval, DN_IDENTIFIER, 0), CLOVE_FAIL(), "rval is not valid");
 
-//     dc_action_on(!dc_sv_str_eq(rval->token->text, "y"), CLOVE_FAIL(), "identifier value is not '%s', got='" DCPRIsv "'", "y",
-//                  dc_sv_fmt(rval->token->text));
+    dc_action_on(!dc_sv_str_eq(rval->token->text, "y"), CLOVE_FAIL(), "identifier value is not '%s', got='" DCPRIsv "'", "y",
+                 dc_sv_fmt(rval->token->text));
 
 
-//     // TEST IF CONSEQUENCE
-//     DNode* if_consequence = dn_child(if_expr, 1);
-//     dc_action_on(!node_is_valid(if_consequence, DN_BLOCK_STATEMENT, 1), CLOVE_FAIL(), "if_consequence is not valid");
+    // TEST IF CONSEQUENCE
+    DNode* if_consequence = dn_child(if_expr, 1);
+    dc_action_on(!node_is_valid(if_consequence, DN_BLOCK_STATEMENT, 1), CLOVE_FAIL(), "if_consequence is not valid");
 
-//     dn_string_init(if_consequence);
+    dn_string_init(if_consequence);
 
-//     dc_action_on(strcmp(if_consequence->text, "{ x; }") != 0, CLOVE_FAIL(), "Wrong consequence");
+    string expected = "{ x; }";
+    dc_action_on(strcmp(if_consequence->text, "{ x; }") != 0, CLOVE_FAIL(), "Wrong consequence: expected: %s, got %s", expected,
+                 if_consequence->text);
 
-//     dn_program_free(program);
-//     parser_free(&p);
+    dn_program_free(program);
+    parser_free(&p);
 
-//     CLOVE_PASS();
-// }
+    CLOVE_PASS();
+}
 
-// CLOVE_TEST(if_else_statement)
-// {
-//     const string input = "if x < y { x } else { y }";
 
-//     Scanner s;
-//     scanner_init(&s, input);
+CLOVE_TEST(if_else_statement)
+{
+    const string input = "if x < y { x } else { y }";
 
-//     Parser p;
-//     parser_init(&p, &s);
+    Scanner s;
+    scanner_init(&s, input);
 
-//     ResultDNode program_res = parser_parse_program(&p);
+    Parser p;
+    parser_init(&p, &s);
 
-//     dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    ResultDNode program_res = parser_parse_program(&p);
 
-//     DNode* program = dc_res_val2(program_res);
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
-//     dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
+    DNode* program = dc_res_val2(program_res);
 
-//     DNode* statement1 = dn_child(program, 0);
-//     dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1), CLOVE_FAIL(), "statement is not valid");
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
 
-//     dn_string_init(program);
+    DNode* statement1 = dn_child(program, 0);
+    dc_action_on(!node_is_valid(statement1, DN_EXPRESSION_STATEMENT, 1), CLOVE_FAIL(), "statement is not valid");
 
-//     const string expected = "if (x < y) { x; } else { y; }\n";
+    dn_string_init(program);
 
-//     dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(), "expected='%s', got='%s'", expected, program->text);
+    const string expected = "if (x < y) { x; } else { y; }\n";
 
-//     dn_program_free(program);
-//     parser_free(&p);
+    dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(), "expected='%s', got='%s'", expected, program->text);
 
-//     CLOVE_PASS();
-// }
+    dn_program_free(program);
+    parser_free(&p);
 
-// CLOVE_TEST(function_literal)
-// {
-//     const string input = "fn(x, y z) {x+y-z;}";
+    CLOVE_PASS();
+}
 
-//     Scanner s;
-//     scanner_init(&s, input);
+CLOVE_TEST(function_literal)
+{
+    const string input = "fn(x, y z) {x+y-z}";
 
-//     Parser p;
-//     parser_init(&p, &s);
+    Scanner s;
+    scanner_init(&s, input);
 
-//     ResultDNode program_res = parser_parse_program(&p);
+    Parser p;
+    parser_init(&p, &s);
 
-//     dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    ResultDNode program_res = parser_parse_program(&p);
 
-//     DNode* program = dc_res_val2(program_res);
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
-//     dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
+    DNode* program = dc_res_val2(program_res);
 
-//     dn_string_init(program);
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
 
-//     const string expected = "fn (x, y, z) { ((x + y) - z); }\n";
+    dn_string_init(program);
 
-//     dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(), "expected='%s', got='%s'", expected, program->text);
+    const string expected = "fn (x, y, z) { ((x + y) - z); }\n";
 
-//     DNode* statement1 = dn_child(program, 0);
-//     DNode* function = dn_child(statement1, 0);
+    dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(), "expected='%s', got='%s'", expected, program->text);
 
-//     dc_action_on(dn_child_count(function) != 4, CLOVE_FAIL(), "function node must have 4 children, got=%" PRIuMAX,
-//                  dn_child_count(function));
+    DNode* statement1 = dn_child(program, 0);
+    DNode* function = dn_child(statement1, 0);
 
-//     dc_action_on(dn_child(function, 0)->type != DN_IDENTIFIER, CLOVE_FAIL(), "Expected child 0 to be identifier but
-//     got='%s'",
-//                  tostr_DNType(dn_child(function, 0)->type));
+    dc_action_on(dn_child_count(function) != 4, CLOVE_FAIL(), "function node must have 4 children, got=%" PRIuMAX,
+                 dn_child_count(function));
 
-//     dc_action_on(dn_child(function, 1)->type != DN_IDENTIFIER, CLOVE_FAIL(), "Expected child 1 to be identifier but
-//     got='%s'",
-//                  tostr_DNType(dn_child(function, 1)->type));
+    dc_action_on(dn_child(function, 0)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                 "Expected child 0 to be identifier but got = '%s' ", tostr_DNType(dn_child(function, 0)->type));
 
-//     dc_action_on(dn_child(function, 2)->type != DN_IDENTIFIER, CLOVE_FAIL(), "Expected child 2 to be identifier but
-//     got='%s'",
-//                  tostr_DNType(dn_child(function, 2)->type));
+    dc_action_on(dn_child(function, 1)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                 "Expected child 1 to be identifier but got = '%s' ", tostr_DNType(dn_child(function, 1)->type));
 
-//     dc_action_on(dn_child(function, 3)->type != DN_BLOCK_STATEMENT, CLOVE_FAIL(),
-//                  "Expected child 3 to be block statement but got='%s'", tostr_DNType(dn_child(function, 3)->type));
+    dc_action_on(dn_child(function, 2)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                 "Expected child 2 to be identifier but got = '%s' ", tostr_DNType(dn_child(function, 2)->type));
 
-//     dn_program_free(program);
-//     parser_free(&p);
+    dc_action_on(dn_child(function, 3)->type != DN_BLOCK_STATEMENT, CLOVE_FAIL(),
+                 "Expected child 3 to be block statement but got='%s'", tostr_DNType(dn_child(function, 3)->type));
 
-//     CLOVE_PASS();
-// }
+    dn_program_free(program);
+    parser_free(&p);
 
-// typedef struct
-// {
-//     string input;
-//     string expected_output;
-//     usize expected_param_count;
-//     string expected_params[3];
-// } FNParamTest;
+    CLOVE_PASS();
+}
 
-// CLOVE_TEST(function_literal_params)
-// {
-//     FNParamTest tests[] = {
-//         {"fn () {};", "fn () { }\n", 0, {NULL}},
-//         {"fn (x) {};", "fn (x) { }\n", 1, {"x"}},
-//         {"fn (x y z) {};", "fn (x, y, z) { }\n", 3, {"x", "y", "z"}},
-//         {"", "", 0, {NULL}},
-//     };
+typedef struct
+{
+    string input;
+    string expected_output;
+    usize expected_param_count;
+    string expected_params[3];
+} FNParamTest;
 
-//     dc_sforeach(tests, FNParamTest, _it->input[0] != '\0')
-//     {
-//         Scanner s;
-//         scanner_init(&s, _it->input);
+CLOVE_TEST(function_literal_params)
+{
+    FNParamTest tests[] = {
+        {"fn () {}", "fn () { }\n", 0, {NULL}},
+        {"fn (x) {}", "fn (x) { }\n", 1, {"x"}},
+        {"fn (x y z) {}", "fn (x, y, z) { }\n", 3, {"x", "y", "z"}},
+        {"", "", 0, {NULL}},
+    };
 
-//         Parser p;
-//         parser_init(&p, &s);
+    dc_sforeach(tests, FNParamTest, _it->input[0] != '\0')
+    {
+        Scanner s;
+        scanner_init(&s, _it->input);
 
-//         ResultDNode program_res = parser_parse_program(&p);
+        Parser p;
+        parser_init(&p, &s);
 
-//         dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+        ResultDNode program_res = parser_parse_program(&p);
 
-//         DNode* program = dc_res_val2(program_res);
+        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
-//         dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
+        DNode* program = dc_res_val2(program_res);
 
-//         dn_string_init(program);
+        dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
 
-//         dc_action_on(strcmp(program->text, _it->expected_output) != 0, CLOVE_FAIL(), "expected='%s', got='%s'",
-//                      _it->expected_output, program->text);
+        dn_string_init(program);
 
-//         DNode* statement1 = dn_child(program, 0);
-//         DNode* function = dn_child(statement1, 0);
+        dc_action_on(strcmp(program->text, _it->expected_output) != 0, CLOVE_FAIL(), "expected='%s', got='%s'",
+                     _it->expected_output, program->text);
 
-//         dc_action_on(dn_child_count(function) != _it->expected_param_count + 1, CLOVE_FAIL(),
-//                      "function node must have %" PRIuMAX " children, got=%" PRIuMAX, _it->expected_param_count,
-//                      dn_child_count(function));
+        DNode* statement1 = dn_child(program, 0);
+        DNode* function = dn_child(statement1, 0);
 
-//         for (usize i = 0; i < _it->expected_param_count; ++i)
-//         {
-//             dc_action_on(dn_child(function, i)->type != DN_IDENTIFIER, CLOVE_FAIL(),
-//                          "Expected child %" PRIuMAX " to be identifier but got='%s'", i,
-//                          tostr_DNType(dn_child(function, i)->type));
+        dc_action_on(dn_child_count(function) != _it->expected_param_count + 1, CLOVE_FAIL(),
+                     "function node must have %" PRIuMAX " children, got=%" PRIuMAX, _it->expected_param_count,
+                     dn_child_count(function));
 
-//             dc_action_on(!dc_sv_str_eq(dn_text(dn_child(function, i)), _it->expected_params[i]), CLOVE_FAIL(),
-//                          "Expected identifier to be '" DCPRIsv "' but got='%s'", dc_sv_fmt(dn_text(dn_child(function, i))),
-//                          _it->expected_params[i]);
-//         }
+        for (usize i = 0; i < _it->expected_param_count; ++i)
+        {
+            dc_action_on(dn_child(function, i)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                         "Expected child %" PRIuMAX " to be identifier but got='%s'", i,
+                         tostr_DNType(dn_child(function, i)->type));
 
-//         dc_action_on(dn_child(function, _it->expected_param_count)->type != DN_BLOCK_STATEMENT, CLOVE_FAIL(),
-//                      "Expected last child to be block statement but got='%s'",
-//                      tostr_DNType(dn_child(function, _it->expected_param_count)->type));
+            dc_action_on(!dc_sv_str_eq(dn_text(dn_child(function, i)), _it->expected_params[i]), CLOVE_FAIL(),
+                         "Expected identifier to be '" DCPRIsv "' but got='%s'", dc_sv_fmt(dn_text(dn_child(function, i))),
+                         _it->expected_params[i]);
+        }
 
-//         dn_program_free(program);
-//         parser_free(&p);
-//     }
+        dc_action_on(dn_child(function, _it->expected_param_count)->type != DN_BLOCK_STATEMENT, CLOVE_FAIL(),
+                     "Expected last child to be block statement but got='%s'",
+                     tostr_DNType(dn_child(function, _it->expected_param_count)->type));
 
-//     CLOVE_PASS();
-// }
+        dn_program_free(program);
+        parser_free(&p);
+    }
 
-// CLOVE_TEST(call_expression)
-// {
-//     const string input = "(add 1 a * b, -4 $1)";
+    CLOVE_PASS();
+}
 
-//     Scanner s;
-//     scanner_init(&s, input);
+CLOVE_TEST(call_expression)
+{
+    const string input = "${add 1 a * b, -4 $1}";
 
-//     Parser p;
-//     parser_init(&p, &s);
+    Scanner s;
+    scanner_init(&s, input);
 
-//     ResultDNode program_res = parser_parse_program(&p);
+    Parser p;
+    parser_init(&p, &s);
 
-//     dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    ResultDNode program_res = parser_parse_program(&p);
 
-//     DNode* program = dc_res_val2(program_res);
+    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
-//     dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
+    DNode* program = dc_res_val2(program_res);
 
-//     dn_string_init(program);
+    dc_action_on(!program_is_valid(program, 1), CLOVE_FAIL(), "program is not valid");
 
-//     const string expected = "add(1, (a * b), (-4), 1)\n";
+    dn_string_init(program);
 
-//     dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(), "expected='%s', got='%s'", expected, program->text);
+    const string expected = "add(1, (a * b), (-4), 1)()\n";
 
-//     DNode* statement1 = dn_child(program, 0);
-//     DNode* call_node = dn_child(statement1, 0);
+    dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(), "expected='%s', got='%s'", expected, program->text);
 
-//     dc_action_on(dn_child_count(call_node) != 5, CLOVE_FAIL(), "call_node node must have 4 children, got=%" PRIuMAX,
-//                  dn_child_count(call_node));
+    DNode* statement1 = dn_child(program, 0);
+    DNode* statement2 = dn_child(statement1, 0);
+    DNode* call_node = dn_child(statement2, 0);
 
-//     dc_action_on(dn_child(call_node, 0)->type != DN_IDENTIFIER, CLOVE_FAIL(), "Expected child 0 to be identifier but
-//     got='%s'",
-//                  tostr_DNType(dn_child(call_node, 0)->type));
+    dc_action_on(dn_child_count(call_node) != 5, CLOVE_FAIL(), "call_node node must have 4 children, got=%" PRIuMAX,
+                 dn_child_count(call_node));
 
-//     dc_action_on(dn_child(call_node, 1)->type != DN_INTEGER_LITERAL, CLOVE_FAIL(),
-//                  "Expected child 1 to be integer value but got='%s'", tostr_DNType(dn_child(call_node, 1)->type));
+    dc_action_on(dn_child(call_node, 0)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                 "Expected child 0 to be identifier but got = '%s' ", tostr_DNType(dn_child(call_node, 0)->type));
 
-//     dc_action_on(dn_child(call_node, 2)->type != DN_INFIX_EXPRESSION, CLOVE_FAIL(),
-//                  "Expected child 2 to be infix expression but got='%s'", tostr_DNType(dn_child(call_node, 2)->type));
+    dc_action_on(dn_child(call_node, 1)->type != DN_INTEGER_LITERAL, CLOVE_FAIL(),
+                 "Expected child 1 to be integer value but got='%s'", tostr_DNType(dn_child(call_node, 1)->type));
 
-//     dc_action_on(dn_child(call_node, 3)->type != DN_PREFIX_EXPRESSION, CLOVE_FAIL(),
-//                  "Expected child 3 to be prefix expression but got='%s'", tostr_DNType(dn_child(call_node, 3)->type));
+    dc_action_on(dn_child(call_node, 2)->type != DN_INFIX_EXPRESSION, CLOVE_FAIL(),
+                 "Expected child 2 to be infix expression but got='%s'", tostr_DNType(dn_child(call_node, 2)->type));
 
-//     dc_action_on(dn_child(call_node, 4)->type != DN_IDENTIFIER, CLOVE_FAIL(), "Expected child 4 to be identifier but
-//     got='%s'",
-//                  tostr_DNType(dn_child(call_node, 3)->type));
+    dc_action_on(dn_child(call_node, 3)->type != DN_PREFIX_EXPRESSION, CLOVE_FAIL(),
+                 "Expected child 3 to be prefix expression but got='%s'", tostr_DNType(dn_child(call_node, 3)->type));
 
-//     dn_program_free(program);
-//     parser_free(&p);
+    dc_action_on(dn_child(call_node, 4)->type != DN_IDENTIFIER, CLOVE_FAIL(),
+                 "Expected child 4 to be identifier but got = '%s' ", tostr_DNType(dn_child(call_node, 3)->type));
 
-//     CLOVE_PASS();
-// }
+    dn_program_free(program);
+    parser_free(&p);
+
+    CLOVE_PASS();
+}
+
+#if 0
+
+#endif
