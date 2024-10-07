@@ -124,6 +124,16 @@ static bool test_Literal(DNode* literal_node, string expected, i64 expected_val)
     return false;
 }
 
+typedef struct
+{
+    string input;
+    string operator;
+    string lval_str;
+    i64 lval;
+    string rval_str;
+    i64 rval;
+} ExpressionTest;
+
 CLOVE_TEST(let_statements)
 {
     const string input = "let $1 5; let $\"some long variable name\" true\n"
@@ -274,16 +284,6 @@ CLOVE_TEST(integer_literal)
 
     CLOVE_PASS();
 }
-
-typedef struct
-{
-    string input;
-    string operator;
-    string lval_str;
-    i64 lval;
-    string rval_str;
-    i64 rval;
-} ExpressionTest;
 
 CLOVE_TEST(prefix_expressions)
 {
@@ -474,6 +474,9 @@ CLOVE_TEST(operator_precedence)
 
         "${add a + b + c * d / f + g}",
         "add((((a + b) + ((c * d) / f)) + g))()\n",
+
+        "if a > 10 { if a > 10 { a } }",
+        "if (a > 10) { if (a > 10) { a; }; }\n",
     };
 
     for (usize i = 0; i < dc_count(tests) / 2; ++i)

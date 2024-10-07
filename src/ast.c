@@ -130,8 +130,8 @@ void dn_string_init(DNode* dn)
                 value = dn_child(dn, 2)->text;
             }
 
-            dc_sprintf(&dn->text, DCPRIsv " %s %s %s%s", dc_sv_fmt(dn_text(dn)), dn_child(dn, 0)->text, dn_child(dn, 1)->text,
-                       (value ? "else " : ""), (value ? value : ""));
+            dc_sprintf(&dn->text, DCPRIsv " %s %s%s%s", dc_sv_fmt(dn_text(dn)), dn_child(dn, 0)->text, dn_child(dn, 1)->text,
+                       (value ? " else " : ""), (value ? value : ""));
 
             break;
         }

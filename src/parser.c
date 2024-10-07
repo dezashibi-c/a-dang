@@ -29,38 +29,50 @@ static ResultDNode parse_statement(Parser* p);
 // * PRIVATE FUNCTIONS
 // ***************************************************************************************
 
-#define current_token_is(P, TYPE) ((P)->current_token->type == TYPE)
-#define current_token_is_not(P, TYPE) ((P)->current_token->type != TYPE)
+#define token_is(TOKEN, TYPE) ((TOKEN) && TOKEN->type == TYPE)
+#define token_is_not(TOKEN, TYPE) ((TOKEN) && TOKEN->type != TYPE)
 
-#define current_token_is_end_of_stmt(P)                                                                                        \
-    (current_token_is(P, TOK_SEMICOLON) || current_token_is(P, TOK_NEWLINE) || current_token_is(P, TOK_EOF))
+#define current_token_is(P, TYPE) token_is((P)->current_token, TYPE)
+#define current_token_is_not(P, TYPE) token_is_not((P)->current_token, TYPE)
 
-#define current_token_is_nl_or_sc(P) (current_token_is(P, TOK_SEMICOLON) || current_token_is(P, TOK_NEWLINE))
+#define peek_token_is(P, TYPE) token_is((P)->peek_token, TYPE)
+#define peek_token_is_not(P, TYPE) token_is_not((P)->peek_token, TYPE)
 
-#define peek_token_is(P, TYPE) ((P)->peek_token->type == TYPE)
-#define peek_token_is_not(P, TYPE) ((P)->peek_token->type != TYPE)
-
-#define peek_token_is_end_of_stmt(P)                                                                                           \
-    (peek_token_is(P, TOK_COMMA) || peek_token_is(P, TOK_SEMICOLON) || peek_token_is(P, TOK_NEWLINE) ||                        \
-     peek_token_is(P, TOK_EOF))
-
-#define peek_token_is_end_of_stmt2(P)                                                                                          \
-    (peek_token_is(P, TOK_SEMICOLON) || peek_token_is(P, TOK_NEWLINE) || peek_token_is(P, TOK_EOF))
-
-#define peek_prec(P) get_precedence((P)->peek_token->type)
+#define peek_prec(P) ((P)->peek_token ? get_precedence((P)->peek_token->type) : PREC_LOWEST)
 #define current_prec(P) get_precedence((P)->current_token->type)
 
 #define parser_location_preserve(P) ParserStatementLoc __parser_loc_snapshot = (P)->loc
 #define parser_location_revert(P) (P)->loc = __parser_loc_snapshot
 #define parser_location_set(P, LOC) (P)->loc = LOC
-#define parser_location_terminators(P) (P)->terminators[(P)->loc]
-#define parser_location_is(P, LOC) ((P)->loc == LOC)
+
+/**
+ * expands to checking if the token is end of statement or not
+ *
+ * @param P is the parser pointer
+ * @param TOK must be whether 'current' or 'peek' without single or double quotes
+ */
+#define token_is_end_of_the_statement(P, TOK)                                                                                  \
+    (((P)->loc != LOC_BODY && TOK##_token_is(P, TOK_RBRACE)) ||                                                                \
+     ((P)->loc != LOC_CALL && (TOK##_token_is(P, TOK_SEMICOLON) || TOK##_token_is(P, TOK_NEWLINE))))
+
+#define try_moving_to_the_end_of_statement(P)                                                                                  \
+    while (token_is_end_of_the_statement(P, current) || current_token_is(P, TOK_EOF))                                          \
+    dc_try_fail_temp(DCResultVoid, next_token((P)))
+
+#define try_bypassing_all_sc_and_nls_or_fail_with(P, PRE_EXIT_ACTIONS)                                                         \
+    while (current_token_is(P, TOK_SEMICOLON) || current_token_is(P, TOK_NEWLINE))                                             \
+    {                                                                                                                          \
+        DCResultVoid res = next_token(p);                                                                                      \
+        dc_res_ret_if_err2(res, { PRE_EXIT_ACTIONS; });                                                                        \
+    }
 
 #define parser_log_tokens(P)                                                                                                   \
-    dc_log("cur tok: %s, next tok: %s", tostr_DTokenType((P)->current_token->type), tostr_DTokenType((P)->peek_token->type))
+    dc_log("cur tok: %s, next tok: %s", tostr_DTokenType((P)->current_token->type),                                            \
+           (P)->peek_token ? tostr_DTokenType((P)->peek_token->type) : "NULL")
 
 #define parser_dbg_log_tokens(P)                                                                                               \
-    dc_dbg_log("cur tok: %s, next tok: %s", tostr_DTokenType((P)->current_token->type), tostr_DTokenType((P)->peek_token->type))
+    dc_dbg_log("cur tok: %s, next tok: %s", tostr_DTokenType((P)->current_token->type),                                        \
+               (P)->peek_token ? tostr_DTokenType((P)->peek_token->type) : "NULL")
 
 #define next_token_err_fmt(P, TYPE)                                                                                            \
     "expected next token to be %s, got %s instead.", tostr_DTokenType(TYPE), tostr_DTokenType(P->peek_token->type)
@@ -68,13 +80,19 @@ static ResultDNode parse_statement(Parser* p);
 #define current_token_err_fmt(P, TYPE)                                                                                         \
     "expected current token to be %s, got %s instead.", tostr_DTokenType(TYPE), tostr_DTokenType(P->current_token->type)
 
-#define unexpected_token_err_fmt(TYPE) "unexpected token '%s' is detected.", tostr_DTokenType(TYPE)
+#define unexpected_token_err_fmt(TYPE) "unexpected token '%s'.", tostr_DTokenType(TYPE)
 
 static DCResultVoid next_token(Parser* p)
 {
     DC_RES_void();
 
     p->current_token = p->peek_token;
+
+    if (current_token_is(p, TOK_EOF))
+    {
+        p->peek_token = NULL;
+        dc_res_ret();
+    }
 
     ResultToken res = scanner_next_token(p->scanner);
     dc_res_fail_if_err2(res);
@@ -84,84 +102,9 @@ static DCResultVoid next_token(Parser* p)
     dc_res_ret();
 }
 
-static DCResultVoid next_token_if_not_eof(Parser* p)
-{
-    DC_RES_void();
-
-    if (current_token_is_not(p, TOK_EOF)) return next_token(p);
-
-    dc_res_ret();
-}
-
 static void add_error(Parser* p, DCError* err)
 {
     dc_da_push(&p->errors, (err->allocated ? dc_dva(string, err->message) : dc_dv(string, err->message)));
-}
-
-static bool current_token_is_end_of_the_statement(Parser* p)
-{
-    bool is_cur_tok_terminator = false;
-    for (DTokenType* dtt = parser_location_terminators(p); *dtt != TOK_TYPE_MAX; ++dtt)
-    {
-        if (current_token_is(p, *dtt))
-        {
-            is_cur_tok_terminator = true;
-            break;
-        }
-    }
-
-    return is_cur_tok_terminator;
-}
-
-static bool peek_token_is_end_of_the_statement(Parser* p)
-{
-    bool is_peek_tok_terminator = false;
-    for (DTokenType* dtt = parser_location_terminators(p); *dtt != TOK_TYPE_MAX; ++dtt)
-    {
-        dc_dbg_log("checking: %s", tostr_DTokenType(*dtt));
-
-        if (peek_token_is(p, *dtt))
-        {
-            is_peek_tok_terminator = true;
-            break;
-        }
-    }
-
-    return is_peek_tok_terminator;
-}
-
-static DCResultVoid move_to_the_end_of_statement(Parser* p)
-{
-    DC_RES_void();
-
-    for (DTokenType* dtt = parser_location_terminators(p); *dtt != TOK_TYPE_MAX; ++dtt)
-    {
-        if (current_token_is(p, *dtt)) dc_res_ret();
-    }
-
-    while (!current_token_is(p, TOK_EOF))
-    {
-        bool is_next_token_a_terminator = false;
-        for (DTokenType* dtt = parser_location_terminators(p); *dtt != TOK_TYPE_MAX; ++dtt)
-        {
-            if (peek_token_is(p, *dtt))
-            {
-                is_next_token_a_terminator = true;
-                break;
-            }
-        }
-
-        if (is_next_token_a_terminator)
-        {
-            dc_try_fail(next_token_if_not_eof(p));
-
-            continue;
-        }
-
-        break;
-    }
-
-    dc_res_ret();
 }
 
 static DCResultVoid move_if_peek_token_is(Parser* p, DTokenType type)
@@ -248,15 +191,9 @@ static DCResultVoid parse_function_params(Parser* p, DNode* parent_node)
 {
     DC_RES_void();
 
-    if (peek_token_is(p, TOK_RPAREN))
-    {
-        dc_try_fail(next_token(p));
-        dc_res_ret();
-    }
-
     dc_try_fail(next_token(p));
 
-    while (true)
+    while (current_token_is_not(p, TOK_RPAREN) && current_token_is_not(p, TOK_EOF))
     {
         ResultDNode ident = parse_identifier(p);
         dc_res_ret_if_err2(ident, {});
@@ -265,13 +202,11 @@ static DCResultVoid parse_function_params(Parser* p, DNode* parent_node)
         dc_res_ret_if_err2(res, dc_try_fail(dn_free(dc_res_val2(ident))));
 
         dc_try_fail(next_token(p));
-        if (current_token_is(p, TOK_COMMA))
-            dc_try_fail(next_token(p));
-        else if (current_token_is(p, TOK_RPAREN) || current_token_is(p, TOK_EOF))
-            break;
+
+        if (current_token_is(p, TOK_COMMA)) dc_try_fail(next_token(p));
     }
 
-    if (current_token_is_not(p, TOK_RPAREN)) dc_res_ret_ea(-1, current_token_err_fmt(p, TOK_RPAREN));
+    if (current_token_is_not(p, TOK_RPAREN)) dc_res_ret_ea(-1, "unclosed parenthesis, " current_token_err_fmt(p, TOK_RPAREN));
 
     dc_res_ret();
 }
@@ -283,11 +218,14 @@ static ResultDNode parse_function_literal(Parser* p)
 {
     DC_RES2(ResultDNode);
 
+    // hold current token 'fn'
     DToken* tok = p->current_token;
 
     dc_try_fail_temp(DCResultVoid, move_if_peek_token_is(p, TOK_LPAREN));
 
     dc_try_fail(dn_new(DN_FUNCTION_LITERAL, tok, true));
+
+    /* parsing function parameters  */
 
     DCResultVoid res = parse_function_params(p, dc_res_val());
     dc_res_ret_if_err2(res, {
@@ -295,6 +233,8 @@ static ResultDNode parse_function_literal(Parser* p)
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
+
+    /* a function also needs body which can be empty but it's mandatory */
 
     res = move_if_peek_token_is(p, TOK_LBRACE);
     dc_res_ret_if_err2(res, {
@@ -313,6 +253,8 @@ static ResultDNode parse_function_literal(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
+    /* add body to function literal to finish up parsing */
+
     res = dn_child_push(dc_res_val(), dc_res_val2(body));
     dc_res_ret_if_err2(res, {
         dc_res_err_dbg_log2(res, "could not push the body to the function literal");
@@ -326,12 +268,14 @@ static ResultDNode parse_function_literal(Parser* p)
 
 /**
  * Call Params are expressions separated by whitespace or ','
+ * Until it reaches the proper end of statement that is proper for current location
+ * Generally they are '\n' and ';' but also EOF, '}' based on the context
  */
 static DCResultVoid parse_call(Parser* p, DNode* parent_node)
 {
     DC_RES_void();
 
-    while (!current_token_is_end_of_the_statement(p))
+    while (!token_is_end_of_the_statement(p, current) && current_token_is_not(p, TOK_EOF))
     {
         ResultDNode param = parse_expression(p, PREC_LOWEST);
 
@@ -342,7 +286,7 @@ static DCResultVoid parse_call(Parser* p, DNode* parent_node)
 
         parser_dbg_log_tokens(p);
 
-        dc_try_fail(next_token_if_not_eof(p));
+        dc_try_fail(next_token(p));
         if (current_token_is(p, TOK_COMMA)) dc_try_fail(next_token(p));
     }
 
@@ -359,19 +303,24 @@ static ResultDNode parse_call_expression(Parser* p)
     DC_RES2(ResultDNode);
 
     // Bypass '${'
-    dc_try_fail_temp(DCResultVoid, next_token_if_not_eof(p));
+    dc_try_fail_temp(DCResultVoid, next_token(p));
 
     DCResultVoid res;
 
     dc_res_try_or_fail_with(dn_new(DN_CALL_EXPRESSION, NULL, true), {});
 
+    parser_location_preserve(p);
+
+    // Switch to call loc to specify proper ending signal
     parser_location_set(p, LOC_CALL);
     res = parse_call(p, dc_res_val());
+
+    parser_location_revert(p);
 
     dc_res_ret_if_err2(res, {
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     dc_res_ret();
@@ -464,8 +413,15 @@ static ResultDNode parse_if_expression(Parser* p)
 
     parser_dbg_log_tokens(p);
 
-    if (current_token_is(p, TOK_ELSE))
+    if (peek_token_is(p, TOK_ELSE))
     {
+        // bypass previous }
+        dc_res_try_or_fail_with2(res, next_token(p), {
+            dc_res_err_dbg_log2(res, "could not move to the next token");
+
+            dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        });
+
         /* Expecting to get a '{' in order to start the alternative block */
 
         res = move_if_peek_token_is(p, TOK_LBRACE);
@@ -564,6 +520,8 @@ static ResultDNode parse_infix_expression(Parser* p, DNode* left)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(right)));
     });
 
+    parser_dbg_log_tokens(p);
+
     dc_res_ret();
 }
 
@@ -582,14 +540,14 @@ static ResultDNode parse_let_statement(Parser* p)
     dc_res_try_or_fail_with3(DCResultVoid, res, move_if_peek_token_is(p, TOK_IDENT), {
         dc_res_err_dbg_log2(res, "Identifier needed");
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     // Try to create a new identifier node
     dc_res_try_or_fail_with3(ResultDNode, temp_node, dn_new(DN_IDENTIFIER, p->current_token, false), {
         dc_res_err_dbg_log2(temp_node, "could not parse name");
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     // Try to create a new let statement node
@@ -598,7 +556,7 @@ static ResultDNode parse_let_statement(Parser* p)
         dc_res_err_dbg_log("could not create let statement node");
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     // Try to push the identifier to the let statement as the first child
@@ -608,11 +566,11 @@ static ResultDNode parse_let_statement(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     // If the let statement doesn't have initial value just return.
-    if (peek_token_is_end_of_the_statement(p))
+    if (token_is_end_of_the_statement(p, peek) || peek_token_is(p, TOK_EOF))
     {
         dc_res_try_or_fail_with2(res, next_token(p), {
             dc_res_err_dbg_log2(res, "could not move to the next token");
@@ -631,7 +589,7 @@ static ResultDNode parse_let_statement(Parser* p)
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     // Try to parse expression as initial value
@@ -640,7 +598,7 @@ static ResultDNode parse_let_statement(Parser* p)
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     // Try to push the initial value expression
@@ -650,11 +608,13 @@ static ResultDNode parse_let_statement(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
+    parser_dbg_log_tokens(p);
+
     // Based on the current location a proper terminator must be seen
-    if (peek_token_is_end_of_the_statement(p))
+    if (token_is_end_of_the_statement(p, peek) || peek_token_is(p, TOK_EOF))
     {
         dc_res_try_or_fail_with2(res, next_token(p), {
             dc_res_err_dbg_log2(res, "could not move to the next token");
@@ -676,7 +636,7 @@ static ResultDNode parse_return_statement(Parser* p)
     DC_TRY_DEF2(ResultDNode, dn_new(DN_RETURN_STATEMENT, p->current_token, true));
 
     // Check if it's a return without a value
-    if (peek_token_is_end_of_the_statement(p))
+    if (token_is_end_of_the_statement(p, peek) || peek_token_is(p, TOK_EOF))
     {
         dc_res_try_or_fail_with3(DCResultVoid, res, next_token(p), {
             dc_res_err_dbg_log2(res, "could not move to the next token");
@@ -694,7 +654,7 @@ static ResultDNode parse_return_statement(Parser* p)
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     dc_res_try_or_fail_with3(ResultDNode, value, parse_expression(p, PREC_LOWEST), {
@@ -702,7 +662,7 @@ static ResultDNode parse_return_statement(Parser* p)
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     parser_dbg_log_tokens(p);
@@ -713,11 +673,11 @@ static ResultDNode parse_return_statement(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(value)));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     // Based on the current location a proper terminator must be seen
-    if (peek_token_is_end_of_the_statement(p))
+    if (token_is_end_of_the_statement(p, peek) || peek_token_is(p, TOK_EOF))
     {
         dc_res_try_or_fail_with2(res, next_token(p), {
             dc_res_err_dbg_log2(res, "could not move to the next token");
@@ -744,12 +704,8 @@ static ResultDNode parse_block_statement(Parser* p)
 
     DCResultVoid res;
 
-
-    while (current_token_is_not(p, TOK_RBRACE))
+    while (current_token_is_not(p, TOK_RBRACE) || current_token_is(p, TOK_EOF))
     {
-        /* Break out of the loop if the cursor is at the end */
-        if (current_token_is(p, TOK_RBRACE) || current_token_is(p, TOK_EOF)) break;
-
         // Enter the block
         parser_location_set(p, LOC_BLOCK);
 
@@ -771,25 +727,14 @@ static ResultDNode parse_block_statement(Parser* p)
         });
 
         /* Bypassing all the meaningless newlines and semicolons */
-        while (current_token_is(p, TOK_SEMICOLON) || current_token_is(p, TOK_NEWLINE))
-        {
-            res = next_token_if_not_eof(p);
-            dc_res_ret_if_err2(res, {
-                dc_res_err_dbg_log2(res, "could move to the next token");
+        try_bypassing_all_sc_and_nls_or_fail_with(p, {
+            dc_res_err_dbg_log2(res, "could move to the next token");
 
-                dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
-            });
-        }
+            dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        });
     }
 
     if (current_token_is(p, TOK_EOF)) dc_res_ret_e(-1, "block ended with EOF, expected '}' instead");
-
-    res = next_token_if_not_eof(p);
-    dc_res_ret_if_err2(res, {
-        dc_res_err_dbg_log2(res, "could not move to the next token");
-
-        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
-    });
 
     dc_res_ret();
 }
@@ -816,7 +761,11 @@ static ResultDNode parse_expression(Parser* p, Precedence precedence)
     ResultDNode left_exp = prefix(p);
     parser_location_revert(p);
 
-    while (!peek_token_is_end_of_the_statement(p) && precedence < peek_prec(p))
+    parser_dbg_log_tokens(p);
+    dc_dbg_log("precedence %d, peek precedence %d", precedence, peek_prec(p));
+
+    while (!token_is_end_of_the_statement(p, peek) && peek_token_is_not(p, TOK_EOF) && peek_token_is_not(p, TOK_COMMA) &&
+           precedence < peek_prec(p))
     {
         ParseInfixFn infix = p->parse_infix_fns[p->peek_token->type];
         if (!infix) return left_exp;
@@ -855,13 +804,13 @@ static ResultDNode parse_expression_statement(Parser* p)
     dc_res_ret_if_err2(res, {
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call)));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     dc_res_try_or_fail_with(dn_new(DN_EXPRESSION_STATEMENT, NULL, true), {
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call)));
 
-        dc_try_fail_temp(DCResultVoid, move_to_the_end_of_statement(p));
+        try_moving_to_the_end_of_statement(p);
     });
 
     if (dn_child_count(dc_res_val2(call)) == 1 && dn_child(dc_res_val2(call), 0)->type != DN_CALL_EXPRESSION &&
@@ -948,26 +897,8 @@ DCResultVoid parser_init(Parser* p, Scanner* s)
 
     dc_try(dc_da_init(&p->errors, NULL));
 
-    // Initialize parsing location
-    memset(p->terminators, 0, sizeof(p->terminators));
-
     // Starting from body
     p->loc = LOC_BODY;
-
-    p->terminators[LOC_BODY][0] = TOK_SEMICOLON;
-    p->terminators[LOC_BODY][1] = TOK_NEWLINE;
-    p->terminators[LOC_BODY][2] = TOK_EOF;
-    p->terminators[LOC_BODY][3] = TOK_TYPE_MAX;
-
-    p->terminators[LOC_BLOCK][0] = TOK_SEMICOLON;
-    p->terminators[LOC_BLOCK][1] = TOK_NEWLINE;
-    p->terminators[LOC_BLOCK][2] = TOK_RBRACE;
-    p->terminators[LOC_BLOCK][3] = TOK_EOF;
-    p->terminators[LOC_BLOCK][4] = TOK_TYPE_MAX;
-
-    p->terminators[LOC_CALL][0] = TOK_RBRACE;
-    p->terminators[LOC_CALL][1] = TOK_EOF;
-    p->terminators[LOC_CALL][2] = TOK_TYPE_MAX;
 
     // Initialize function pointers
     memset(p->parse_prefix_fns, 0, sizeof(p->parse_prefix_fns));
@@ -1028,9 +959,9 @@ ResultDNode parser_parse_program(Parser* p)
     while (true)
     {
         /* Bypassing all the meaningless newlines and semicolons */
-        while (current_token_is_end_of_the_statement(p) && current_token_is_not(p, TOK_EOF))
+        while (current_token_is(p, TOK_SEMICOLON) || current_token_is(p, TOK_NEWLINE))
         {
-            res = next_token_if_not_eof(p);
+            res = next_token(p);
             if (dc_res_is_err2(res))
             {
                 dc_res_err_dbg_log2(res, "could not move to the next token");
