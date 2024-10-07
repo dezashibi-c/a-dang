@@ -56,7 +56,7 @@ static ResultDNode parse_statement(Parser* p);
      ((P)->loc != LOC_CALL && (TOK##_token_is(P, TOK_SEMICOLON) || TOK##_token_is(P, TOK_NEWLINE))))
 
 #define try_moving_to_the_end_of_statement(P)                                                                                  \
-    while (token_is_end_of_the_statement(P, current) || current_token_is(P, TOK_EOF))                                          \
+    while (!token_is_end_of_the_statement(P, current) && current_token_is_not(P, TOK_EOF))                                     \
     dc_try_fail_temp(DCResultVoid, next_token((P)))
 
 #define try_bypassing_all_sc_and_nls_or_fail_with(P, PRE_EXIT_ACTIONS)                                                         \
@@ -144,6 +144,13 @@ static Precedence get_precedence(DTokenType type)
     };
 
     return PREC_LOWEST;
+}
+
+static ResultDNode parse_illegal(Parser* p)
+{
+    DC_RES2(ResultDNode);
+
+    dc_res_ret_ea(-1, "got illegal token of type: %s", tostr_DTokenType(p->current_token->type));
 }
 
 static ResultDNode parse_identifier(Parser* p)
@@ -761,6 +768,8 @@ static ResultDNode parse_expression(Parser* p, Precedence precedence)
     ResultDNode left_exp = prefix(p);
     parser_location_revert(p);
 
+    if (dc_res_is_err2(left_exp)) return left_exp;
+
     parser_dbg_log_tokens(p);
     dc_dbg_log("precedence %d, peek precedence %d", precedence, peek_prec(p));
 
@@ -914,6 +923,11 @@ DCResultVoid parser_init(Parser* p, Scanner* s)
     p->parse_prefix_fns[TOK_IF] = parse_if_expression;
     p->parse_prefix_fns[TOK_FUNCTION] = parse_function_literal;
     p->parse_prefix_fns[TOK_DOLLAR_LBRACE] = parse_call_expression;
+
+    // Illegal tokens that are supposed to be bypassed already
+    p->parse_prefix_fns[TOK_COMMA] = parse_illegal;
+    p->parse_prefix_fns[TOK_NEWLINE] = parse_illegal;
+    p->parse_prefix_fns[TOK_SEMICOLON] = parse_illegal;
 
     p->parse_infix_fns[TOK_PLUS] = parse_infix_expression;
     p->parse_infix_fns[TOK_MINUS] = parse_infix_expression;
