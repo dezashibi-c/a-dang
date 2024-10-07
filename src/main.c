@@ -60,7 +60,7 @@ static void repl()
         {
             dn_string_init(dc_res_val2(program_res));
 
-            printf("Evaluated text: " dc_colorize_fg(LGREEN, "%s") "\n", dc_res_val2(program_res)->text);
+            printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", dc_res_val2(program_res)->text);
 
             dn_program_free(dc_res_val2(program_res));
         }
