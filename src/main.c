@@ -55,9 +55,15 @@ static void repl()
         ResultDNode program_res = parser_parse_program(&p);
 
         if (dc_res_is_err2(program_res))
-            parser_log_errors(&p);
+            dc_log("parser could not finish the job properly: (code %d) %s", dc_res_err_code2(program_res),
+                   dc_res_err_msg2(program_res));
         else
         {
+            if (parser_has_error(&p))
+            {
+                parser_log_errors(&p);
+            }
+
             dn_string_init(dc_res_val2(program_res));
 
             printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", dc_res_val2(program_res)->text);

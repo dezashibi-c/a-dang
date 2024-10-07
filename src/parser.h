@@ -58,6 +58,8 @@ typedef struct Parser
     ParseInfixFn parse_infix_fns[DN__MAX];
 } Parser;
 
+#define parser_has_error(P) ((P)->errors.count != 0)
+
 DCResultVoid parser_init(Parser* p, Scanner* s);
 DCResultVoid parser_free(Parser* p);
 ResultDNode parser_parse_program(Parser* p);

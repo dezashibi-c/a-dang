@@ -324,11 +324,7 @@ static ResultDNode parse_call_expression(Parser* p)
 
     parser_location_revert(p);
 
-    dc_res_ret_if_err2(res, {
-        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
-
-        try_moving_to_the_end_of_statement(p);
-    });
+    dc_res_ret_if_err2(res, { dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val())); });
 
     dc_res_ret();
 }
@@ -544,26 +540,18 @@ static ResultDNode parse_let_statement(Parser* p)
     /* Parsing identifier for let statement */
 
     // Check if the next token is an identifier or not
-    dc_res_try_or_fail_with3(DCResultVoid, res, move_if_peek_token_is(p, TOK_IDENT), {
-        dc_res_err_dbg_log2(res, "Identifier needed");
-
-        try_moving_to_the_end_of_statement(p);
-    });
+    dc_res_try_or_fail_with3(DCResultVoid, res, move_if_peek_token_is(p, TOK_IDENT),
+                             { dc_res_err_dbg_log2(res, "Identifier needed"); });
 
     // Try to create a new identifier node
-    dc_res_try_or_fail_with3(ResultDNode, temp_node, dn_new(DN_IDENTIFIER, p->current_token, false), {
-        dc_res_err_dbg_log2(temp_node, "could not parse name");
-
-        try_moving_to_the_end_of_statement(p);
-    });
+    dc_res_try_or_fail_with3(ResultDNode, temp_node, dn_new(DN_IDENTIFIER, p->current_token, false),
+                             { dc_res_err_dbg_log2(temp_node, "could not parse name"); });
 
     // Try to create a new let statement node
     // If successful it will be saved in the main result variable
     dc_res_try_or_fail_with(dn_new(DN_LET_STATEMENT, tok, true), {
         dc_res_err_dbg_log("could not create let statement node");
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
-
-        try_moving_to_the_end_of_statement(p);
     });
 
     // Try to push the identifier to the let statement as the first child
@@ -572,8 +560,6 @@ static ResultDNode parse_let_statement(Parser* p)
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
-
-        try_moving_to_the_end_of_statement(p);
     });
 
     // If the let statement doesn't have initial value just return.
@@ -595,8 +581,6 @@ static ResultDNode parse_let_statement(Parser* p)
         dc_res_err_dbg_log2(res, "could not move to the next token");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
-
-        try_moving_to_the_end_of_statement(p);
     });
 
     // Try to parse expression as initial value
@@ -604,8 +588,6 @@ static ResultDNode parse_let_statement(Parser* p)
         dc_res_err_dbg_log2(temp_node, "could not parse value");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
-
-        try_moving_to_the_end_of_statement(p);
     });
 
     // Try to push the initial value expression
@@ -614,8 +596,6 @@ static ResultDNode parse_let_statement(Parser* p)
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
-
-        try_moving_to_the_end_of_statement(p);
     });
 
     parser_dbg_log_tokens(p);
@@ -632,7 +612,7 @@ static ResultDNode parse_let_statement(Parser* p)
         dc_res_ret(); // return successfully
     }
 
-    dc_res_ret_e(-1, "end of statement needed");
+    dc_res_ret_ea(-1, "end of statement needed, got token of type %s.", tostr_DTokenType(p->peek_token->type));
 }
 
 /**
@@ -660,16 +640,12 @@ static ResultDNode parse_return_statement(Parser* p)
         dc_res_err_dbg_log2(res, "could not move to the next token");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
-
-        try_moving_to_the_end_of_statement(p);
     });
 
     dc_res_try_or_fail_with3(ResultDNode, value, parse_expression(p, PREC_LOWEST), {
         dc_res_err_dbg_log2(res, "could not parse value");
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
-
-        try_moving_to_the_end_of_statement(p);
     });
 
     parser_dbg_log_tokens(p);
@@ -679,8 +655,6 @@ static ResultDNode parse_return_statement(Parser* p)
 
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(value)));
-
-        try_moving_to_the_end_of_statement(p);
     });
 
     // Based on the current location a proper terminator must be seen
@@ -695,7 +669,7 @@ static ResultDNode parse_return_statement(Parser* p)
         dc_res_ret(); // return successfully
     }
 
-    dc_res_ret_e(-1, "end of statement needed");
+    dc_res_ret_ea(-1, "end of statement needed, got token of type %s.", tostr_DTokenType(p->peek_token->type));
 }
 
 static ResultDNode parse_block_statement(Parser* p)
@@ -810,17 +784,10 @@ static ResultDNode parse_expression_statement(Parser* p)
     res = parse_call(p, dc_res_val2(call));
     parser_location_revert(p);
 
-    dc_res_ret_if_err2(res, {
-        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call)));
+    dc_res_ret_if_err2(res, { dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call))); });
 
-        try_moving_to_the_end_of_statement(p);
-    });
-
-    dc_res_try_or_fail_with(dn_new(DN_EXPRESSION_STATEMENT, NULL, true), {
-        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call)));
-
-        try_moving_to_the_end_of_statement(p);
-    });
+    dc_res_try_or_fail_with(dn_new(DN_EXPRESSION_STATEMENT, NULL, true),
+                            { dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call))); });
 
     if (dn_child_count(dc_res_val2(call)) == 1 && dn_child(dc_res_val2(call), 0)->type != DN_CALL_EXPRESSION &&
         current_token_is_not(p, TOK_SEMICOLON))
@@ -861,6 +828,8 @@ static ResultDNode parse_expression_statement(Parser* p)
  */
 static ResultDNode parse_statement(Parser* p)
 {
+    DC_RES2(ResultDNode);
+
     parser_location_preserve(p);
 
     ResultDNode result;
@@ -880,7 +849,10 @@ static ResultDNode parse_statement(Parser* p)
             break;
     }
 
+    if (dc_res_is_err2(result)) try_moving_to_the_end_of_statement(p);
+
     parser_location_revert(p);
+
     return result;
 }
 
@@ -1009,8 +981,6 @@ ResultDNode parser_parse_program(Parser* p)
 
         add_error(p, &dc_res_err2(stmt));
     }
-
-    if (p->errors.count != 0) dc_res_ret_e(-1, "parser has error");
 
     dc_res_ret();
 }
