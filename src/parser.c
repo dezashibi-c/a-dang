@@ -685,7 +685,7 @@ static ResultDNode parse_block_statement(Parser* p)
 
     DCResultVoid res;
 
-    while (current_token_is_not(p, TOK_RBRACE) || current_token_is(p, TOK_EOF))
+    while (current_token_is_not(p, TOK_RBRACE) && current_token_is_not(p, TOK_EOF))
     {
         // Enter the block
         parser_location_set(p, LOC_BLOCK);
@@ -897,9 +897,12 @@ DCResultVoid parser_init(Parser* p, Scanner* s)
     p->parse_prefix_fns[TOK_DOLLAR_LBRACE] = parse_call_expression;
 
     // Illegal tokens that are supposed to be bypassed already
+    p->parse_prefix_fns[TOK_EOF] = parse_illegal;
     p->parse_prefix_fns[TOK_COMMA] = parse_illegal;
     p->parse_prefix_fns[TOK_NEWLINE] = parse_illegal;
     p->parse_prefix_fns[TOK_SEMICOLON] = parse_illegal;
+    p->parse_prefix_fns[TOK_RBRACE] = parse_illegal;
+    p->parse_prefix_fns[TOK_RPAREN] = parse_illegal;
 
     p->parse_infix_fns[TOK_PLUS] = parse_infix_expression;
     p->parse_infix_fns[TOK_MINUS] = parse_infix_expression;
