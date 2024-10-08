@@ -125,7 +125,7 @@ CLOVE_TEST(integer_expressions)
             CLOVE_FAIL();
         }
 
-        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "evaluation result failed");
+        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "wrong evaluation result");
     }
 
     CLOVE_PASS();
@@ -196,7 +196,7 @@ CLOVE_TEST(boolean_expressions)
             CLOVE_FAIL();
         }
 
-        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "evaluation result failed");
+        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "wrong evaluation result");
     }
 
     CLOVE_PASS();
@@ -233,7 +233,40 @@ CLOVE_TEST(if_else_expressions)
             CLOVE_FAIL();
         }
 
-        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "evaluation result failed");
+        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "wrong evaluation result");
+    }
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(return_statement)
+{
+    TestCase tests[] = {
+        {.input = "return 10", .expected = dang_int(10)},
+
+        {.input = "return", .expected = DANG_NULL},
+
+        {.input = "return 10; 9", .expected = dang_int(10)},
+
+        {.input = "return 2 * 5; 9", .expected = dang_int(10)},
+
+        {.input = "9; return 2 * 5; 9", .expected = dang_int(10)},
+
+        {.input = "if 10 > 1 {\n if 10 > 1 {\n return 10 \n } \n return 1 \n}", .expected = dang_int(10)},
+
+        {.input = "", .expected = DANG_NULL},
+    };
+
+    dc_sforeach(tests, TestCase, strlen(_it->input) != 0)
+    {
+        DCResult res = test_eval(_it->input);
+        if (dc_res_is_err2(res))
+        {
+            dc_res_err_log2(res, "evaluation failed");
+            CLOVE_FAIL();
+        }
+
+        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "wrong evaluation result");
     }
 
     CLOVE_PASS();

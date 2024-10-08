@@ -20,7 +20,13 @@ static DCResult eval_statements(DNode* dn)
 {
     DC_RES();
 
-    dc_da_for(dn->children) dc_try_fail(dang_eval(dn_child(dn, _idx)));
+    dc_da_for(dn->children)
+    {
+        DNode* stmt = dn_child(dn, _idx);
+        dc_try_fail(dang_eval(stmt));
+
+        if (stmt->type == DN_RETURN_STATEMENT) dc_res_ret();
+    }
 
     dc_res_ret();
 }
@@ -203,6 +209,18 @@ DCResult dang_eval(DNode* dn)
 
         case DN_IF_EXPRESSION:
             return eval_if_expression(dn);
+
+        case DN_RETURN_STATEMENT:
+        {
+            DNode* ret_val = (dn_child_count(dn) > 0) ? dn_child(dn, 0) : NULL;
+
+            if (!ret_val) dc_res_ret_ok_dv(voidptr, NULL);
+
+            return dang_eval(ret_val);
+        }
+
+        case DN_CALL_EXPRESSION:
+            dc_res_ret_ok_dv(voidptr, NULL);
 
         default:
             break;
