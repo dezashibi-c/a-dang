@@ -120,16 +120,16 @@ static DCResult eval_infix_expression(DNode* dn, DCDynVal* left, DCDynVal* right
     else if (dc_dv_is(*left, u8) && dc_dv_is(*right, u8))
         return eval_boolean_infix_expression(dn, left, right);
 
-    else if (dc_dv_is(*right, u8))
-    {
-        DCDynVal left2 = dang_bool(dc_res_val2(dc_dv_as_bool(left)));
-        return eval_boolean_infix_expression(dn, &left2, right);
-    }
-
     else if (dc_dv_is(*left, u8))
     {
         DCDynVal right2 = dang_bool(dc_res_val2(dc_dv_as_bool(right)));
         return eval_boolean_infix_expression(dn, left, &right2);
+    }
+
+    else if (dc_dv_is(*right, u8))
+    {
+        DCDynVal left2 = dang_bool(dc_res_val2(dc_dv_as_bool(left)));
+        return eval_boolean_infix_expression(dn, &left2, right);
     }
 
     else
