@@ -137,6 +137,28 @@ static DCResult eval_infix_expression(DNode* dn, DCDynVal* left, DCDynVal* right
                       dc_tostr_dvt(left), dc_tostr_dvt(right));
 }
 
+static DCResult eval_if_expression(DNode* dn)
+{
+    DC_RES();
+
+    DNode* condition = dn_child(dn, 0);
+    DNode* consequence = dn_child(dn, 1);
+    DNode* alternative = (dn_child_count(dn) > 2) ? dn_child(dn, 2) : NULL;
+
+    dc_try_or_fail_with3(DCResult, condition_evaluated, dang_eval(condition), {});
+
+    dc_try_or_fail_with3(DCResultBool, condition_as_bool, dc_dv_as_bool(&dc_res_val2(condition_evaluated)), {});
+
+    if (dc_res_val2(condition_as_bool))
+        return dang_eval(consequence);
+
+    else if (alternative)
+        return dang_eval(alternative);
+
+    else
+        dc_res_ret_ok_dv(voidptr, NULL);
+}
+
 DCResult dang_eval(DNode* dn)
 {
     DC_RES();
@@ -175,6 +197,12 @@ DCResult dang_eval(DNode* dn)
 
         case DN_INTEGER_LITERAL:
             dc_res_ret_ok_dv(i64, dn_child_as(dn, 0, i64));
+
+        case DN_BLOCK_STATEMENT:
+            return eval_statements(dn);
+
+        case DN_IF_EXPRESSION:
+            return eval_if_expression(dn);
 
         default:
             break;

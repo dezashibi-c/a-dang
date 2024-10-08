@@ -418,7 +418,7 @@ static ResultDNode parse_if_expression(Parser* p)
 
     if (peek_token_is(p, TOK_ELSE))
     {
-        // bypass previous }
+        // bypass previous 'else'
         dc_try_or_fail_with2(res, next_token(p), {
             dc_res_err_dbg_log2(res, "could not move to the next token");
 
@@ -687,6 +687,13 @@ static ResultDNode parse_block_statement(Parser* p)
 
     while (current_token_is_not(p, TOK_RBRACE) && current_token_is_not(p, TOK_EOF))
     {
+        /* Bypassing all the meaningless newlines and semicolons */
+        try_bypassing_all_sc_and_nls_or_fail_with(p, {
+            dc_res_err_dbg_log2(res, "could move to the next token");
+
+            dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        });
+
         // Enter the block
         dang_parser_location_set(p, LOC_BLOCK);
 

@@ -49,32 +49,27 @@ static DCResult test_eval(string input)
 
 static bool test_evaluated_literal(DCDynVal* obj, DCDynVal* expected)
 {
-    if (dc_dv_is_not(*expected, voidptr))
+    DCResultBool res = dc_dv_eq(obj, expected);
+    if (dc_res_is_err2(res))
     {
-        DCResultBool res = dc_dv_eq(obj, expected);
-        if (dc_res_is_err2(res))
-        {
-            dc_res_err_log2(res, "cannot compare dynamic values");
-            return false;
-        }
-
-        if (!dc_res_val2(res))
-        {
-            DCResultString obj_str, expected_str;
-
-            obj_str = dc_tostr_dv(obj);
-            expected_str = dc_tostr_dv(expected);
-
-            dc_log("expected '%s' but got '%s'", dc_res_val2(expected_str), dc_res_val2(obj_str));
-
-            if (dc_res_val2(obj_str)) free(dc_res_val2(obj_str));
-            if (dc_res_val2(expected_str)) free(dc_res_val2(expected_str));
-        }
-
-        return dc_res_val2(res);
+        dc_res_err_log2(res, "cannot compare dynamic values");
+        return false;
     }
 
-    return false;
+    if (!dc_res_val2(res))
+    {
+        DCResultString obj_str, expected_str;
+
+        obj_str = dc_tostr_dv(obj);
+        expected_str = dc_tostr_dv(expected);
+
+        dc_log("expected '%s' but got '%s'", dc_res_val2(expected_str), dc_res_val2(obj_str));
+
+        if (dc_res_val2(obj_str)) free(dc_res_val2(obj_str));
+        if (dc_res_val2(expected_str)) free(dc_res_val2(expected_str));
+    }
+
+    return dc_res_val2(res);
 }
 
 typedef struct
@@ -188,6 +183,43 @@ CLOVE_TEST(boolean_expressions)
         {.input = "(1 > 2) == true", .expected = DANG_FALSE},
 
         {.input = "(1 > 2) == false", .expected = DANG_TRUE},
+
+        {.input = "", .expected = DANG_NULL},
+    };
+
+    dc_sforeach(tests, TestCase, strlen(_it->input) != 0)
+    {
+        DCResult res = test_eval(_it->input);
+        if (dc_res_is_err2(res))
+        {
+            dc_res_err_log2(res, "evaluation failed");
+            CLOVE_FAIL();
+        }
+
+        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "evaluation result failed");
+    }
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(if_else_expressions)
+{
+    TestCase tests[] = {
+        {.input = "if true { 10 }", .expected = dang_int(10)},
+
+        {.input = "if false { 10 }", .expected = DANG_NULL},
+
+        {.input = "if 1 { 10 }", .expected = dang_int(10)},
+
+        {.input = "if (true) { 10 }", .expected = dang_int(10)},
+
+        {.input = "if 1 < 2 { 10 }", .expected = dang_int(10)},
+
+        {.input = "if 1 > 2 { 10 }", .expected = DANG_NULL},
+
+        {.input = "if 1 > 2 {\n 10 \n\n\n} else {\n\n 20 \n}\n", .expected = dang_int(20)},
+
+        {.input = "if 1 < 2 { 10 } else { 20 }", .expected = dang_int(10)},
 
         {.input = "", .expected = DANG_NULL},
     };
