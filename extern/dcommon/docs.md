@@ -51,6 +51,21 @@ typedef FILE* fileptr;
 dc_as_bool(TYPE, VAL)
 
 /**
+ * Default value of boolean based on u8 dynamic value of 1
+ */
+#define DC_DV_TRUE
+
+/**
+ * Default value of boolean based on u8 dynamic value of 0
+ */
+#define DC_DV_FALSE
+
+/**
+ * Default value of boolean based on voidptr dynamic value of NULL
+ */
+#define DC_DV_NULL
+
+/**
  * Provides proper stopper for given type
  *
  * NOTE: These are values that can be used as a stopping point in an array

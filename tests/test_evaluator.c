@@ -47,7 +47,7 @@ static DCResult test_eval(string input)
     dc_res_ret();
 }
 
-static bool test_evaluated_integer(DCDynVal* obj, DCDynVal* expected)
+static bool test_evaluated_literal(DCDynVal* obj, DCDynVal* expected)
 {
     if (dc_dv_is_not(*expected, voidptr))
     {
@@ -61,7 +61,7 @@ static bool test_evaluated_integer(DCDynVal* obj, DCDynVal* expected)
         return dc_res_val2(res);
     }
 
-    return true;
+    return false;
 }
 
 typedef struct
@@ -70,12 +70,18 @@ typedef struct
     DCDynVal expected;
 } TestCase;
 
-CLOVE_TEST(integer_expression)
+CLOVE_TEST(literal_expressions)
 {
     TestCase tests[] = {
-        {.input = "5", .expected = dc_dv(i64, 5)},
-        {.input = "10", .expected = dc_dv(i64, 10)},
-        {.input = "", .expected = dc_dv(voidptr, NULL)},
+        {.input = "5", .expected = dang_int(5)},
+
+        {.input = "10", .expected = dang_int(10)},
+
+        {.input = "true", .expected = DANG_TRUE},
+
+        {.input = "false", .expected = DANG_FALSE},
+
+        {.input = "", .expected = DANG_NULL},
     };
 
     dc_sforeach(tests, TestCase, strlen(_it->input) != 0)
@@ -87,7 +93,69 @@ CLOVE_TEST(integer_expression)
             CLOVE_FAIL();
         }
 
-        dc_action_on(!test_evaluated_integer(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "evaluation result failed");
+        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "evaluation result failed");
+    }
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(integer_expressions)
+{
+    TestCase tests[] = {
+        {.input = "5", .expected = dang_int(5)},
+
+        {.input = "10", .expected = dang_int(10)},
+
+        {.input = "-5", .expected = dang_int(-5)},
+
+        {.input = "-10", .expected = dang_int(-10)},
+
+        {.input = "", .expected = DANG_NULL},
+    };
+
+    dc_sforeach(tests, TestCase, strlen(_it->input) != 0)
+    {
+        DCResult res = test_eval(_it->input);
+        if (dc_res_is_err2(res))
+        {
+            dc_res_err_log2(res, "evaluation failed");
+            CLOVE_FAIL();
+        }
+
+        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "evaluation result failed");
+    }
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(bang_operator)
+{
+    TestCase tests[] = {
+        {.input = "!false", .expected = DANG_TRUE},
+
+        {.input = "!true", .expected = DANG_FALSE},
+
+        {.input = "!5", .expected = DANG_FALSE},
+
+        {.input = "!!true", .expected = DANG_TRUE},
+
+        {.input = "!!false", .expected = DANG_FALSE},
+
+        {.input = "!!5", .expected = DANG_TRUE},
+
+        {.input = "", .expected = DANG_NULL},
+    };
+
+    dc_sforeach(tests, TestCase, strlen(_it->input) != 0)
+    {
+        DCResult res = test_eval(_it->input);
+        if (dc_res_is_err2(res))
+        {
+            dc_res_err_log2(res, "evaluation failed");
+            CLOVE_FAIL();
+        }
+
+        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "evaluation result failed");
     }
 
     CLOVE_PASS();

@@ -67,6 +67,8 @@ typedef enum
 
 #define dn_child(NODE, INDEX) ((DNode*)dc_da_get_as(NODE->children, INDEX, voidptr))
 
+#define dn_child_dv(NODE, INDEX) (dc_da_get2(NODE->children, INDEX))
+
 #define dn_child_as(NODE, INDEX, TYPE) (dc_da_get_as(((NODE)->children), INDEX, TYPE))
 
 #define dn_child_count(NODE) ((NODE)->children.count)

@@ -76,7 +76,7 @@ static void repl()
                 }
                 else
                 {
-                    printf("%s", "Evaluated as: " DC_FG_LGREEN);
+                    printf("%s", "Result: " DC_FG_LGREEN);
                     dc_dv_println(&dc_res_val2(evaluated));
                     printf("%s", DC_COLOR_RESET);
                 }

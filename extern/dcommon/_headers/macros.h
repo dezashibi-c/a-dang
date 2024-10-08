@@ -118,6 +118,21 @@
 #define dc_size_as_bool(VAL) ((VAL) != 0)
 #define dc_usize_as_bool(VAL) ((VAL) != 0)
 
+/**
+ * Default value of boolean based on u8 dynamic value of 1
+ */
+#define DC_DV_TRUE dc_dv(u8, true)
+
+/**
+ * Default value of boolean based on u8 dynamic value of 0
+ */
+#define DC_DV_FALSE dc_dv(u8, false)
+
+/**
+ * Default value of boolean based on voidptr dynamic value of NULL
+ */
+#define DC_DV_NULL dc_dv(voidptr, NULL)
+
 // ***************************************************************************************
 // * STOPPER AND STOPPER CHECKERS
 // *    These are values that can be used as a stopping point in an array

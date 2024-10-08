@@ -16,13 +16,44 @@
 
 #include "evaluator.h"
 
-static DCResult dang_eval_statements(DNode* dn)
+static DCResult eval_statements(DNode* dn)
 {
     DC_RES();
 
     dc_da_for(dn->children) dc_try_fail(dang_eval(dn_child(dn, _idx)));
 
     dc_res_ret();
+}
+
+static DCResult eval_bang_operator(DCDynVal* right)
+{
+    DC_RES();
+
+    dc_try_or_fail_with3(DCResultBool, right_as_bool, dc_dv_as_bool(right), {});
+
+    dc_res_ret_ok_dv(u8, !dc_res_val2(right_as_bool));
+}
+
+static DCResult eval_minus_prefix_operator(DCDynVal* right)
+{
+    DC_RES();
+
+    if (dc_dv_is_not(*right, i64))
+        dc_res_ret_ea(-1, "'-' operator does not support right value of type: %s", dc_tostr_dvt(right));
+
+    dc_res_ret_ok_dv(i64, -dc_dv_as(*right, i64));
+}
+
+static DCResult eval_prefix_expression(DNode* dn, DCDynVal* right)
+{
+    DC_RES();
+
+    if (dc_sv_str_eq(dn_text(dn), "!"))
+        return eval_bang_operator(right);
+    else if (dc_sv_str_eq(dn_text(dn), "-"))
+        return eval_minus_prefix_operator(right);
+    else
+        dc_res_ret_ea(-1, "unimplemented operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
 }
 
 DCResult dang_eval(DNode* dn)
@@ -37,10 +68,20 @@ DCResult dang_eval(DNode* dn)
     switch (dn->type)
     {
         case DN_PROGRAM:
-            return dang_eval_statements(dn);
+            return eval_statements(dn);
 
         case DN_EXPRESSION_STATEMENT:
             return dang_eval(dn_child(dn, 0));
+
+        case DN_PREFIX_EXPRESSION:
+        {
+            dc_try_or_fail_with3(DCResult, right, dang_eval(dn_child(dn, 0)), {});
+
+            return eval_prefix_expression(dn, &dc_res_val2(right));
+        }
+
+        case DN_BOOLEAN_LITERAL:
+            dc_res_ret_ok_dv(u8, dn_child_as(dn, 0, u8));
 
         case DN_INTEGER_LITERAL:
             dc_res_ret_ok_dv(i64, dn_child_as(dn, 0, i64));
