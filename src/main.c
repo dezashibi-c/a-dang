@@ -78,7 +78,12 @@ static void repl()
                 else
                 {
                     printf("%s", "Result: " DC_FG_LGREEN);
-                    dc_dv_println(&dc_res_val2(evaluated));
+
+                    if (dc_res_val2(evaluated).type == dc_dvt(u8))
+                        printf("%s\n", dc_tostr_bool(dc_dv_as(dc_res_val2(evaluated), u8)));
+                    else
+                        dc_dv_println(&dc_res_val2(evaluated));
+
                     printf("%s", DC_COLOR_RESET);
                 }
             }
