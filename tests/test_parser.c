@@ -752,16 +752,21 @@ CLOVE_TEST(string_output_comparision)
 
         ResultDNode program_res = parser_parse_program(&p);
 
-        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
-
         DNode* program = dc_res_val2(program_res);
 
-        if (parser_has_no_error(&p))
+        if (!parser_has_no_error(&p))
         {
-            dn_string_init(program);
+            dn_program_free(program);
+            parser_free(&p);
 
-            dc_action_on(strcmp(expected, program->text) != 0, CLOVE_FAIL(), "expected=%s, got=%s", expected, program->text);
+            CLOVE_FAIL();
+
+            continue;
         }
+
+        dn_string_init(program);
+
+        dc_action_on(strcmp(expected, program->text) != 0, CLOVE_FAIL(), "expected=%s, got=%s", expected, program->text);
 
         dn_program_free(program);
         parser_free(&p);
