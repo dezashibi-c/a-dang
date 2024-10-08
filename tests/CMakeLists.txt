@@ -21,9 +21,9 @@ add_custom_target(all_tests)
 # are not any like `add_clove_test(test_something "" "")`
 ###############################################################################
 
-set(base_sources ../src/common.c ../src/scanner.c ../src/token.c)
-set(full_sources ${base_sources} ../src/parser.c ../src/ast.c)
+set(sources ../src/common.c ../src/scanner.c ../src/token.c ../src/parser.c ../src/ast.c ../src/evaluator.c)
 
-add_clove_test(test_scanner "" ${base_sources})
-add_clove_test(test_parser "" ${full_sources})
-add_clove_test(test_ast "" ${full_sources})
+add_clove_test(test_scanner "" ${sources})
+add_clove_test(test_parser "" ${sources})
+add_clove_test(test_ast "" ${sources})
+add_clove_test(test_evaluator "" ${sources})

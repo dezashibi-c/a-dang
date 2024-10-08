@@ -1,7 +1,7 @@
 // ***************************************************************************************
 //    Project: Dang Compiler -> https://github.com/dezashibi-c/dang
-//    File: scanner.h
-//    Date: 2024-09-10
+//    File: evaluator.h
+//    Date: 2024-10-08
 //    Author: Navid Dezashibi
 //    Contact: navid@dezashibi.com
 //    Website: https://dezashibi.com | https://github.com/dezashibi
@@ -11,29 +11,14 @@
 //     or concerns, please feel free to contact me at the email address provided
 //     above.
 // ***************************************************************************************
-// *  Description: Scanner struct and related functionalities
+// *  Description: Evaluator header file
 // ***************************************************************************************
 
-#ifndef DANG_SCANNER_H
-#define DANG_SCANNER_H
+#ifndef DANG_EVAL_H
+#define DANG_EVAL_H
 
-#include "dcommon/dcommon.h"
+#include "ast.h"
 
-#include "token.h"
+DCResult eval(DNode* dn);
 
-typedef struct
-{
-    string input;
-    usize pos;
-    usize read_pos;
-    char c;
-    DCDynArr tokens;
-} Scanner;
-
-// todo:: rename all scanner and parser functions to have dang or dn prefix
-
-DCResultVoid dang_scanner_init(Scanner* s, const string input);
-DCResultVoid dang_scanner_free(Scanner* s);
-ResultToken dang_scanner_next_token(Scanner* s);
-
-#endif // DANG_SCANNER_H
+#endif // DANG_EVAL_H

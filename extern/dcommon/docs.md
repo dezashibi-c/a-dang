@@ -966,6 +966,13 @@ typedef struct
 } DCDynArr;
 
 /**
+ * Returns string representation of the type the given dynamic value holds right now
+ *
+ * @return the string representation of the type, "(null dynamic value)" and "unknown or unimplemented"
+ */
+string dc_tostr_dvt(DCDynVal* dv);
+
+/**
  * Checks for falsy values in a given dynamic value and return the result as
  * DCResultBool
  *
@@ -1522,6 +1529,13 @@ dc_dv_is_allocated(NAME)
  * elements
  */
 dc_da_check_boundary(DARR, INDEX)
+
+/**
+ * Retrieves dynamic value element at certain index as is
+ *
+ * NOTE: There is no boundary check in this macro, you have to do it beforehand
+ */
+#define dc_da_get2(DARR, INDEX)
 
 /**
  * Retrieves dynamic value element at certain index and return the wanted type
@@ -2153,6 +2167,27 @@ DCResultUsize dc_sappend(string* str, const string fmt, ...);
  * NOTE: Allocates memory
  */
 DCResultString dc_strdup(const string in);
+
+/**
+ * Converts the current value of the dynamic value to string
+ *
+ * @return string or error
+ */
+DCResultString dc_tostr_dv(DCDynVal* dv);
+
+/**
+ * Prints the current value of the dynamic value (no new line)
+ *
+ * @return nothing or error
+ */
+DCResultVoid dc_dv_print(DCDynVal* dv);
+
+/**
+ * Prints the current value of the dynamic value (with new line)
+ *
+ * @return nothing or error
+ */
+DCResultVoid dc_dv_println(DCDynVal* dv);
 
 /**
  * Replaces all the '' with '/' in the original provided path

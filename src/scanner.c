@@ -120,7 +120,7 @@ static DC_DV_FREE_FN_DECL(custom_token_free)
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-DCResultVoid scanner_init(Scanner* s, const string input)
+DCResultVoid dang_scanner_init(Scanner* s, const string input)
 {
     DC_RES_void();
 
@@ -134,12 +134,12 @@ DCResultVoid scanner_init(Scanner* s, const string input)
     dc_res_ret();
 }
 
-DCResultVoid scanner_free(Scanner* s)
+DCResultVoid dang_scanner_free(Scanner* s)
 {
     return dc_da_free(&s->tokens);
 }
 
-ResultToken scanner_next_token(Scanner* s)
+ResultToken dang_scanner_next_token(Scanner* s)
 {
     DC_RES2(ResultToken);
 

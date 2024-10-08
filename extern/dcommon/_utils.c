@@ -148,6 +148,71 @@ DCResultString dc_strdup(const string in)
     dc_res_ret_ok(out);
 }
 
+DCResultString dc_tostr_dv(DCDynVal* dv)
+{
+    DC_RES_string();
+
+    if (!dv) dc_res_ret_e(1, "got NULL dynamic value");
+
+#define stringify(TYPE)                                                                                                        \
+    case dc_dvt(TYPE):                                                                                                         \
+        dc_sprintf(&result, dc_dv_fmt(dv), dc_dv_as(*dv, TYPE));                                                               \
+        break
+
+    string result = NULL;
+
+    switch (dv->type)
+    {
+        stringify(u8);
+        stringify(u16);
+        stringify(u32);
+        stringify(u64);
+        stringify(i8);
+        stringify(i16);
+        stringify(i32);
+        stringify(i64);
+        stringify(f32);
+        stringify(f64);
+        stringify(uptr);
+        stringify(char);
+        stringify(string);
+        stringify(voidptr);
+        stringify(fileptr);
+        stringify(size);
+        stringify(usize);
+
+        default:
+            dc_sprintf(&result, "%s", "(unknown dynamic value)");
+            break;
+    };
+
+    dc_res_ret_ok(result);
+
+#undef stringify
+}
+
+DCResultVoid dc_dv_print(DCDynVal* dv)
+{
+    DC_RES_void();
+
+    dc_try_or_fail_with3(DCResultString, res, dc_tostr_dv(dv), {});
+
+    printf("%s", dc_res_val2(res));
+
+    if (dc_res_val2(res)) free(dc_res_val2(res));
+
+    dc_res_ret();
+}
+
+DCResultVoid dc_dv_println(DCDynVal* dv)
+{
+    DC_TRY_DEF2(DCResultVoid, dc_dv_print(dv));
+
+    printf("%s", "\n");
+
+    dc_res_ret();
+}
+
 DCResultVoid dc_normalize_path_to_posix(string path)
 {
     DC_RES_void();

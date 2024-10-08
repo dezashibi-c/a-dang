@@ -1,4 +1,4 @@
-#define CLOVE_SUITE_NAME scanner_tests
+#define CLOVE_SUITE_NAME dang_scanner_tests
 
 #include "clove-unit/clove-unit.h"
 
@@ -29,17 +29,17 @@ static bool perform_token_test(TestExpectedResult* expected_token, DToken* actua
     return true;
 }
 
-static bool perform_scanner_test(const string input, TestExpectedResult tests[])
+static bool perform_dang_scanner_test(const string input, TestExpectedResult tests[])
 {
     Scanner s;
-    scanner_init(&s, input);
+    dang_scanner_init(&s, input);
 
     ResultToken token;
 
     u8 i = 0;
     dc_sforeach(tests, TestExpectedResult, _it->type != TOK_EOF)
     {
-        token = scanner_next_token(&s);
+        token = dang_scanner_next_token(&s);
         if (dc_res_is_err2(token)) return false;
 
         if (!perform_token_test(_it, dc_res_val2(token), i)) return false;
@@ -47,13 +47,13 @@ static bool perform_scanner_test(const string input, TestExpectedResult tests[])
         ++i;
     }
 
-    token = scanner_next_token(&s);
+    token = dang_scanner_next_token(&s);
     if (!perform_token_test(&tests[i], dc_res_val2(token), i)) return false;
     ++i;
 
     dc_action_on(i != s.tokens.count, return false, "Expected %d tokens but got=%zu", i, s.tokens.count);
 
-    scanner_free(&s);
+    dang_scanner_free(&s);
 
     return true;
 }
@@ -69,7 +69,7 @@ CLOVE_TEST(basic_signs)
         {.type = TOK_EOF, .text = ""},
     };
 
-    CLOVE_IS_TRUE(perform_scanner_test(input, tests));
+    CLOVE_IS_TRUE(perform_dang_scanner_test(input, tests));
 }
 
 CLOVE_TEST(more_tokens)
@@ -106,7 +106,7 @@ CLOVE_TEST(more_tokens)
         {.type = TOK_EOF, .text = ""},
     };
 
-    CLOVE_IS_TRUE(perform_scanner_test(input, tests));
+    CLOVE_IS_TRUE(perform_dang_scanner_test(input, tests));
 }
 
 CLOVE_TEST(remaining_tokens)
@@ -128,7 +128,7 @@ CLOVE_TEST(remaining_tokens)
         {.type = TOK_EOF, .text = ""},
     };
 
-    CLOVE_IS_TRUE(perform_scanner_test(input, tests));
+    CLOVE_IS_TRUE(perform_dang_scanner_test(input, tests));
 }
 
 CLOVE_TEST(rest_of_keywords)
@@ -174,5 +174,5 @@ CLOVE_TEST(rest_of_keywords)
         {.type = TOK_EOF, .text = ""},
     };
 
-    CLOVE_IS_TRUE(perform_scanner_test(input, tests));
+    CLOVE_IS_TRUE(perform_dang_scanner_test(input, tests));
 }

@@ -41,9 +41,9 @@ static ResultDNode parse_statement(Parser* p);
 #define peek_prec(P) ((P)->peek_token ? get_precedence((P)->peek_token->type) : PREC_LOWEST)
 #define current_prec(P) get_precedence((P)->current_token->type)
 
-#define parser_location_preserve(P) ParserStatementLoc __parser_loc_snapshot = (P)->loc
-#define parser_location_revert(P) (P)->loc = __parser_loc_snapshot
-#define parser_location_set(P, LOC) (P)->loc = LOC
+#define dang_parser_location_preserve(P) ParserStatementLoc __dang_parser_loc_snapshot = (P)->loc
+#define dang_parser_location_revert(P) (P)->loc = __dang_parser_loc_snapshot
+#define dang_parser_location_set(P, LOC) (P)->loc = LOC
 
 /**
  * expands to checking if the token is end of statement or not
@@ -66,11 +66,11 @@ static ResultDNode parse_statement(Parser* p);
         dc_res_ret_if_err2(res, { PRE_EXIT_ACTIONS; });                                                                        \
     }
 
-#define parser_log_tokens(P)                                                                                                   \
+#define dang_parser_log_tokens(P)                                                                                              \
     dc_log("cur tok: %s, next tok: %s", tostr_DTokenType((P)->current_token->type),                                            \
            (P)->peek_token ? tostr_DTokenType((P)->peek_token->type) : "NULL")
 
-#define parser_dbg_log_tokens(P)                                                                                               \
+#define dang_parser_dbg_log_tokens(P)                                                                                          \
     dc_dbg_log("cur tok: %s, next tok: %s", tostr_DTokenType((P)->current_token->type),                                        \
                (P)->peek_token ? tostr_DTokenType((P)->peek_token->type) : "NULL")
 
@@ -94,7 +94,7 @@ static DCResultVoid next_token(Parser* p)
         dc_res_ret();
     }
 
-    ResultToken res = scanner_next_token(p->scanner);
+    ResultToken res = dang_scanner_next_token(p->scanner);
     dc_res_fail_if_err2(res);
 
     p->peek_token = dc_res_val2(res);
@@ -250,9 +250,9 @@ static ResultDNode parse_function_literal(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
-    parser_location_preserve(p);
+    dang_parser_location_preserve(p);
     ResultDNode body = parse_block_statement(p);
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     dc_res_ret_if_err2(body, {
         dc_res_err_dbg_log2(body, "could not parse function literal body");
@@ -291,7 +291,7 @@ static DCResultVoid parse_call(Parser* p, DNode* parent_node)
         DCResultVoid res = dn_child_push(parent_node, dc_res_val2(param));
         dc_res_ret_if_err2(res, dc_try_fail(dn_free(dc_res_val2(param))));
 
-        parser_dbg_log_tokens(p);
+        dang_parser_dbg_log_tokens(p);
 
         dc_try_fail(next_token(p));
         if (current_token_is(p, TOK_COMMA)) dc_try_fail(next_token(p));
@@ -316,13 +316,13 @@ static ResultDNode parse_call_expression(Parser* p)
 
     dc_try_or_fail_with(dn_new(DN_CALL_EXPRESSION, NULL, true), {});
 
-    parser_location_preserve(p);
+    dang_parser_location_preserve(p);
 
     // Switch to call loc to specify proper ending signal
-    parser_location_set(p, LOC_CALL);
+    dang_parser_location_set(p, LOC_CALL);
     res = parse_call(p, dc_res_val());
 
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     dc_res_ret_if_err2(res, { dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val())); });
 
@@ -338,9 +338,9 @@ static ResultDNode parse_grouped_expression(Parser* p)
 
     dc_try_fail_temp(DCResultVoid, next_token(p));
 
-    parser_location_preserve(p);
+    dang_parser_location_preserve(p);
     dc_try(parse_expression(p, PREC_LOWEST));
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     dc_res_ret_if_err();
 
@@ -350,7 +350,7 @@ static ResultDNode parse_grouped_expression(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
-    parser_dbg_log_tokens(p);
+    dang_parser_dbg_log_tokens(p);
 
     dc_res_ret();
 }
@@ -370,9 +370,9 @@ static ResultDNode parse_if_expression(Parser* p)
     dc_try_fail(dn_new(DN_IF_EXPRESSION, tok, true));
 
     /* Getting the condition expression */
-    parser_location_preserve(p);
+    dang_parser_location_preserve(p);
     ResultDNode condition = parse_expression(p, PREC_LOWEST);
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     dc_res_ret_if_err2(condition, {
         dc_res_err_dbg_log2(condition, "could not extract condition node for if expression");
@@ -398,7 +398,7 @@ static ResultDNode parse_if_expression(Parser* p)
     });
 
     ResultDNode consequence = parse_block_statement(p);
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     dc_res_ret_if_err2(consequence, {
         dc_res_err_dbg_log2(consequence, "could not extract consequence node for if expression");
@@ -414,7 +414,7 @@ static ResultDNode parse_if_expression(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(consequence)));
     });
 
-    parser_dbg_log_tokens(p);
+    dang_parser_dbg_log_tokens(p);
 
     if (peek_token_is(p, TOK_ELSE))
     {
@@ -435,7 +435,7 @@ static ResultDNode parse_if_expression(Parser* p)
         });
 
         ResultDNode alternative = parse_block_statement(p);
-        parser_location_revert(p);
+        dang_parser_location_revert(p);
 
         dc_res_ret_if_err2(alternative, {
             dc_res_err_dbg_log2(alternative, "could not extract alternative node for if expression");
@@ -463,9 +463,9 @@ static ResultDNode parse_prefix_expression(Parser* p)
 
     dc_try_fail_temp(DCResultVoid, next_token(p));
 
-    parser_location_preserve(p);
+    dang_parser_location_preserve(p);
     ResultDNode right = parse_expression(p, PREC_PREFIX);
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     dc_res_ret_if_err2(right, { dc_res_err_dbg_log2(right, "could not parse right hand side"); });
 
@@ -505,9 +505,9 @@ static ResultDNode parse_infix_expression(Parser* p, DNode* left)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
-    parser_location_preserve(p);
+    dang_parser_location_preserve(p);
     ResultDNode right = parse_expression(p, prec);
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     dc_res_ret_if_err2(right, {
         dc_res_err_dbg_log2(right, "could not parse right hand side");
@@ -523,7 +523,7 @@ static ResultDNode parse_infix_expression(Parser* p, DNode* left)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(right)));
     });
 
-    parser_dbg_log_tokens(p);
+    dang_parser_dbg_log_tokens(p);
 
     dc_res_ret();
 }
@@ -598,7 +598,7 @@ static ResultDNode parse_let_statement(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(temp_node)));
     });
 
-    parser_dbg_log_tokens(p);
+    dang_parser_dbg_log_tokens(p);
 
     // Based on the current location a proper terminator must be seen
     if (token_is_end_of_the_statement(p, peek) || peek_token_is(p, TOK_EOF))
@@ -648,7 +648,7 @@ static ResultDNode parse_return_statement(Parser* p)
         dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
     });
 
-    parser_dbg_log_tokens(p);
+    dang_parser_dbg_log_tokens(p);
 
     dc_try_or_fail_with2(res, dn_child_push(dc_res_val(), dc_res_val2(value)), {
         dc_res_err_dbg_log2(res, "could not push the value to statement");
@@ -688,7 +688,7 @@ static ResultDNode parse_block_statement(Parser* p)
     while (current_token_is_not(p, TOK_RBRACE) && current_token_is_not(p, TOK_EOF))
     {
         // Enter the block
-        parser_location_set(p, LOC_BLOCK);
+        dang_parser_location_set(p, LOC_BLOCK);
 
         ResultDNode stmt = parse_statement(p);
         dc_res_ret_if_err2(stmt, {
@@ -697,7 +697,7 @@ static ResultDNode parse_block_statement(Parser* p)
             dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
         });
 
-        parser_dbg_log_tokens(p);
+        dang_parser_dbg_log_tokens(p);
 
         res = dn_child_push(dc_res_val(), dc_res_val2(stmt));
         dc_res_ret_if_err2(res, {
@@ -738,13 +738,13 @@ static ResultDNode parse_expression(Parser* p, Precedence precedence)
         dc_res_ret_ea(1, unexpected_token_err_fmt(p->current_token->type));
     }
 
-    parser_location_preserve(p);
+    dang_parser_location_preserve(p);
     ResultDNode left_exp = prefix(p);
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     if (dc_res_is_err2(left_exp)) return left_exp;
 
-    parser_dbg_log_tokens(p);
+    dang_parser_dbg_log_tokens(p);
     dc_dbg_log("precedence %d, peek precedence %d", precedence, peek_prec(p));
 
     while (!token_is_end_of_the_statement(p, peek) && peek_token_is_not(p, TOK_EOF) && peek_token_is_not(p, TOK_COMMA) &&
@@ -759,9 +759,9 @@ static ResultDNode parse_expression(Parser* p, Precedence precedence)
             dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(left_exp)));
         });
 
-        parser_location_preserve(p);
+        dang_parser_location_preserve(p);
         left_exp = infix(p, dc_res_val2(left_exp));
-        parser_location_revert(p);
+        dang_parser_location_revert(p);
     }
 
     return left_exp;
@@ -780,9 +780,9 @@ static ResultDNode parse_expression_statement(Parser* p)
     ResultDNode call = dn_new(DN_CALL_EXPRESSION, NULL, true);
     dc_res_ret_if_err2(call, {});
 
-    parser_location_preserve(p);
+    dang_parser_location_preserve(p);
     res = parse_call(p, dc_res_val2(call));
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     dc_res_ret_if_err2(res, { dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call))); });
 
@@ -830,7 +830,7 @@ static ResultDNode parse_statement(Parser* p)
 {
     DC_RES2(ResultDNode);
 
-    parser_location_preserve(p);
+    dang_parser_location_preserve(p);
 
     ResultDNode result;
 
@@ -851,7 +851,7 @@ static ResultDNode parse_statement(Parser* p)
 
     if (dc_res_is_err2(result)) try_moving_to_the_end_of_statement(p);
 
-    parser_location_revert(p);
+    dang_parser_location_revert(p);
 
     return result;
 }
@@ -860,7 +860,7 @@ static ResultDNode parse_statement(Parser* p)
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-DCResultVoid parser_init(Parser* p, Scanner* s)
+DCResultVoid dang_parser_init(Parser* p, Scanner* s)
 {
     DC_RES_void();
 
@@ -920,13 +920,13 @@ DCResultVoid parser_init(Parser* p, Scanner* s)
     dc_res_ret();
 }
 
-DCResultVoid parser_free(Parser* p)
+DCResultVoid dang_parser_free(Parser* p)
 {
     DC_RES_void();
 
     dc_try(dc_da_free(&p->errors));
 
-    dc_try(scanner_free(p->scanner));
+    dc_try(dang_scanner_free(p->scanner));
 
     dc_res_ret();
 }
@@ -939,7 +939,7 @@ DCResultVoid parser_free(Parser* p)
  *
  * On each iteration the cursor must be at the end of the current statement (sentence terminator)
  */
-ResultDNode parser_parse_program(Parser* p)
+ResultDNode dang_parser_parse_program(Parser* p)
 {
     DC_TRY_DEF2(ResultDNode, dn_new(DN_PROGRAM, NULL, true));
 
@@ -988,11 +988,11 @@ ResultDNode parser_parse_program(Parser* p)
     dc_res_ret();
 }
 
-void parser_log_errors(Parser* p)
+void dang_parser_log_errors(Parser* p)
 {
     dc_da_for(p->errors)
     {
         string error = dc_da_get_as(p->errors, _idx, string);
-        dc_log("%s", error);
+        dc_log(dc_colorize_fg(LRED, "%s"), error);
     }
 }

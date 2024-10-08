@@ -54,7 +54,9 @@ string tostr_DNType(DNType dnt)
 
 void dn_string_init(DNode* dn)
 {
-    dc_action_on(!dn_type_is_valid(dn->type), exit(-1), "got wrong node type: %s", tostr_DNType(dn->type));
+    dc_action_on(!dn, exit(-1), "%s", "got NULL node");
+
+    dc_action_on(!dn_type_is_valid(dn->type), exit(-1), "got invalid node type: %s", tostr_DNType(dn->type));
 
     if (dn->text != NULL) return;
 

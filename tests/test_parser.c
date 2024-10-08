@@ -1,4 +1,4 @@
-#define CLOVE_SUITE_NAME parser_tests
+#define CLOVE_SUITE_NAME dang_parser_tests
 
 #include "clove-unit/clove-unit.h"
 
@@ -6,9 +6,9 @@
 #include "parser.h"
 #include "scanner.h"
 
-static bool parser_has_no_error(Parser* p)
+static bool dang_parser_has_no_error(Parser* p)
 {
-    dc_action_on(p->errors.count != 0, parser_log_errors(p); return false, "parser has %zu errors", p->errors.count);
+    dc_action_on(p->errors.count != 0, dang_parser_log_errors(p); return false, "parser has %zu errors", p->errors.count);
 
     return true;
 }
@@ -140,15 +140,15 @@ CLOVE_TEST(let_statements)
                          "let foobar y";
 
     Scanner s;
-    scanner_init(&s, input);
+    dang_scanner_init(&s, input);
 
 
     Parser p;
-    parser_init(&p, &s);
+    dang_parser_init(&p, &s);
 
-    ResultDNode program_res = parser_parse_program(&p);
+    ResultDNode program_res = dang_parser_parse_program(&p);
 
-    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
     DNode* program = dc_res_val2(program_res);
 
@@ -167,7 +167,7 @@ CLOVE_TEST(let_statements)
     }
 
     dn_program_free(program);
-    parser_free(&p);
+    dang_parser_free(&p);
 
     CLOVE_PASS();
 }
@@ -178,14 +178,14 @@ CLOVE_TEST(return_statement)
                          "return y";
 
     Scanner s;
-    scanner_init(&s, input);
+    dang_scanner_init(&s, input);
 
     Parser p;
-    parser_init(&p, &s);
+    dang_parser_init(&p, &s);
 
-    ResultDNode program_res = parser_parse_program(&p);
+    ResultDNode program_res = dang_parser_parse_program(&p);
 
-    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
     DNode* program = dc_res_val2(program_res);
 
@@ -220,7 +220,7 @@ CLOVE_TEST(return_statement)
     }
 
     dn_program_free(program);
-    parser_free(&p);
+    dang_parser_free(&p);
 
     CLOVE_PASS();
 }
@@ -230,14 +230,14 @@ CLOVE_TEST(boolean_literal)
     const string input = "true";
 
     Scanner s;
-    scanner_init(&s, input);
+    dang_scanner_init(&s, input);
 
     Parser p;
-    parser_init(&p, &s);
+    dang_parser_init(&p, &s);
 
-    ResultDNode program_res = parser_parse_program(&p);
+    ResultDNode program_res = dang_parser_parse_program(&p);
 
-    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
     DNode* program = dc_res_val2(program_res);
 
@@ -250,7 +250,7 @@ CLOVE_TEST(boolean_literal)
     dc_action_on(!test_BooleanLiteral(expression, "true", true), CLOVE_FAIL(), "Wrong boolean literal node");
 
     dn_program_free(program);
-    parser_free(&p);
+    dang_parser_free(&p);
 
     CLOVE_PASS();
 }
@@ -260,14 +260,14 @@ CLOVE_TEST(integer_literal)
     const string input = "5";
 
     Scanner s;
-    scanner_init(&s, input);
+    dang_scanner_init(&s, input);
 
     Parser p;
-    parser_init(&p, &s);
+    dang_parser_init(&p, &s);
 
-    ResultDNode program_res = parser_parse_program(&p);
+    ResultDNode program_res = dang_parser_parse_program(&p);
 
-    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
     DNode* program = dc_res_val2(program_res);
 
@@ -280,7 +280,7 @@ CLOVE_TEST(integer_literal)
     dc_action_on(!test_IntegerLiteral(expression, "5", 5), CLOVE_FAIL(), "Wrong integer value node");
 
     dn_program_free(program);
-    parser_free(&p);
+    dang_parser_free(&p);
 
     CLOVE_PASS();
 }
@@ -297,14 +297,14 @@ CLOVE_TEST(prefix_expressions)
     for (usize i = 0; i < dc_count(tests); ++i)
     {
         Scanner s;
-        scanner_init(&s, tests[i].input);
+        dang_scanner_init(&s, tests[i].input);
 
         Parser p;
-        parser_init(&p, &s);
+        dang_parser_init(&p, &s);
 
-        ResultDNode program_res = parser_parse_program(&p);
+        ResultDNode program_res = dang_parser_parse_program(&p);
 
-        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+        dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
         DNode* program = dc_res_val2(program_res);
 
@@ -323,7 +323,7 @@ CLOVE_TEST(prefix_expressions)
         dc_action_on(!test_Literal(value, tests[i].lval_str, tests[i].lval), CLOVE_FAIL(), "Wrong literal value node");
 
         dn_program_free(program);
-        parser_free(&p);
+        dang_parser_free(&p);
     }
 
     CLOVE_PASS();
@@ -348,14 +348,14 @@ CLOVE_TEST(infix_expressions)
     for (usize i = 0; i < dc_count(tests); ++i)
     {
         Scanner s;
-        scanner_init(&s, tests[i].input);
+        dang_scanner_init(&s, tests[i].input);
 
         Parser p;
-        parser_init(&p, &s);
+        dang_parser_init(&p, &s);
 
-        ResultDNode program_res = parser_parse_program(&p);
+        ResultDNode program_res = dang_parser_parse_program(&p);
 
-        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+        dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
         DNode* program = dc_res_val2(program_res);
 
@@ -379,7 +379,7 @@ CLOVE_TEST(infix_expressions)
                      "Wrong integer value node for right value");
 
         dn_program_free(program);
-        parser_free(&p);
+        dang_parser_free(&p);
     }
 
     CLOVE_PASS();
@@ -390,14 +390,14 @@ CLOVE_TEST(if_statement)
     const string input = "if x < y { x }";
 
     Scanner s;
-    scanner_init(&s, input);
+    dang_scanner_init(&s, input);
 
     Parser p;
-    parser_init(&p, &s);
+    dang_parser_init(&p, &s);
 
-    ResultDNode program_res = parser_parse_program(&p);
+    ResultDNode program_res = dang_parser_parse_program(&p);
 
-    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
     DNode* program = dc_res_val2(program_res);
 
@@ -440,7 +440,7 @@ CLOVE_TEST(if_statement)
                  if_consequence->text);
 
     dn_program_free(program);
-    parser_free(&p);
+    dang_parser_free(&p);
 
     CLOVE_PASS();
 }
@@ -450,14 +450,14 @@ CLOVE_TEST(if_else_statement)
     const string input = "if x < y { x } else { y }";
 
     Scanner s;
-    scanner_init(&s, input);
+    dang_scanner_init(&s, input);
 
     Parser p;
-    parser_init(&p, &s);
+    dang_parser_init(&p, &s);
 
-    ResultDNode program_res = parser_parse_program(&p);
+    ResultDNode program_res = dang_parser_parse_program(&p);
 
-    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
     DNode* program = dc_res_val2(program_res);
 
@@ -473,7 +473,7 @@ CLOVE_TEST(if_else_statement)
     dc_action_on(strcmp(program->text, expected) != 0, CLOVE_FAIL(), "expected='%s', got='%s'", expected, program->text);
 
     dn_program_free(program);
-    parser_free(&p);
+    dang_parser_free(&p);
 
     CLOVE_PASS();
 }
@@ -483,14 +483,14 @@ CLOVE_TEST(function_literal)
     const string input = "fn(x, y z) {x+y-z}";
 
     Scanner s;
-    scanner_init(&s, input);
+    dang_scanner_init(&s, input);
 
     Parser p;
-    parser_init(&p, &s);
+    dang_parser_init(&p, &s);
 
-    ResultDNode program_res = parser_parse_program(&p);
+    ResultDNode program_res = dang_parser_parse_program(&p);
 
-    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
     DNode* program = dc_res_val2(program_res);
 
@@ -521,7 +521,7 @@ CLOVE_TEST(function_literal)
                  "Expected child 3 to be block statement but got='%s'", tostr_DNType(dn_child(function, 3)->type));
 
     dn_program_free(program);
-    parser_free(&p);
+    dang_parser_free(&p);
 
     CLOVE_PASS();
 }
@@ -546,14 +546,14 @@ CLOVE_TEST(function_literal_params)
     dc_sforeach(tests, FNParamTest, _it->input[0] != '\0')
     {
         Scanner s;
-        scanner_init(&s, _it->input);
+        dang_scanner_init(&s, _it->input);
 
         Parser p;
-        parser_init(&p, &s);
+        dang_parser_init(&p, &s);
 
-        ResultDNode program_res = parser_parse_program(&p);
+        ResultDNode program_res = dang_parser_parse_program(&p);
 
-        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+        dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
         DNode* program = dc_res_val2(program_res);
 
@@ -587,7 +587,7 @@ CLOVE_TEST(function_literal_params)
                      tostr_DNType(dn_child(function, _it->expected_param_count)->type));
 
         dn_program_free(program);
-        parser_free(&p);
+        dang_parser_free(&p);
     }
 
     CLOVE_PASS();
@@ -598,14 +598,14 @@ CLOVE_TEST(call_expression)
     const string input = "${add 1 a * b, -4 $1}";
 
     Scanner s;
-    scanner_init(&s, input);
+    dang_scanner_init(&s, input);
 
     Parser p;
-    parser_init(&p, &s);
+    dang_parser_init(&p, &s);
 
-    ResultDNode program_res = parser_parse_program(&p);
+    ResultDNode program_res = dang_parser_parse_program(&p);
 
-    dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+    dc_action_on(!dang_parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
 
     DNode* program = dc_res_val2(program_res);
 
@@ -640,7 +640,7 @@ CLOVE_TEST(call_expression)
                  "Expected child 4 to be identifier but got = '%s' ", tostr_DNType(dn_child(call_node, 3)->type));
 
     dn_program_free(program);
-    parser_free(&p);
+    dang_parser_free(&p);
 
     CLOVE_PASS();
 }
@@ -745,19 +745,19 @@ CLOVE_TEST(string_output_comparision)
         string expected = tests[(i * 2) + 1];
 
         Scanner s;
-        scanner_init(&s, input);
+        dang_scanner_init(&s, input);
 
         Parser p;
-        parser_init(&p, &s);
+        dang_parser_init(&p, &s);
 
-        ResultDNode program_res = parser_parse_program(&p);
+        ResultDNode program_res = dang_parser_parse_program(&p);
 
         DNode* program = dc_res_val2(program_res);
 
-        if (!parser_has_no_error(&p))
+        if (!dang_parser_has_no_error(&p))
         {
             dn_program_free(program);
-            parser_free(&p);
+            dang_parser_free(&p);
 
             CLOVE_FAIL();
 
@@ -769,7 +769,7 @@ CLOVE_TEST(string_output_comparision)
         dc_action_on(strcmp(expected, program->text) != 0, CLOVE_FAIL(), "expected=%s, got=%s", expected, program->text);
 
         dn_program_free(program);
-        parser_free(&p);
+        dang_parser_free(&p);
     }
 
     CLOVE_PASS();

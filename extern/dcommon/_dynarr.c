@@ -24,6 +24,75 @@
 #include "_headers/general.h"
 #include "_headers/macros.h"
 
+string dc_dv_fmt(DCDynVal* dv)
+{
+    if (!dv) return "";
+
+#define dv_fmt_case(TYPE, FMT)                                                                                                 \
+    case dc_dvt(TYPE):                                                                                                         \
+        return FMT
+
+    switch (dv->type)
+    {
+        dv_fmt_case(u8, "%" PRIu8);
+        dv_fmt_case(u16, "%" PRIu16);
+        dv_fmt_case(u32, "%" PRIu32);
+        dv_fmt_case(u64, PRIu64);
+        dv_fmt_case(i8, "%" PRId8);
+        dv_fmt_case(i16, "%" PRId16);
+        dv_fmt_case(i32, "%" PRId32);
+        dv_fmt_case(i64, "%" PRId64);
+        dv_fmt_case(f32, "%f");
+        dv_fmt_case(f64, "%lf");
+        dv_fmt_case(uptr, "%" PRIuPTR);
+        dv_fmt_case(char, "%c");
+        dv_fmt_case(string, "%s");
+        dv_fmt_case(voidptr, "%p");
+        dv_fmt_case(fileptr, "%p");
+        dv_fmt_case(size, "%" PRIdPTR);
+        dv_fmt_case(usize, "%" PRIuMAX);
+
+        default:
+            return "";
+    };
+#undef dv_fmt_case
+}
+
+string dc_tostr_dvt(DCDynVal* dv)
+{
+    if (!dv) return "(null dynamic value)";
+
+#define dvt_case(TYPE)                                                                                                         \
+    case dc_dvt(TYPE):                                                                                                         \
+        return #TYPE
+
+    switch (dv->type)
+    {
+        dvt_case(u8);
+        dvt_case(u16);
+        dvt_case(u32);
+        dvt_case(u64);
+        dvt_case(i8);
+        dvt_case(i16);
+        dvt_case(i32);
+        dvt_case(i64);
+        dvt_case(f32);
+        dvt_case(f64);
+        dvt_case(uptr);
+        dvt_case(char);
+        dvt_case(string);
+        dvt_case(voidptr);
+        dvt_case(fileptr);
+        dvt_case(size);
+        dvt_case(usize);
+
+        default:
+            return "unknown or unimplemented";
+    };
+
+#undef dvt_case
+}
+
 DCResultBool dc_dv_as_bool(DCDynVal* dv)
 {
     DC_RES_bool();
