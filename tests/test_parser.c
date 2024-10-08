@@ -385,128 +385,6 @@ CLOVE_TEST(infix_expressions)
     CLOVE_PASS();
 }
 
-CLOVE_TEST(operator_precedence)
-{
-    string tests[] = {
-        "-a * b",
-        "((-a) * b)\n",
-
-        "!-a",
-        "(!(-a))\n",
-
-        "a + b + c",
-        "((a + b) + c)\n",
-
-        "a + b - c",
-        "((a + b) - c)\n",
-
-        "a * b * c",
-        "((a * b) * c)\n",
-
-        "a * b / c",
-        "((a * b) / c)\n",
-
-        "a + b / c",
-        "(a + (b / c))\n",
-
-        "a + b * c + d / e - f",
-        "(((a + (b * c)) + (d / e)) - f)\n",
-
-        "3 + 4\n -5 * 5",
-        "(3 + 4)\n((-5) * 5)\n",
-
-        "5 > 4 == 3 < 4",
-        "((5 > 4) == (3 < 4))\n",
-
-        "5 < 4 != 3 > 4",
-        "((5 < 4) != (3 > 4))\n",
-
-        "3 + 4 * 5 == 3 * 1 + 4 * 5",
-        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n",
-
-        "true",
-        "true\n",
-
-        "false",
-        "false\n",
-
-        "3 > 5 == false",
-        "((3 > 5) == false)\n",
-
-        "3 < 5 == true",
-        "((3 < 5) == true)\n",
-
-        "1 + (2 + 3) + 4",
-        "((1 + (2 + 3)) + 4)\n",
-
-        "(5 + 5) * 2",
-        "((5 + 5) * 2)\n",
-
-        "2 / (5 + 5)",
-        "(2 / (5 + 5))\n",
-
-        "-(5 + 5)",
-        "(-(5 + 5))\n",
-
-        "!(true == true)",
-        "(!(true == true))\n",
-
-        "add 1 2 3",
-        "add(1, 2, 3)\n",
-
-        "${add 1 2 3}",
-        "add(1, 2, 3)()\n",
-
-        "add ${add 1 2 3} 3 x",
-        "add(add(1, 2, 3), 3, x)\n",
-
-        "a + ${add b * c} + d",
-        "((a + add((b * c))) + d)\n",
-
-        "add a b 1 2*3, 4+5 ${add 6 7 * 8}",
-        "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))\n",
-
-        "${add a b 1 2*3, 4+5 ${add 6 7 * 8}}",
-        "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))()\n",
-
-        "add a + b + c * d / f + g",
-        "add((((a + b) + ((c * d) / f)) + g))\n",
-
-        "${add a + b + c * d / f + g}",
-        "add((((a + b) + ((c * d) / f)) + g))()\n",
-
-        "if a > 10 { if a > 10 { a } }",
-        "if (a > 10) { if (a > 10) { a; }; }\n",
-    };
-
-    for (usize i = 0; i < dc_count(tests) / 2; ++i)
-    {
-        string input = tests[i * 2];
-        string expected = tests[(i * 2) + 1];
-
-        Scanner s;
-        scanner_init(&s, input);
-
-        Parser p;
-        parser_init(&p, &s);
-
-        ResultDNode program_res = parser_parse_program(&p);
-
-        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
-
-        DNode* program = dc_res_val2(program_res);
-
-        dn_string_init(program);
-
-        dc_action_on(strcmp(expected, program->text) != 0, CLOVE_FAIL(), "expected=%s, got=%s", expected, program->text);
-
-        dn_program_free(program);
-        parser_free(&p);
-    }
-
-    CLOVE_PASS();
-}
-
 CLOVE_TEST(if_statement)
 {
     const string input = "if x < y { x }";
@@ -566,7 +444,6 @@ CLOVE_TEST(if_statement)
 
     CLOVE_PASS();
 }
-
 
 CLOVE_TEST(if_else_statement)
 {
@@ -764,6 +641,131 @@ CLOVE_TEST(call_expression)
 
     dn_program_free(program);
     parser_free(&p);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(string_output_comparision)
+{
+    string tests[] = {
+        "-a * b",
+        "((-a) * b)\n",
+
+        "!-a",
+        "(!(-a))\n",
+
+        "a + b + c",
+        "((a + b) + c)\n",
+
+        "a + b - c",
+        "((a + b) - c)\n",
+
+        "a * b * c",
+        "((a * b) * c)\n",
+
+        "a * b / c",
+        "((a * b) / c)\n",
+
+        "a + b / c",
+        "(a + (b / c))\n",
+
+        "a + b * c + d / e - f",
+        "(((a + (b * c)) + (d / e)) - f)\n",
+
+        "3 + 4\n -5 * 5",
+        "(3 + 4)\n((-5) * 5)\n",
+
+        "5 > 4 == 3 < 4",
+        "((5 > 4) == (3 < 4))\n",
+
+        "5 < 4 != 3 > 4",
+        "((5 < 4) != (3 > 4))\n",
+
+        "3 + 4 * 5 == 3 * 1 + 4 * 5",
+        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n",
+
+        "true",
+        "true\n",
+
+        "false",
+        "false\n",
+
+        "3 > 5 == false",
+        "((3 > 5) == false)\n",
+
+        "3 < 5 == true",
+        "((3 < 5) == true)\n",
+
+        "1 + (2 + 3) + 4",
+        "((1 + (2 + 3)) + 4)\n",
+
+        "(5 + 5) * 2",
+        "((5 + 5) * 2)\n",
+
+        "2 / (5 + 5)",
+        "(2 / (5 + 5))\n",
+
+        "-(5 + 5)",
+        "(-(5 + 5))\n",
+
+        "!(true == true)",
+        "(!(true == true))\n",
+
+        "add 1 2 3",
+        "add(1, 2, 3)\n",
+
+        "${add 1 2 3}",
+        "add(1, 2, 3)()\n",
+
+        "add ${add 1 2 3} 3 x",
+        "add(add(1, 2, 3), 3, x)\n",
+
+        "a + ${add b * c} + d",
+        "((a + add((b * c))) + d)\n",
+
+        "add a b 1 2*3, 4+5 ${add 6 7 * 8}",
+        "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))\n",
+
+        "${add a b 1 2*3, 4+5 ${add 6 7 * 8}}",
+        "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))()\n",
+
+        "add a + b + c * d / f + g",
+        "add((((a + b) + ((c * d) / f)) + g))\n",
+
+        "${add a + b + c * d / f + g}",
+        "add((((a + b) + ((c * d) / f)) + g))()\n",
+
+        "if a > 10 { if a > 10 { a } }",
+        "if (a > 10) { if (a > 10) { a; }; }\n",
+    };
+
+    for (usize i = 0; i < dc_count(tests) / 2; ++i)
+    {
+        string input = tests[i * 2];
+        string expected = tests[(i * 2) + 1];
+
+        Scanner s;
+        scanner_init(&s, input);
+
+        Parser p;
+        parser_init(&p, &s);
+
+        ResultDNode program_res = parser_parse_program(&p);
+
+        dc_action_on(!parser_has_no_error(&p), CLOVE_FAIL(), "parser has error");
+
+        DNode* program = dc_res_val2(program_res);
+
+        if (parser_has_no_error(&p))
+        {
+            dn_string_init(program);
+
+            dc_action_on(strcmp(expected, program->text) != 0, CLOVE_FAIL(), "expected=%s, got=%s", expected, program->text);
+        }
+
+        dn_program_free(program);
+        parser_free(&p);
+    }
 
     CLOVE_PASS();
 }

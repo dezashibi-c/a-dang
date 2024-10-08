@@ -22,7 +22,8 @@ add_custom_target(all_tests)
 ###############################################################################
 
 set(base_sources ../src/common.c ../src/scanner.c ../src/token.c)
+set(full_sources ${base_sources} ../src/parser.c ../src/ast.c)
 
 add_clove_test(test_scanner "" ${base_sources})
-add_clove_test(test_parser "" ${base_sources} ../src/parser.c ../src/ast.c)
-add_clove_test(test_ast "" ${base_sources} ../src/parser.c ../src/ast.c)
+add_clove_test(test_parser "" ${full_sources})
+add_clove_test(test_ast "" ${full_sources})
