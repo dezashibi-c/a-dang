@@ -58,6 +58,19 @@ static bool test_evaluated_literal(DCDynVal* obj, DCDynVal* expected)
             return false;
         }
 
+        if (!dc_res_val2(res))
+        {
+            DCResultString obj_str, expected_str;
+
+            obj_str = dc_tostr_dv(obj);
+            expected_str = dc_tostr_dv(expected);
+
+            dc_log("expected '%s' but got '%s'", dc_res_val2(expected_str), dc_res_val2(obj_str));
+
+            if (dc_res_val2(obj_str)) free(dc_res_val2(obj_str));
+            if (dc_res_val2(expected_str)) free(dc_res_val2(expected_str));
+        }
+
         return dc_res_val2(res);
     }
 
@@ -109,6 +122,30 @@ CLOVE_TEST(integer_expressions)
         {.input = "-5", .expected = dang_int(-5)},
 
         {.input = "-10", .expected = dang_int(-10)},
+
+        {.input = "--10", .expected = dang_int(10)},
+
+        {.input = "5 + 5 + 5 + 5 - 10", .expected = dang_int(10)},
+
+        {.input = "2 * 2 * 2 * 2 * 2", .expected = dang_int(32)},
+
+        {.input = "-50 + 100 + -50", .expected = dang_int(0)},
+
+        {.input = "5 * 2 + 10", .expected = dang_int(20)},
+
+        {.input = "5 + 2 * 10", .expected = dang_int(25)},
+
+        {.input = "20 + 2 * -10", .expected = dang_int(0)},
+
+        {.input = "50 / 2 * 2 + 10", dang_int(60)},
+
+        {.input = "2 * (5 + 10)", .expected = dang_int(30)},
+
+        {.input = "3 * 3 * 3 + 10", .expected = dang_int(37)},
+
+        {.input = "3 * (3 * 3) + 10", .expected = dang_int(37)},
+
+        {.input = "(5 + 10 * 2 + 15 / 3) * 2 + -10", .expected = dang_int(50)},
 
         {.input = "", .expected = DANG_NULL},
     };

@@ -50,10 +50,47 @@ static DCResult eval_prefix_expression(DNode* dn, DCDynVal* right)
 
     if (dc_sv_str_eq(dn_text(dn), "!"))
         return eval_bang_operator(right);
+
     else if (dc_sv_str_eq(dn_text(dn), "-"))
         return eval_minus_prefix_operator(right);
+
     else
-        dc_res_ret_ea(-1, "unimplemented operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
+        dc_res_ret_ea(-1, "unimplemented infix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
+}
+
+static DCResult eval_integer_infix_expression(DNode* dn, DCDynVal* left, DCDynVal* right)
+{
+    DC_RES();
+
+    i64 lval = dc_dv_as(*left, i64);
+    i64 rval = dc_dv_as(*right, i64);
+
+    if (dc_sv_str_eq(dn_text(dn), "+"))
+        dc_res_ret_ok_dv(i64, lval + rval);
+
+    else if (dc_sv_str_eq(dn_text(dn), "-"))
+        dc_res_ret_ok_dv(i64, lval - rval);
+
+    else if (dc_sv_str_eq(dn_text(dn), "*"))
+        dc_res_ret_ok_dv(i64, lval * rval);
+
+    else if (dc_sv_str_eq(dn_text(dn), "/"))
+        dc_res_ret_ok_dv(i64, lval / rval);
+
+    else
+        dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
+}
+
+static DCResult eval_infix_expression(DNode* dn, DCDynVal* left, DCDynVal* right)
+{
+    DC_RES();
+
+    if (dc_dv_is(*left, i64) && dc_dv_is(*right, i64))
+        return eval_integer_infix_expression(dn, left, right);
+
+    else
+        dc_res_ret_ea(-1, "unimplemented infix for '" DCPRIsv "' operator between '%s' and '%s'", dc_sv_fmt(dn_text(dn)),
+                      dc_tostr_dvt(left), dc_tostr_dvt(right));
 }
 
 DCResult dang_eval(DNode* dn)
@@ -62,6 +99,7 @@ DCResult dang_eval(DNode* dn)
 
     if (!dn)
         dc_res_ret_e(-1, "got NULL node");
+
     else if (!dn_type_is_valid(dn->type))
         dc_res_ret_ea(-1, "got invalid node type: %s", tostr_DNType(dn->type));
 
@@ -78,6 +116,14 @@ DCResult dang_eval(DNode* dn)
             dc_try_or_fail_with3(DCResult, right, dang_eval(dn_child(dn, 0)), {});
 
             return eval_prefix_expression(dn, &dc_res_val2(right));
+        }
+
+        case DN_INFIX_EXPRESSION:
+        {
+            dc_try_or_fail_with3(DCResult, left, dang_eval(dn_child(dn, 0)), {});
+            dc_try_or_fail_with3(DCResult, right, dang_eval(dn_child(dn, 1)), {});
+
+            return eval_infix_expression(dn, &dc_res_val2(left), &dc_res_val2(right));
         }
 
         case DN_BOOLEAN_LITERAL:

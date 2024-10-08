@@ -47,7 +47,8 @@ static void repl()
 
         if (dc_res_is_err2(res))
         {
-            printf("Parser initialization error: %s\n", dc_res_err_msg2(res));
+            dc_res_err_log2(res, DC_FG_LRED "Parser initialization error");
+            printf("%s", DC_COLOR_RESET);
 
             dang_parser_free(&p);
             continue;
