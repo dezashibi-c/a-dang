@@ -670,19 +670,19 @@ dc_res_fail_if_err()
  * Expands to a new result variable declaration initialized with the CALL
  * and returning error with failure actions in case of errors
  */
-#define dc_res_try_or_fail_with3(RES_TYPE, RES, CALL, FAILURE_ACTIONS)   
+#define dc_try_or_fail_with3(RES_TYPE, RES, CALL, FAILURE_ACTIONS)   
 
 /**
  * Expands to assigning an existing result variable with the CALL
  * and returning error with failure actions in case of errors
  */
-#define dc_res_try_or_fail_with2(RES, CALL, FAILURE_ACTIONS)
+#define dc_try_or_fail_with2(RES, CALL, FAILURE_ACTIONS)
 
 /**
  * Expands to assigning main result variable (__dc_res) to the CALL
  * and returning error with failure actions in case of errors
  */
-#define dc_res_try_or_fail_with(CALL, FAILURE_ACTIONS)
+#define dc_try_or_fail_with(CALL, FAILURE_ACTIONS)
 
 /**
  * Checks if the main result variable (__dc_result) is error does
