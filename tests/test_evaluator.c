@@ -83,35 +83,6 @@ typedef struct
     DCDynVal expected;
 } TestCase;
 
-CLOVE_TEST(literal_expressions)
-{
-    TestCase tests[] = {
-        {.input = "5", .expected = dang_int(5)},
-
-        {.input = "10", .expected = dang_int(10)},
-
-        {.input = "true", .expected = DANG_TRUE},
-
-        {.input = "false", .expected = DANG_FALSE},
-
-        {.input = "", .expected = DANG_NULL},
-    };
-
-    dc_sforeach(tests, TestCase, strlen(_it->input) != 0)
-    {
-        DCResult res = test_eval(_it->input);
-        if (dc_res_is_err2(res))
-        {
-            dc_res_err_log2(res, "evaluation failed");
-            CLOVE_FAIL();
-        }
-
-        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), CLOVE_FAIL(), "evaluation result failed");
-    }
-
-    CLOVE_PASS();
-}
-
 CLOVE_TEST(integer_expressions)
 {
     TestCase tests[] = {
@@ -165,9 +136,13 @@ CLOVE_TEST(integer_expressions)
     CLOVE_PASS();
 }
 
-CLOVE_TEST(bang_operator)
+CLOVE_TEST(boolean_expressions)
 {
     TestCase tests[] = {
+        {.input = "true", .expected = DANG_TRUE},
+
+        {.input = "false", .expected = DANG_FALSE},
+
         {.input = "!false", .expected = DANG_TRUE},
 
         {.input = "!true", .expected = DANG_FALSE},
@@ -179,6 +154,40 @@ CLOVE_TEST(bang_operator)
         {.input = "!!false", .expected = DANG_FALSE},
 
         {.input = "!!5", .expected = DANG_TRUE},
+
+        {.input = "1 < 2", .expected = DANG_TRUE},
+
+        {.input = "1 > 2", .expected = DANG_FALSE},
+
+        {.input = "1 > 1", .expected = DANG_FALSE},
+
+        {.input = "1 < 1", .expected = DANG_FALSE},
+
+        {.input = "1 == 1", .expected = DANG_TRUE},
+
+        {.input = "1 != 1", .expected = DANG_FALSE},
+
+        {.input = "1 == 2", .expected = DANG_FALSE},
+
+        {.input = "1 != 2", .expected = DANG_TRUE},
+
+        {.input = "true == true", .expected = DANG_TRUE},
+
+        {.input = "false == false", .expected = DANG_TRUE},
+
+        {.input = "true == false", .expected = DANG_FALSE},
+
+        {.input = "true != false", .expected = DANG_TRUE},
+
+        {.input = "false != true", .expected = DANG_TRUE},
+
+        {.input = "(1 < 2) == true", .expected = DANG_TRUE},
+
+        {.input = "(1 < 2) == false", .expected = DANG_FALSE},
+
+        {.input = "(1 > 2) == true", .expected = DANG_FALSE},
+
+        {.input = "(1 > 2) == false", .expected = DANG_TRUE},
 
         {.input = "", .expected = DANG_NULL},
     };

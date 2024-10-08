@@ -77,6 +77,35 @@ static DCResult eval_integer_infix_expression(DNode* dn, DCDynVal* left, DCDynVa
     else if (dc_sv_str_eq(dn_text(dn), "/"))
         dc_res_ret_ok_dv(i64, lval / rval);
 
+    else if (dc_sv_str_eq(dn_text(dn), "<"))
+        dc_res_ret_ok_dv(u8, lval < rval);
+
+    else if (dc_sv_str_eq(dn_text(dn), ">"))
+        dc_res_ret_ok_dv(u8, lval > rval);
+
+    else if (dc_sv_str_eq(dn_text(dn), "=="))
+        dc_res_ret_ok_dv(u8, lval == rval);
+
+    else if (dc_sv_str_eq(dn_text(dn), "!="))
+        dc_res_ret_ok_dv(u8, lval != rval);
+
+    else
+        dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
+}
+
+static DCResult eval_boolean_infix_expression(DNode* dn, DCDynVal* left, DCDynVal* right)
+{
+    DC_RES();
+
+    u8 lval = dc_dv_as(*left, u8);
+    u8 rval = dc_dv_as(*right, u8);
+
+    if (dc_sv_str_eq(dn_text(dn), "=="))
+        dc_res_ret_ok_dv(u8, lval == rval);
+
+    else if (dc_sv_str_eq(dn_text(dn), "!="))
+        dc_res_ret_ok_dv(u8, lval != rval);
+
     else
         dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
 }
@@ -87,6 +116,21 @@ static DCResult eval_infix_expression(DNode* dn, DCDynVal* left, DCDynVal* right
 
     if (dc_dv_is(*left, i64) && dc_dv_is(*right, i64))
         return eval_integer_infix_expression(dn, left, right);
+
+    else if (dc_dv_is(*left, u8) && dc_dv_is(*right, u8))
+        return eval_boolean_infix_expression(dn, left, right);
+
+    else if (dc_dv_is(*right, u8))
+    {
+        DCDynVal left2 = dang_bool(dc_dv_as_bool(left).data.v);
+        return eval_boolean_infix_expression(dn, &left2, right);
+    }
+
+    else if (dc_dv_is(*left, u8))
+    {
+        DCDynVal right2 = dang_bool(dc_dv_as_bool(right).data.v);
+        return eval_boolean_infix_expression(dn, left, &right2);
+    }
 
     else
         dc_res_ret_ea(-1, "unimplemented infix for '" DCPRIsv "' operator between '%s' and '%s'", dc_sv_fmt(dn_text(dn)),
