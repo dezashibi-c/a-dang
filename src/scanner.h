@@ -30,8 +30,6 @@ typedef struct
     DCDynArr tokens;
 } Scanner;
 
-// todo:: rename all scanner and parser functions to have dang or dn prefix
-
 DCResultVoid dang_scanner_init(Scanner* s, const string input);
 DCResultVoid dang_scanner_free(Scanner* s);
 ResultToken dang_scanner_next_token(Scanner* s);
