@@ -68,7 +68,7 @@ static void repl()
             {
                 printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", dc_res_val2(program_res)->text);
 
-                DCResult evaluated = eval(dc_res_val2(program_res));
+                DCResult evaluated = dang_eval(dc_res_val2(program_res));
                 if (dc_res_is_err2(evaluated))
                 {
                     dc_res_err_log2(evaluated, DC_FG_LRED "Evaluation error");

@@ -16,16 +16,16 @@
 
 #include "evaluator.h"
 
-static DCResult eval_statements(DNode* dn)
+static DCResult dang_eval_statements(DNode* dn)
 {
     DC_RES();
 
-    dc_da_for(dn->children) dc_try_fail(eval(dn_child(dn, _idx)));
+    dc_da_for(dn->children) dc_try_fail(dang_eval(dn_child(dn, _idx)));
 
     dc_res_ret();
 }
 
-DCResult eval(DNode* dn)
+DCResult dang_eval(DNode* dn)
 {
     DC_RES();
 
@@ -37,10 +37,10 @@ DCResult eval(DNode* dn)
     switch (dn->type)
     {
         case DN_PROGRAM:
-            return eval_statements(dn);
+            return dang_eval_statements(dn);
 
         case DN_EXPRESSION_STATEMENT:
-            return eval(dn_child(dn, 0));
+            return dang_eval(dn_child(dn, 0));
 
         case DN_INTEGER_LITERAL:
             dc_res_ret_ok_dv(i64, dn_child_as(dn, 0, i64));

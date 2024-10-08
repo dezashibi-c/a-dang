@@ -19,6 +19,6 @@
 
 #include "ast.h"
 
-DCResult eval(DNode* dn);
+DCResult dang_eval(DNode* dn);
 
 #endif // DANG_EVAL_H

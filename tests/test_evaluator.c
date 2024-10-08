@@ -1,4 +1,4 @@
-#define CLOVE_SUITE_NAME evaluator_tests
+#define CLOVE_SUITE_NAME dang_evaluator_tests
 
 #include "clove-unit/clove-unit.h"
 
@@ -36,7 +36,7 @@ static DCResult test_eval(string input)
         dc_res_ret_e(-1, "parser has error");
     }
 
-    dc_try_or_fail_with(eval(program), {
+    dc_try_or_fail_with(dang_eval(program), {
         dn_program_free(program);
         dang_parser_free(&p);
     });
