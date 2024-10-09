@@ -16,22 +16,7 @@
 
 #include "evaluator.h"
 
-static DObjResult eval_program_statements(DNode* dn)
-{
-    DC_RES2(DObjResult);
-
-    dc_da_for(dn->children)
-    {
-        DNode* stmt = dn_child(dn, _idx);
-        dc_try_fail(dang_eval(stmt));
-
-        if (dobj_is_return(dc_res_val())) dc_res_ret();
-    }
-
-    dc_res_ret();
-}
-
-static DObjResult eval_block_statements(DNode* dn)
+static DObjResult eval_statements(DNode* dn)
 {
     DC_RES2(DObjResult);
 
@@ -191,7 +176,7 @@ DObjResult dang_eval(DNode* dn)
     switch (dn->type)
     {
         case DN_PROGRAM:
-            return eval_program_statements(dn);
+            return eval_statements(dn);
 
         case DN_EXPRESSION_STATEMENT:
             return dang_eval(dn_child(dn, 0));
@@ -218,7 +203,7 @@ DObjResult dang_eval(DNode* dn)
             dc_res_ret_ok(dobj_int(dn_child_as(dn, 0, i64)));
 
         case DN_BLOCK_STATEMENT:
-            return eval_block_statements(dn);
+            return eval_statements(dn);
 
         case DN_IF_EXPRESSION:
             return eval_if_expression(dn);
