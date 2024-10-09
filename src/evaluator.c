@@ -212,15 +212,24 @@ DObjResult dang_eval(DNode* dn)
         {
             DNode* ret_val = (dn_child_count(dn) > 0) ? dn_child(dn, 0) : NULL;
 
-            if (!ret_val) dc_res_ret_ok(dobj_null());
+            if (!ret_val) dc_res_ret_ok(dobj_return_null());
 
             dc_try_or_fail_with3(DObjResult, value, dang_eval(ret_val), {});
 
             dc_res_ret_ok(dobj_return(dc_res_val2(value)));
         }
 
+        // todo:: this is temporary must be fixed to actual call evaluation
         case DN_CALL_EXPRESSION:
-            dc_res_ret_ok(dobj_null());
+        {
+            DNode* ret_val = (dn_child_count(dn) > 0) ? dn_child(dn, 0) : NULL;
+
+            if (!ret_val) dc_res_ret_ok(dobj_null());
+
+            dc_try_or_fail_with3(DObjResult, value, dang_eval(ret_val), {});
+
+            dc_res_ret_ok(dc_res_val2(value));
+        }
 
         default:
             break;

@@ -46,6 +46,12 @@ typedef struct DObject
     {                                                                                                                          \
         .type = (DOBJ).type, .dv = (DOBJ).dv, .is_returned = true                                                              \
     }
+#define dobj_return_null()                                                                                                     \
+    (DObject)                                                                                                                  \
+    {                                                                                                                          \
+        .type = DOBJ_NULL, .dv = dc_dv(voidptr, NULL), .is_returned = true                                                     \
+    }
+
 #define dobj_null() dobj(DOBJ_NULL, voidptr, NULL)
 #define dobj_true() dobj_bool(true)
 #define dobj_false() dobj_bool(false)

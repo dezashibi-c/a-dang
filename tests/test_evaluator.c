@@ -258,3 +258,37 @@ CLOVE_TEST(return_statement)
     else
         CLOVE_FAIL();
 }
+
+CLOVE_TEST(error_handling)
+{
+    string error_tests[] = {
+        "5 + true",
+
+        "5 + true; 5",
+
+        "-true",
+
+        "true + false",
+
+        "5; true + false; 5",
+
+        "if 10 > 1 { true + false }",
+
+        "if 10 > 1 { \n if 10 > 1 { \n return true + false \n } \n\n return 1 \n}",
+
+        NULL,
+    };
+
+    dc_foreach(error_tests, string)
+    {
+        DObjResult res = test_eval(*_it);
+        if (dc_res_is_ok2(res))
+        {
+            dc_log("expected input '%s' to cause error but evaluated to ok result", *_it);
+
+            CLOVE_FAIL();
+        }
+    }
+
+    CLOVE_PASS();
+}
