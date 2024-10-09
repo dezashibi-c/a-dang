@@ -11,6 +11,8 @@
         "DCOMMON",
         "DCPR",
         "dnode",
+        "DOBJ",
+        "dobjt",
         "dynarr",
         "DYNARR",
         "dynval",

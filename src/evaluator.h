@@ -18,14 +18,9 @@
 #define DANG_EVAL_H
 
 #include "ast.h"
+#include "object.h"
 
-#define DANG_TRUE DC_DV_TRUE
-#define DANG_FALSE DC_DV_FALSE
-#define DANG_NULL DC_DV_NULL
-
-#define dang_int(NUM) dc_dv(i64, NUM)
-#define dang_bool(VAL) dc_dv(u8, !!VAL)
-
-DCResult dang_eval(DNode* dn);
+DObjResult dang_eval(DNode* dn);
+string tostr_DObjType(DObjType dobjt);
 
 #endif // DANG_EVAL_H

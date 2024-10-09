@@ -16,43 +16,56 @@
 
 #include "evaluator.h"
 
-static DCResult eval_statements(DNode* dn)
+static DObjResult eval_program_statements(DNode* dn)
 {
-    DC_RES();
+    DC_RES2(DObjResult);
 
     dc_da_for(dn->children)
     {
         DNode* stmt = dn_child(dn, _idx);
         dc_try_fail(dang_eval(stmt));
 
-        if (stmt->type == DN_RETURN_STATEMENT) dc_res_ret();
+        if (dobj_is_return(dc_res_val())) dc_res_ret();
     }
 
     dc_res_ret();
 }
 
-static DCResult eval_bang_operator(DCDynVal* right)
+static DObjResult eval_block_statements(DNode* dn)
 {
-    DC_RES();
+    DC_RES2(DObjResult);
 
-    dc_try_or_fail_with3(DCResultBool, right_as_bool, dc_dv_as_bool(right), {});
+    dc_da_for(dn->children)
+    {
+        DNode* stmt = dn_child(dn, _idx);
+        dc_try_fail(dang_eval(stmt));
 
-    dc_res_ret_ok_dv(u8, !dc_res_val2(right_as_bool));
+        if (dobj_is_return(dc_res_val())) dc_res_ret();
+    }
+
+    dc_res_ret();
 }
 
-static DCResult eval_minus_prefix_operator(DCDynVal* right)
+static DObjResult eval_bang_operator(DObject* right)
 {
-    DC_RES();
+    DC_RES2(DObjResult);
 
-    if (dc_dv_is_not(*right, i64))
-        dc_res_ret_ea(-1, "'-' operator does not support right value of type: %s", dc_tostr_dvt(right));
-
-    dc_res_ret_ok_dv(i64, -dc_dv_as(*right, i64));
+    dc_res_ret_ok(dobj_bool(!dobj_as_bool(*right)));
 }
 
-static DCResult eval_prefix_expression(DNode* dn, DCDynVal* right)
+static DObjResult eval_minus_prefix_operator(DObject* right)
 {
-    DC_RES();
+    DC_RES2(DObjResult);
+
+    if (!dobj_is_int(*right))
+        dc_res_ret_ea(-1, "'-' operator does not support right value of type: %s", dc_tostr_dvt(&right->dv));
+
+    dc_res_ret_ok(dobj_int(-dobj_as_int(*right)));
+}
+
+static DObjResult eval_prefix_expression(DNode* dn, DObject* right)
+{
+    DC_RES2(DObjResult);
 
     if (dc_sv_str_eq(dn_text(dn), "!"))
         return eval_bang_operator(right);
@@ -64,96 +77,96 @@ static DCResult eval_prefix_expression(DNode* dn, DCDynVal* right)
         dc_res_ret_ea(-1, "unimplemented infix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
 }
 
-static DCResult eval_integer_infix_expression(DNode* dn, DCDynVal* left, DCDynVal* right)
+static DObjResult eval_integer_infix_expression(DNode* dn, DObject* left, DObject* right)
 {
-    DC_RES();
+    DC_RES2(DObjResult);
 
-    i64 lval = dc_dv_as(*left, i64);
-    i64 rval = dc_dv_as(*right, i64);
+    i64 lval = dobj_as_int(*left);
+    i64 rval = dobj_as_int(*right);
 
     if (dc_sv_str_eq(dn_text(dn), "+"))
-        dc_res_ret_ok_dv(i64, lval + rval);
+        dc_res_ret_ok(dobj_int(lval + rval));
 
     else if (dc_sv_str_eq(dn_text(dn), "-"))
-        dc_res_ret_ok_dv(i64, lval - rval);
+        dc_res_ret_ok(dobj_int(lval - rval));
 
     else if (dc_sv_str_eq(dn_text(dn), "*"))
-        dc_res_ret_ok_dv(i64, lval * rval);
+        dc_res_ret_ok(dobj_int(lval * rval));
 
     else if (dc_sv_str_eq(dn_text(dn), "/"))
-        dc_res_ret_ok_dv(i64, lval / rval);
+        dc_res_ret_ok(dobj_int(lval / rval));
 
     else if (dc_sv_str_eq(dn_text(dn), "<"))
-        dc_res_ret_ok_dv(u8, lval < rval);
+        dc_res_ret_ok(dobj_bool(lval < rval));
 
     else if (dc_sv_str_eq(dn_text(dn), ">"))
-        dc_res_ret_ok_dv(u8, lval > rval);
+        dc_res_ret_ok(dobj_bool(lval > rval));
 
     else if (dc_sv_str_eq(dn_text(dn), "=="))
-        dc_res_ret_ok_dv(u8, lval == rval);
+        dc_res_ret_ok(dobj_bool(lval == rval));
 
     else if (dc_sv_str_eq(dn_text(dn), "!="))
-        dc_res_ret_ok_dv(u8, lval != rval);
+        dc_res_ret_ok(dobj_bool(lval != rval));
 
     else
         dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
 }
 
-static DCResult eval_boolean_infix_expression(DNode* dn, DCDynVal* left, DCDynVal* right)
+static DObjResult eval_boolean_infix_expression(DNode* dn, DObject* left, DObject* right)
 {
-    DC_RES();
+    DC_RES2(DObjResult);
 
-    u8 lval = dc_dv_as(*left, u8);
-    u8 rval = dc_dv_as(*right, u8);
+    bool lval = dobj_as_bool(*left);
+    bool rval = dobj_as_bool(*right);
 
     if (dc_sv_str_eq(dn_text(dn), "=="))
-        dc_res_ret_ok_dv(u8, lval == rval);
+        dc_res_ret_ok(dobj_bool(lval == rval));
 
     else if (dc_sv_str_eq(dn_text(dn), "!="))
-        dc_res_ret_ok_dv(u8, lval != rval);
+        dc_res_ret_ok(dobj_bool(lval != rval));
 
     else
         dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
 }
 
-static DCResult eval_infix_expression(DNode* dn, DCDynVal* left, DCDynVal* right)
+static DObjResult eval_infix_expression(DNode* dn, DObject* left, DObject* right)
 {
-    DC_RES();
+    DC_RES2(DObjResult);
 
-    if (dc_dv_is(*left, i64) && dc_dv_is(*right, i64))
+    if (dobj_is_int(*left) && dobj_is_int(*right))
         return eval_integer_infix_expression(dn, left, right);
 
-    else if (dc_dv_is(*left, u8) && dc_dv_is(*right, u8))
+    else if (dobj_is_bool(*left) && dobj_is_bool(*right))
         return eval_boolean_infix_expression(dn, left, right);
 
-    else if (dc_dv_is(*left, u8))
+    else if (dobj_is_bool(*left))
     {
-        DCDynVal right2 = dang_bool(dc_res_val2(dc_dv_as_bool(right)));
+        DObject right2 = dobj_bool(dc_res_val2(dc_dv_as_bool(&right->dv)));
         return eval_boolean_infix_expression(dn, left, &right2);
     }
 
-    else if (dc_dv_is(*right, u8))
+    else if (dobj_is_bool(*right))
     {
-        DCDynVal left2 = dang_bool(dc_res_val2(dc_dv_as_bool(left)));
+        DObject left2 = dobj_bool(dc_res_val2(dc_dv_as_bool(&left->dv)));
         return eval_boolean_infix_expression(dn, &left2, right);
     }
 
     else
         dc_res_ret_ea(-1, "unimplemented infix for '" DCPRIsv "' operator between '%s' and '%s'", dc_sv_fmt(dn_text(dn)),
-                      dc_tostr_dvt(left), dc_tostr_dvt(right));
+                      dc_tostr_dvt(&left->dv), dc_tostr_dvt(&right->dv));
 }
 
-static DCResult eval_if_expression(DNode* dn)
+static DObjResult eval_if_expression(DNode* dn)
 {
-    DC_RES();
+    DC_RES2(DObjResult);
 
     DNode* condition = dn_child(dn, 0);
     DNode* consequence = dn_child(dn, 1);
     DNode* alternative = (dn_child_count(dn) > 2) ? dn_child(dn, 2) : NULL;
 
-    dc_try_or_fail_with3(DCResult, condition_evaluated, dang_eval(condition), {});
+    dc_try_or_fail_with3(DObjResult, condition_evaluated, dang_eval(condition), {});
 
-    dc_try_or_fail_with3(DCResultBool, condition_as_bool, dc_dv_as_bool(&dc_res_val2(condition_evaluated)), {});
+    dc_try_or_fail_with3(DCResultBool, condition_as_bool, dc_dv_as_bool(&dc_res_val2(condition_evaluated).dv), {});
 
     if (dc_res_val2(condition_as_bool))
         return dang_eval(consequence);
@@ -162,12 +175,12 @@ static DCResult eval_if_expression(DNode* dn)
         return dang_eval(alternative);
 
     else
-        dc_res_ret_ok_dv(voidptr, NULL);
+        dc_res_ret_ok(dobj_null());
 }
 
-DCResult dang_eval(DNode* dn)
+DObjResult dang_eval(DNode* dn)
 {
-    DC_RES();
+    DC_RES2(DObjResult);
 
     if (!dn)
         dc_res_ret_e(-1, "got NULL node");
@@ -178,34 +191,34 @@ DCResult dang_eval(DNode* dn)
     switch (dn->type)
     {
         case DN_PROGRAM:
-            return eval_statements(dn);
+            return eval_program_statements(dn);
 
         case DN_EXPRESSION_STATEMENT:
             return dang_eval(dn_child(dn, 0));
 
         case DN_PREFIX_EXPRESSION:
         {
-            dc_try_or_fail_with3(DCResult, right, dang_eval(dn_child(dn, 0)), {});
+            dc_try_or_fail_with3(DObjResult, right, dang_eval(dn_child(dn, 0)), {});
 
             return eval_prefix_expression(dn, &dc_res_val2(right));
         }
 
         case DN_INFIX_EXPRESSION:
         {
-            dc_try_or_fail_with3(DCResult, left, dang_eval(dn_child(dn, 0)), {});
-            dc_try_or_fail_with3(DCResult, right, dang_eval(dn_child(dn, 1)), {});
+            dc_try_or_fail_with3(DObjResult, left, dang_eval(dn_child(dn, 0)), {});
+            dc_try_or_fail_with3(DObjResult, right, dang_eval(dn_child(dn, 1)), {});
 
             return eval_infix_expression(dn, &dc_res_val2(left), &dc_res_val2(right));
         }
 
         case DN_BOOLEAN_LITERAL:
-            dc_res_ret_ok_dv(u8, dn_child_as(dn, 0, u8));
+            dc_res_ret_ok(dobj_bool(dn_child_as(dn, 0, u8)));
 
         case DN_INTEGER_LITERAL:
-            dc_res_ret_ok_dv(i64, dn_child_as(dn, 0, i64));
+            dc_res_ret_ok(dobj_int(dn_child_as(dn, 0, i64)));
 
         case DN_BLOCK_STATEMENT:
-            return eval_statements(dn);
+            return eval_block_statements(dn);
 
         case DN_IF_EXPRESSION:
             return eval_if_expression(dn);
@@ -214,17 +227,32 @@ DCResult dang_eval(DNode* dn)
         {
             DNode* ret_val = (dn_child_count(dn) > 0) ? dn_child(dn, 0) : NULL;
 
-            if (!ret_val) dc_res_ret_ok_dv(voidptr, NULL);
+            if (!ret_val) dc_res_ret_ok(dobj_null());
 
-            return dang_eval(ret_val);
+            dc_try_or_fail_with3(DObjResult, value, dang_eval(ret_val), {});
+
+            dc_res_ret_ok(dobj_return(dc_res_val2(value)));
         }
 
         case DN_CALL_EXPRESSION:
-            dc_res_ret_ok_dv(voidptr, NULL);
+            dc_res_ret_ok(dobj_null());
 
         default:
             break;
     };
 
     dc_res_ret_ea(-1, "Unimplemented or unsupported node type: %s", tostr_DNType(dn->type));
+}
+
+string tostr_DObjType(DObjType dobjt)
+{
+    switch (dobjt)
+    {
+        dc_str_case(DOBJ_INTEGER);
+        dc_str_case(DOBJ_BOOLEAN);
+        dc_str_case(DOBJ_NULL);
+
+        default:
+            return "(unknown evaluated object type)";
+    }
 }

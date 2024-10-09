@@ -69,7 +69,7 @@ static void repl()
             {
                 printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", dc_res_val2(program_res)->text);
 
-                DCResult evaluated = dang_eval(dc_res_val2(program_res));
+                DObjResult evaluated = dang_eval(dc_res_val2(program_res));
                 if (dc_res_is_err2(evaluated))
                 {
                     dc_res_err_log2(evaluated, DC_FG_LRED "Evaluation error");
@@ -79,10 +79,10 @@ static void repl()
                 {
                     printf("%s", "Result: " DC_FG_LGREEN);
 
-                    if (dc_res_val2(evaluated).type == dc_dvt(u8))
-                        printf("%s\n", dc_tostr_bool(dc_dv_as(dc_res_val2(evaluated), u8)));
+                    if (dobj_is_bool(dc_res_val2(evaluated)))
+                        printf("%s\n", dc_tostr_bool(dobj_as_bool(dc_res_val2(evaluated))));
                     else
-                        dc_dv_println(&dc_res_val2(evaluated));
+                        dc_dv_println(&dc_res_val2(evaluated).dv);
 
                     printf("%s", DC_COLOR_RESET);
                 }

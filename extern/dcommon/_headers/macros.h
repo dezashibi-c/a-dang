@@ -509,7 +509,7 @@
     do                                                                                                                         \
     {                                                                                                                          \
         __dc_res.status = DC_RES_OK;                                                                                           \
-        __dc_res.data.v = VALUE;                                                                                               \
+        __dc_res.data.v = (VALUE);                                                                                             \
     } while (0)
 
 /**
@@ -518,7 +518,7 @@
  *
  * NOTE: The value must not be allocated (see dc_res_ok_dva)
  */
-#define dc_res_ok_dv(TYPE, VALUE) dc_res_ok(dc_dv(TYPE, VALUE))
+#define dc_res_ok_dv(TYPE, VALUE) dc_res_ok(dc_dv(TYPE, (VALUE)))
 
 /**
  * In case the result is of type DCResult this is a shortcut to create a literal
@@ -526,7 +526,7 @@
  *
  * NOTE: The value must be allocated (see dc_res_ok_dv)
  */
-#define dc_res_ok_dva(TYPE, VALUE) dc_res_ok(dc_dva(TYPE, VALUE))
+#define dc_res_ok_dva(TYPE, VALUE) dc_res_ok(dc_dva(TYPE, (VALUE)))
 
 /**
  * Returns the main result variable (__dc_res)
@@ -565,7 +565,7 @@
 #define dc_res_ret_ok(VALUE)                                                                                                   \
     do                                                                                                                         \
     {                                                                                                                          \
-        dc_res_ok(VALUE);                                                                                                      \
+        dc_res_ok((VALUE));                                                                                                    \
         dc_res_ret();                                                                                                          \
     } while (0)
 
@@ -580,7 +580,7 @@
 #define dc_res_ret_ok_dv(TYPE, VALUE)                                                                                          \
     do                                                                                                                         \
     {                                                                                                                          \
-        dc_res_ok_dv(TYPE, VALUE);                                                                                             \
+        dc_res_ok_dv(TYPE, (VALUE));                                                                                           \
         dc_res_ret();                                                                                                          \
     } while (0)
 
@@ -595,7 +595,7 @@
 #define dc_res_ret_ok_dva(TYPE, VALUE)                                                                                         \
     do                                                                                                                         \
     {                                                                                                                          \
-        dc_res_ok_dva(TYPE, VALUE);                                                                                            \
+        dc_res_ok_dva(TYPE, (VALUE));                                                                                          \
         dc_res_ret();                                                                                                          \
     } while (0)
 
