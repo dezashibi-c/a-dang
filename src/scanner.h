@@ -11,7 +11,7 @@
 //     or concerns, please feel free to contact me at the email address provided
 //     above.
 // ***************************************************************************************
-// *  Description: Scanner struct and related functionalities
+// *  Description: DScanner struct and related functionalities
 // ***************************************************************************************
 
 #ifndef DANG_SCANNER_H
@@ -28,10 +28,10 @@ typedef struct
     usize read_pos;
     char c;
     DCDynArr tokens;
-} Scanner;
+} DScanner;
 
-DCResultVoid dang_scanner_init(Scanner* s, const string input);
-DCResultVoid dang_scanner_free(Scanner* s);
-ResultToken dang_scanner_next_token(Scanner* s);
+DCResultVoid dang_scanner_init(DScanner* s, const string input);
+DCResultVoid dang_scanner_free(DScanner* s);
+ResultToken dang_scanner_next_token(DScanner* s);
 
 #endif // DANG_SCANNER_H

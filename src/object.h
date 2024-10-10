@@ -40,9 +40,11 @@ DCResultType(DEnv*, DEnvResult);
 
 typedef struct DObject
 {
-    bool is_returned;
     DObjType type;
     DCDynVal dv;
+    bool is_returned;
+
+    DEnv* env;
 } DObject;
 
 DCResultType(DObject, DObjResult);
@@ -54,7 +56,13 @@ DCResultType(DObject*, DObjPResult);
 #define dobj(OBJ_TYPE, VAL_TYPE, VAL)                                                                                          \
     (DObject)                                                                                                                  \
     {                                                                                                                          \
-        .type = OBJ_TYPE, .dv = dc_dv(VAL_TYPE, VAL), .is_returned = false                                                     \
+        .type = OBJ_TYPE, .dv = dc_dv(VAL_TYPE, VAL), .is_returned = false, .env = NULL,                                       \
+    }
+
+#define dobj_fn(NODE, ENV)                                                                                                     \
+    (DObject)                                                                                                                  \
+    {                                                                                                                          \
+        .type = DOBJ_FUNCTION, .dv = dc_dv(voidptr, NODE), .is_returned = false, .env = (ENV),                                 \
     }
 
 #define dobj_int(INT_VAL) dobj(DOBJ_INTEGER, i64, INT_VAL)

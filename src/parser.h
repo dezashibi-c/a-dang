@@ -20,10 +20,10 @@
 #include "ast.h"
 #include "scanner.h"
 
-typedef struct Parser Parser;
+typedef struct DParser DParser;
 
-typedef ResultDNode (*ParsePrefixFn)(Parser*);
-typedef ResultDNode (*ParseInfixFn)(Parser*, DNode*);
+typedef ResultDNode (*ParsePrefixFn)(DParser*);
+typedef ResultDNode (*ParseInfixFn)(DParser*, DNode*);
 
 typedef enum
 {
@@ -41,28 +41,28 @@ typedef enum
     LOC_BODY,
     LOC_BLOCK,
     LOC_CALL,
-} ParserStatementLoc;
+} DParserStatementLoc;
 
-typedef struct Parser
+typedef struct DParser
 {
-    Scanner* scanner;
+    DScanner* scanner;
 
     DToken* current_token;
     DToken* peek_token;
 
     DCDynArr errors;
 
-    ParserStatementLoc loc;
+    DParserStatementLoc loc;
 
     ParsePrefixFn parse_prefix_fns[DN__MAX];
     ParseInfixFn parse_infix_fns[DN__MAX];
-} Parser;
+} DParser;
 
 #define dang_parser_has_error(P) ((P)->errors.count != 0)
 
-DCResultVoid dang_parser_init(Parser* p, Scanner* s);
-DCResultVoid dang_parser_free(Parser* p);
-ResultDNode dang_parser_parse_program(Parser* p);
-void dang_parser_log_errors(Parser* p);
+DCResultVoid dang_parser_init(DParser* p, DScanner* s);
+DCResultVoid dang_parser_free(DParser* p);
+ResultDNode dang_parser_parse_program(DParser* p);
+void dang_parser_log_errors(DParser* p);
 
 #endif // DANG_PARSER_H

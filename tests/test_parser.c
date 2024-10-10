@@ -6,7 +6,7 @@
 #include "parser.h"
 #include "scanner.h"
 
-static bool dang_parser_has_no_error(Parser* p)
+static bool dang_parser_has_no_error(DParser* p)
 {
     dc_action_on(p->errors.count != 0, dang_parser_log_errors(p); return false, "parser has %zu errors", p->errors.count);
 
@@ -139,11 +139,11 @@ CLOVE_TEST(let_statements)
     const string input = "let $1 5; let $\"some long variable name\" true\n"
                          "let foobar y";
 
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
 
-    Parser p;
+    DParser p;
     dang_parser_init(&p, &s);
 
     ResultDNode program_res = dang_parser_parse_program(&p);
@@ -177,10 +177,10 @@ CLOVE_TEST(return_statement)
     const string input = "return; return 5; return true\n"
                          "return y";
 
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
-    Parser p;
+    DParser p;
     dang_parser_init(&p, &s);
 
     ResultDNode program_res = dang_parser_parse_program(&p);
@@ -229,10 +229,10 @@ CLOVE_TEST(boolean_literal)
 {
     const string input = "true";
 
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
-    Parser p;
+    DParser p;
     dang_parser_init(&p, &s);
 
     ResultDNode program_res = dang_parser_parse_program(&p);
@@ -259,10 +259,10 @@ CLOVE_TEST(integer_literal)
 {
     const string input = "5";
 
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
-    Parser p;
+    DParser p;
     dang_parser_init(&p, &s);
 
     ResultDNode program_res = dang_parser_parse_program(&p);
@@ -296,10 +296,10 @@ CLOVE_TEST(prefix_expressions)
 
     for (usize i = 0; i < dc_count(tests); ++i)
     {
-        Scanner s;
+        DScanner s;
         dang_scanner_init(&s, tests[i].input);
 
-        Parser p;
+        DParser p;
         dang_parser_init(&p, &s);
 
         ResultDNode program_res = dang_parser_parse_program(&p);
@@ -347,10 +347,10 @@ CLOVE_TEST(infix_expressions)
 
     for (usize i = 0; i < dc_count(tests); ++i)
     {
-        Scanner s;
+        DScanner s;
         dang_scanner_init(&s, tests[i].input);
 
-        Parser p;
+        DParser p;
         dang_parser_init(&p, &s);
 
         ResultDNode program_res = dang_parser_parse_program(&p);
@@ -389,10 +389,10 @@ CLOVE_TEST(if_statement)
 {
     const string input = "if x < y { x }";
 
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
-    Parser p;
+    DParser p;
     dang_parser_init(&p, &s);
 
     ResultDNode program_res = dang_parser_parse_program(&p);
@@ -449,10 +449,10 @@ CLOVE_TEST(if_else_statement)
 {
     const string input = "if x < y { x } else { y }";
 
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
-    Parser p;
+    DParser p;
     dang_parser_init(&p, &s);
 
     ResultDNode program_res = dang_parser_parse_program(&p);
@@ -482,10 +482,10 @@ CLOVE_TEST(function_literal)
 {
     const string input = "fn(x, y z) {x+y-z}";
 
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
-    Parser p;
+    DParser p;
     dang_parser_init(&p, &s);
 
     ResultDNode program_res = dang_parser_parse_program(&p);
@@ -545,10 +545,10 @@ CLOVE_TEST(function_literal_params)
 
     dc_sforeach(tests, FNParamTest, _it->input[0] != '\0')
     {
-        Scanner s;
+        DScanner s;
         dang_scanner_init(&s, _it->input);
 
-        Parser p;
+        DParser p;
         dang_parser_init(&p, &s);
 
         ResultDNode program_res = dang_parser_parse_program(&p);
@@ -597,10 +597,10 @@ CLOVE_TEST(call_expression)
 {
     const string input = "${add 1 a * b, -4 $1}";
 
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
-    Parser p;
+    DParser p;
     dang_parser_init(&p, &s);
 
     ResultDNode program_res = dang_parser_parse_program(&p);
@@ -744,10 +744,10 @@ CLOVE_TEST(string_output_comparision)
         string input = tests[i * 2];
         string expected = tests[(i * 2) + 1];
 
-        Scanner s;
+        DScanner s;
         dang_scanner_init(&s, input);
 
-        Parser p;
+        DParser p;
         dang_parser_init(&p, &s);
 
         ResultDNode program_res = dang_parser_parse_program(&p);

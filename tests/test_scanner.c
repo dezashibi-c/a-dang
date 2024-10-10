@@ -31,7 +31,7 @@ static bool perform_token_test(TestExpectedResult* expected_token, DToken* actua
 
 static bool perform_dang_scanner_test(const string input, TestExpectedResult tests[])
 {
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
     ResultToken token;

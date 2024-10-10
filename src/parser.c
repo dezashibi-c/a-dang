@@ -21,9 +21,9 @@
 // * PRIVATE FUNCTIONS DECLARATIONS
 // ***************************************************************************************
 
-static ResultDNode parse_expression(Parser* p, Precedence precedence);
-static ResultDNode parse_block_statement(Parser* p);
-static ResultDNode parse_statement(Parser* p);
+static ResultDNode parse_expression(DParser* p, Precedence precedence);
+static ResultDNode parse_block_statement(DParser* p);
+static ResultDNode parse_statement(DParser* p);
 
 // ***************************************************************************************
 // * PRIVATE FUNCTIONS
@@ -41,7 +41,7 @@ static ResultDNode parse_statement(Parser* p);
 #define peek_prec(P) ((P)->peek_token ? get_precedence((P)->peek_token->type) : PREC_LOWEST)
 #define current_prec(P) get_precedence((P)->current_token->type)
 
-#define dang_parser_location_preserve(P) ParserStatementLoc __dang_parser_loc_snapshot = (P)->loc
+#define dang_parser_location_preserve(P) DParserStatementLoc __dang_parser_loc_snapshot = (P)->loc
 #define dang_parser_location_revert(P) (P)->loc = __dang_parser_loc_snapshot
 #define dang_parser_location_set(P, LOC) (P)->loc = LOC
 
@@ -82,7 +82,7 @@ static ResultDNode parse_statement(Parser* p);
 
 #define unexpected_token_err_fmt(TYPE) "unexpected token '%s'.", tostr_DTokenType(TYPE)
 
-static DCResultVoid next_token(Parser* p)
+static DCResultVoid next_token(DParser* p)
 {
     DC_RES_void();
 
@@ -102,12 +102,12 @@ static DCResultVoid next_token(Parser* p)
     dc_res_ret();
 }
 
-static void add_error(Parser* p, DCError* err)
+static void add_error(DParser* p, DCError* err)
 {
     dc_da_push(&p->errors, (err->allocated ? dc_dva(string, err->message) : dc_dv(string, err->message)));
 }
 
-static DCResultVoid move_if_peek_token_is(Parser* p, DTokenType type)
+static DCResultVoid move_if_peek_token_is(DParser* p, DTokenType type)
 {
     DC_RES_void();
 
@@ -146,19 +146,19 @@ static Precedence get_precedence(DTokenType type)
     return PREC_LOWEST;
 }
 
-static ResultDNode parse_illegal(Parser* p)
+static ResultDNode parse_illegal(DParser* p)
 {
     DC_RES2(ResultDNode);
 
     dc_res_ret_ea(-1, "got illegal token of type: %s", tostr_DTokenType(p->current_token->type));
 }
 
-static ResultDNode parse_identifier(Parser* p)
+static ResultDNode parse_identifier(DParser* p)
 {
     return dn_new(DN_IDENTIFIER, p->current_token, false);
 }
 
-static ResultDNode parse_integer_literal(Parser* p)
+static ResultDNode parse_integer_literal(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -180,7 +180,7 @@ static ResultDNode parse_integer_literal(Parser* p)
     dc_res_ret();
 }
 
-static ResultDNode parse_boolean_literal(Parser* p)
+static ResultDNode parse_boolean_literal(DParser* p)
 {
     DC_TRY_DEF2(ResultDNode, dn_new(DN_BOOLEAN_LITERAL, p->current_token, true));
 
@@ -194,7 +194,7 @@ static ResultDNode parse_boolean_literal(Parser* p)
     dc_res_ret();
 }
 
-static DCResultVoid parse_function_params(Parser* p, DNode* parent_node)
+static DCResultVoid parse_function_params(DParser* p, DNode* parent_node)
 {
     DC_RES_void();
 
@@ -221,7 +221,7 @@ static DCResultVoid parse_function_params(Parser* p, DNode* parent_node)
 /**
  * Function literal: 'fn' '(' (identifier (,)?)*  ')' '{' statement* '}'
  */
-static ResultDNode parse_function_literal(Parser* p)
+static ResultDNode parse_function_literal(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -278,7 +278,7 @@ static ResultDNode parse_function_literal(Parser* p)
  * Until it reaches the proper end of statement that is proper for current location
  * Generally they are '\n' and ';' but also EOF, '}' based on the context
  */
-static DCResultVoid parse_call(Parser* p, DNode* parent_node)
+static DCResultVoid parse_call(DParser* p, DNode* parent_node)
 {
     DC_RES_void();
 
@@ -305,7 +305,7 @@ static DCResultVoid parse_call(Parser* p, DNode* parent_node)
  *
  * '${' command (param ','?)* '}'
  */
-static ResultDNode parse_call_expression(Parser* p)
+static ResultDNode parse_call_expression(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -332,7 +332,7 @@ static ResultDNode parse_call_expression(Parser* p)
 /**
  * Grouped expressions is used to prioritized expressions
  */
-static ResultDNode parse_grouped_expression(Parser* p)
+static ResultDNode parse_grouped_expression(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -359,7 +359,7 @@ static ResultDNode parse_grouped_expression(Parser* p)
  * If Expression: In this language if is an expression meaning it can return values
  *                'if' expression '{' statement* '}' ('else' '{' statement* '}')?
  */
-static ResultDNode parse_if_expression(Parser* p)
+static ResultDNode parse_if_expression(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -455,7 +455,7 @@ static ResultDNode parse_if_expression(Parser* p)
     dc_res_ret();
 }
 
-static ResultDNode parse_prefix_expression(Parser* p)
+static ResultDNode parse_prefix_expression(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -485,7 +485,7 @@ static ResultDNode parse_prefix_expression(Parser* p)
 /**
  * Infix Expressions: - + * / == < etc.
  */
-static ResultDNode parse_infix_expression(Parser* p, DNode* left)
+static ResultDNode parse_infix_expression(DParser* p, DNode* left)
 {
     DC_TRY_DEF2(ResultDNode, dn_new(DN_INFIX_EXPRESSION, p->current_token, true));
 
@@ -531,7 +531,7 @@ static ResultDNode parse_infix_expression(Parser* p, DNode* left)
 /**
  * Let Statement: 'let' identifier expression? StatementTerminator
  */
-static ResultDNode parse_let_statement(Parser* p)
+static ResultDNode parse_let_statement(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -618,7 +618,7 @@ static ResultDNode parse_let_statement(Parser* p)
 /**
  * Return Statement: 'let' expression? StatementTerminator
  */
-static ResultDNode parse_return_statement(Parser* p)
+static ResultDNode parse_return_statement(DParser* p)
 {
     DC_TRY_DEF2(ResultDNode, dn_new(DN_RETURN_STATEMENT, p->current_token, true));
 
@@ -672,7 +672,7 @@ static ResultDNode parse_return_statement(Parser* p)
     dc_res_ret_ea(-1, "end of statement needed, got token of type %s.", tostr_DTokenType(p->peek_token->type));
 }
 
-static ResultDNode parse_block_statement(Parser* p)
+static ResultDNode parse_block_statement(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -732,7 +732,7 @@ static ResultDNode parse_block_statement(Parser* p)
  *
  * Expressions: prefix, infix, if, etc.
  */
-static ResultDNode parse_expression(Parser* p, Precedence precedence)
+static ResultDNode parse_expression(DParser* p, Precedence precedence)
 {
     DC_RES2(ResultDNode);
 
@@ -779,7 +779,7 @@ static ResultDNode parse_expression(Parser* p, Precedence precedence)
  *
  * Basically a function call (command) or other expressions
  */
-static ResultDNode parse_expression_statement(Parser* p)
+static ResultDNode parse_expression_statement(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -833,7 +833,7 @@ static ResultDNode parse_expression_statement(Parser* p)
  *
  * They suppose to move to the next token after their terminator already
  */
-static ResultDNode parse_statement(Parser* p)
+static ResultDNode parse_statement(DParser* p)
 {
     DC_RES2(ResultDNode);
 
@@ -867,15 +867,15 @@ static ResultDNode parse_statement(Parser* p)
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-DCResultVoid dang_parser_init(Parser* p, Scanner* s)
+DCResultVoid dang_parser_init(DParser* p, DScanner* s)
 {
     DC_RES_void();
 
     if (!p || !s)
     {
-        dc_dbg_log("Parser or Scanner cannot be NULL");
+        dc_dbg_log("DParser or DScanner cannot be NULL");
 
-        dc_res_ret_e(1, "Parser or Scanner cannot be NULL");
+        dc_res_ret_e(1, "DParser or DScanner cannot be NULL");
     }
 
     p->scanner = s;
@@ -927,7 +927,7 @@ DCResultVoid dang_parser_init(Parser* p, Scanner* s)
     dc_res_ret();
 }
 
-DCResultVoid dang_parser_free(Parser* p)
+DCResultVoid dang_parser_free(DParser* p)
 {
     DC_RES_void();
 
@@ -946,7 +946,7 @@ DCResultVoid dang_parser_free(Parser* p)
  *
  * On each iteration the cursor must be at the end of the current statement (sentence terminator)
  */
-ResultDNode dang_parser_parse_program(Parser* p)
+ResultDNode dang_parser_parse_program(DParser* p)
 {
     DC_TRY_DEF2(ResultDNode, dn_new(DN_PROGRAM, NULL, true));
 
@@ -995,7 +995,7 @@ ResultDNode dang_parser_parse_program(Parser* p)
     dc_res_ret();
 }
 
-void dang_parser_log_errors(Parser* p)
+void dang_parser_log_errors(DParser* p)
 {
     dc_da_for(p->errors)
     {

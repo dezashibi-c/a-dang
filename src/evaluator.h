@@ -22,6 +22,11 @@
 
 DObjResult dang_eval(DNode* dn, DEnv* de);
 
+void dang_obj_init(DObject* dobj, DObjType dobjt, DCDynVal dv, bool is_returned);
+DObjPResult dang_obj_new(DObjType dobjt, DCDynVal dv, bool is_returned);
+DObjPResult dang_obj_new_from(DObject* dobj);
+DCResultVoid dang_dobj_free(DObject* dobj);
+
 DEnvResult dang_denv_new();
 DCResultVoid dang_denv_free(DEnv* de);
 DObjPResult dang_denv_get(DEnv* de, string name);

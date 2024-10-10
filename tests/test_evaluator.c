@@ -7,7 +7,7 @@
 #include "parser.h"
 #include "scanner.h"
 
-static bool dang_parser_has_no_error(Parser* p)
+static bool dang_parser_has_no_error(DParser* p)
 {
     dc_action_on(p->errors.count != 0, dang_parser_log_errors(p); return false, "parser has %zu errors", p->errors.count);
 
@@ -18,10 +18,10 @@ static DObjResult test_eval(string input)
 {
     DC_RES2(DObjResult);
 
-    Scanner s;
+    DScanner s;
     dang_scanner_init(&s, input);
 
-    Parser p;
+    DParser p;
     dang_parser_init(&p, &s);
 
     ResultDNode program_res = dang_parser_parse_program(&p);
@@ -275,6 +275,30 @@ CLOVE_TEST(let_statement)
         {.input = "let a 5; let b a; b", .expected = dobj_int(5)},
 
         {.input = "let a 5; let b a; let c a + b + 5; c", .expected = dobj_int(15)},
+
+        {.input = "", .expected = dobj_null()},
+    };
+
+    if (perform_evaluation_tests(tests))
+        CLOVE_PASS();
+    else
+        CLOVE_FAIL();
+}
+
+CLOVE_TEST(function_application)
+{
+    TestCase tests[] = {
+        {.input = "let my_fn fn(x) {}; my_fn;", .expected = dobj_null()},
+
+        {.input = "let identity fn(x) { x }; identity 5", .expected = dobj_int(5)},
+
+        {.input = "let identity fn(x) { return x }; identity 5", .expected = dobj_int(5)},
+
+        {.input = "let double fn(x) { x * 2 }; double 5", .expected = dobj_int(10)},
+
+        {.input = "let add fn(x, y) { x + y }; add 5 5", .expected = dobj_int(10)},
+
+        {.input = "let add fn(x, y) { x + y }; add 5 + 5 ${add 5 5}", .expected = dobj_int(20)},
 
         {.input = "", .expected = dobj_null()},
     };

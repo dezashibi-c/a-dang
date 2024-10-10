@@ -167,6 +167,46 @@ static DObjResult eval_if_expression(DNode* dn, DEnv* de)
         dc_res_ret_ok(dobj_null());
 }
 
+static DObjResult eval_let_statement(DNode* dn, DEnv* de)
+{
+    DC_RES2(DObjResult);
+
+    DNode* var_name = dn_child(dn, 0);
+    dn_string_init(var_name);
+
+    DObjPResult check = dang_denv_get(de, var_name->text);
+    if (dc_res_is_ok2(check))
+    {
+        dc_dbg_log("symbol '%s' is already defined", var_name->text);
+
+        dc_res_ret_ea(-1, "symbol '%s' is already defined", var_name->text);
+    }
+
+    DNode* value_node = (dn_child_count(dn) > 1) ? dn_child(dn, 1) : NULL;
+
+    DObject* value;
+    DObjPResult val_obj_res;
+
+    if (value_node)
+    {
+        dc_try_or_fail_with3(DObjResult, v_res, dang_eval(value_node, de), {});
+
+        dc_try_or_fail_with2(val_obj_res, dang_obj_new_from(&dc_res_val2(v_res)), {});
+    }
+    else
+    {
+        dc_try_or_fail_with2(val_obj_res, dang_obj_new(DOBJ_NULL, dc_dv(voidptr, NULL), false), {});
+    }
+
+    value = dc_res_val2(val_obj_res);
+    // should not break
+    value->is_returned = false;
+
+    dc_try_fail_temp(DObjPResult, dang_denv_set(de, var_name->text, value));
+
+    dc_res_ret_ok(dobj_null());
+}
+
 static DC_HT_HASH_FN_DECL(string_hash)
 {
     DC_RES_u32();
@@ -196,13 +236,9 @@ static DC_DV_FREE_FN_DECL(env_store_free)
     if (_value && _value->type == dc_dvt(voidptr))
     {
         DCHashEntry* he = (DCHashEntry*)dc_dv_as(*_value, voidptr);
+        DObject* dobj = (DObject*)dc_dv_as(he->value, voidptr);
 
-        // as the value of the hash entry itself is also an allocated
-        // memory for DObject it needs to be freed first
-        // I could use a cast and free it but dc_dv_free takes care of it
-        // as it is already marked as allocated
-
-        dc_dv_free(&he->value, NULL);
+        dc_try_fail(dang_dobj_free(dobj));
     }
 
     dc_res_ret();
@@ -277,58 +313,18 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
         }
 
         case DN_LET_STATEMENT:
-        {
-            DNode* var_name = dn_child(dn, 0);
-            dn_string_init(var_name);
+            return eval_let_statement(dn, de);
 
-            DObjPResult check = dang_denv_get(de, var_name->text);
-            if (dc_res_is_ok2(check))
-            {
-                dc_dbg_log("symbol '%s' is already defined", var_name->text);
+        case DN_FUNCTION_LITERAL:
+            dc_res_ret_ok(dobj_fn(dn, de));
 
-                dc_res_ret_ea(-1, "symbol '%s' is already defined", var_name->text);
-            }
-
-            DNode* value_node = (dn_child_count(dn) > 1) ? dn_child(dn, 1) : NULL;
-
-            DObject* value = (DObject*)malloc(sizeof(DObject));
-            if (!value)
-            {
-                dc_dbg_log("Cannot initialize value object in let statement evaluation");
-
-                dc_res_ret_e(2, "cannot initialize value object in let statement");
-            }
-
-            if (value_node)
-            {
-                dc_try_or_fail_with3(DObjResult, v_res, dang_eval(value_node, de), {});
-
-                value->type = dc_res_val2(v_res).type;
-                value->dv = dc_res_val2(v_res).dv;
-                value->is_returned = dc_res_val2(v_res).is_returned;
-            }
-            else
-            {
-                value->type = DOBJ_NULL;
-                value->dv = dc_dv(voidptr, NULL);
-                value->is_returned = false;
-            }
-
-            dc_try_fail_temp(DObjPResult, dang_denv_set(de, var_name->text, value));
-
-            dc_res_ret_ok(dobj_null());
-        }
-
-        // todo:: this is temporary must be fixed to actual call evaluation
         case DN_CALL_EXPRESSION:
         {
-            DNode* ret_val = (dn_child_count(dn) > 0) ? dn_child(dn, 0) : NULL;
+            DNode* ret_val = dn_child(dn, 0);
 
-            if (!ret_val) dc_res_ret_ok(dobj_null());
+            dc_try_or_fail_with3(DObjResult, function, dang_eval(ret_val, de), {});
 
-            dc_try_or_fail_with3(DObjResult, value, dang_eval(ret_val, de), {});
-
-            dc_res_ret_ok(dc_res_val2(value));
+            // todo:: eval arguments (first element is function symbol the rest is arguments)
         }
 
         default:
@@ -336,6 +332,55 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
     };
 
     dc_res_ret_ea(-1, "Unimplemented or unsupported node type: %s", tostr_DNType(dn->type));
+}
+
+void dang_obj_init(DObject* dobj, DObjType dobjt, DCDynVal dv, bool is_returned)
+{
+    dobj->type = dobjt;
+    dobj->dv = dv;
+    dobj->is_returned = is_returned;
+}
+
+
+DObjPResult dang_obj_new(DObjType dobjt, DCDynVal dv, bool is_returned)
+{
+    DC_RES2(DObjPResult);
+
+    DObject* dobj = (DObject*)malloc(sizeof(DObject));
+    if (!dobj)
+    {
+        dc_dbg_log("Cannot initialize dang object");
+
+        dc_res_ret_e(2, "cannot initialize dang object");
+    }
+
+    dang_obj_init(dobj, dobjt, dv, is_returned);
+
+    dc_res_ret_ok(dobj);
+}
+
+DObjPResult dang_obj_new_from(DObject* dobj)
+{
+    DC_RES2(DObjPResult);
+
+    if (!dobj)
+    {
+        dc_dbg_log("Cannot initialize dang object");
+
+        dc_res_ret_e(2, "cannot initialize dang object");
+    }
+
+    return dang_obj_new(dobj->type, dobj->dv, dobj->is_returned);
+}
+
+DCResultVoid dang_dobj_free(DObject* dobj)
+{
+    DC_TRY_DEF2(DCResultVoid, dc_dv_free(&dobj->dv, NULL));
+
+    free(dobj);
+    dobj = NULL;
+
+    dc_res_ret();
 }
 
 DEnvResult dang_denv_new()

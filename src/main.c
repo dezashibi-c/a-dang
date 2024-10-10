@@ -74,15 +74,15 @@ static void repl()
 
         if (strncmp(line, DANG_REPL_EXIT, strlen(DANG_REPL_EXIT)) == 0) break;
 
-        Scanner s;
+        DScanner s;
         dang_scanner_init(&s, line);
 
-        Parser p;
+        DParser p;
         DCResultVoid res = dang_parser_init(&p, &s);
 
         if (dc_res_is_err2(res))
         {
-            dc_res_err_log2(res, DC_FG_LRED "Parser initialization error");
+            dc_res_err_log2(res, DC_FG_LRED "DParser initialization error");
             printf("%s", DC_COLOR_RESET);
 
             continue;

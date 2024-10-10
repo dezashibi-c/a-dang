@@ -11,7 +11,7 @@
 //     or concerns, please feel free to contact me at the email address provided
 //     above.
 // ***************************************************************************************
-// *  Description: Scanner struct and related functionalities
+// *  Description: DScanner struct and related functionalities
 // ***************************************************************************************
 
 #include "scanner.h"
@@ -26,7 +26,7 @@
 
 #define is_whitespace(C) ((C) == ' ' || (C) == '\t' || (C) == '\r')
 
-static void read_char(Scanner* s)
+static void read_char(DScanner* s)
 {
     if (s->read_pos >= strlen(s->input))
         s->c = 0;
@@ -37,19 +37,19 @@ static void read_char(Scanner* s)
     s->read_pos++;
 }
 
-static char peek(Scanner* s)
+static char peek(DScanner* s)
 {
     if (s->read_pos >= strlen(s->input)) return 0;
 
     return s->input[s->read_pos];
 }
 
-static void skip_whitespace(Scanner* s)
+static void skip_whitespace(DScanner* s)
 {
     while (is_whitespace(s->c)) read_char(s);
 }
 
-static ResultToken extract_identifier(Scanner* s)
+static ResultToken extract_identifier(DScanner* s)
 {
     DC_RES2(ResultToken);
 
@@ -82,7 +82,7 @@ static ResultToken extract_identifier(Scanner* s)
     dc_res_ret_ok(t);
 }
 
-static ResultToken extract_number(Scanner* s)
+static ResultToken extract_number(DScanner* s)
 {
     DC_RES2(ResultToken);
 
@@ -120,7 +120,7 @@ static DC_DV_FREE_FN_DECL(custom_token_free)
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-DCResultVoid dang_scanner_init(Scanner* s, const string input)
+DCResultVoid dang_scanner_init(DScanner* s, const string input)
 {
     DC_RES_void();
 
@@ -134,12 +134,12 @@ DCResultVoid dang_scanner_init(Scanner* s, const string input)
     dc_res_ret();
 }
 
-DCResultVoid dang_scanner_free(Scanner* s)
+DCResultVoid dang_scanner_free(DScanner* s)
 {
     return dc_da_free(&s->tokens);
 }
 
-ResultToken dang_scanner_next_token(Scanner* s)
+ResultToken dang_scanner_next_token(DScanner* s)
 {
     DC_RES2(ResultToken);
 
@@ -333,7 +333,7 @@ ResultToken dang_scanner_next_token(Scanner* s)
     dc_da_push(&s->tokens, dc_dva(voidptr, token));
 
     if (token->type == TOK_ILLEGAL)
-        dc_res_ret_ea(-1, "Scanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(token->text));
+        dc_res_ret_ea(-1, "DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(token->text));
 
     dc_res_ret_ok(token);
 }
