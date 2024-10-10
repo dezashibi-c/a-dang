@@ -322,7 +322,10 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
         {
             DNode* ret_val = dn_child(dn, 0);
 
-            dc_try_or_fail_with3(DObjResult, function, dang_eval(ret_val, de), {});
+            dc_try_or_fail_with3(DObjResult, fn_res, dang_eval(ret_val, de), {});
+
+            // function is a pointer to the "fn" declaration node that has been saved in the env
+            DObject function = dc_res_val2(fn_res);
 
             // todo:: eval arguments (first element is function symbol the rest is arguments)
         }
