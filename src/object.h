@@ -19,12 +19,24 @@
 
 #include "dcommon/dcommon.h"
 
+// ***************************************************************************************
+// * TYPES
+// ***************************************************************************************
+
 typedef enum
 {
     DOBJ_INTEGER,
     DOBJ_BOOLEAN,
+    DOBJ_FUNCTION,
     DOBJ_NULL,
 } DObjType;
+
+typedef struct
+{
+    DCHashTable store;
+} DEnv;
+
+DCResultType(DEnv*, DEnvResult);
 
 typedef struct DObject
 {
@@ -33,6 +45,12 @@ typedef struct DObject
     DCDynVal dv;
 } DObject;
 
+DCResultType(DObject, DObjResult);
+DCResultType(DObject*, DObjPResult);
+
+// ***************************************************************************************
+// * MACROS
+// ***************************************************************************************
 #define dobj(OBJ_TYPE, VAL_TYPE, VAL)                                                                                          \
     (DObject)                                                                                                                  \
     {                                                                                                                          \
@@ -63,8 +81,5 @@ typedef struct DObject
 #define dobj_is_bool(DOBJ) ((DOBJ).type == DOBJ_BOOLEAN)
 #define dobj_is_return(DOBJ) ((DOBJ).is_returned)
 #define dobj_is_null(DOBJ) ((DOBJ).type == DOBJ_NULL)
-
-DCResultType(DObject, DObjResult);
-DCResultType(DObject*, DObjPResult);
 
 #endif // DANG_OBJECT_H

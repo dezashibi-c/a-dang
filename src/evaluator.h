@@ -20,13 +20,6 @@
 #include "ast.h"
 #include "object.h"
 
-typedef struct
-{
-    DCHashTable store;
-} DEnv;
-
-DCResultType(DEnv*, DEnvResult);
-
 DObjResult dang_eval(DNode* dn, DEnv* de);
 
 DEnvResult dang_denv_new();

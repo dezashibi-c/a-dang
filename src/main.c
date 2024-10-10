@@ -20,7 +20,7 @@
 
 #define DANG_REPL_EXIT ":q"
 
-static DC_DV_FREE_FN_DECL(_dnode_free)
+static DC_DV_FREE_FN_DECL(_program_free)
 {
     DC_RES_void();
 
@@ -50,7 +50,7 @@ static void repl()
     }
 
     DEnv* de = dc_res_val2(de_res);
-    DCResultDa programs_res = dc_da_new(_dnode_free);
+    DCResultDa programs_res = dc_da_new(_program_free);
     if (dc_res_is_err2(programs_res))
     {
         dc_res_err_log2(programs_res, "cannot initialize programs array");
