@@ -20,7 +20,20 @@
 #include "ast.h"
 #include "object.h"
 
-DObjResult dang_eval(DNode* dn);
+typedef struct
+{
+    DCHashTable store;
+} DEnv;
+
+DCResultType(DEnv*, DEnvResult);
+
+DObjResult dang_eval(DNode* dn, DEnv* de);
+
+DEnvResult dang_denv_new();
+DCResultVoid dang_denv_free(DEnv* de);
+DObjPResult dang_denv_get(DEnv* de, string name);
+DObjPResult dang_denv_set(DEnv* de, string name, DObject* dobj);
+
 string tostr_DObjType(DObjType dobjt);
 
 #endif // DANG_EVAL_H

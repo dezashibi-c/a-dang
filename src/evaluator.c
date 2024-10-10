@@ -16,14 +16,18 @@
 
 #include "evaluator.h"
 
-static DObjResult eval_statements(DNode* dn)
+// ***************************************************************************************
+// * PRIVATE FUNCTIONS
+// ***************************************************************************************
+
+static DObjResult eval_statements(DNode* dn, DEnv* de)
 {
     DC_RES2(DObjResult);
 
     dc_da_for(dn->children)
     {
         DNode* stmt = dn_child(dn, _idx);
-        dc_try_fail(dang_eval(stmt));
+        dc_try_fail(dang_eval(stmt, de));
 
         if (dobj_is_return(dc_res_val())) dc_res_ret();
     }
@@ -141,7 +145,7 @@ static DObjResult eval_infix_expression(DNode* dn, DObject* left, DObject* right
                       dc_tostr_dvt(&left->dv), dc_tostr_dvt(&right->dv));
 }
 
-static DObjResult eval_if_expression(DNode* dn)
+static DObjResult eval_if_expression(DNode* dn, DEnv* de)
 {
     DC_RES2(DObjResult);
 
@@ -149,21 +153,66 @@ static DObjResult eval_if_expression(DNode* dn)
     DNode* consequence = dn_child(dn, 1);
     DNode* alternative = (dn_child_count(dn) > 2) ? dn_child(dn, 2) : NULL;
 
-    dc_try_or_fail_with3(DObjResult, condition_evaluated, dang_eval(condition), {});
+    dc_try_or_fail_with3(DObjResult, condition_evaluated, dang_eval(condition, de), {});
 
     dc_try_or_fail_with3(DCResultBool, condition_as_bool, dc_dv_as_bool(&dc_res_val2(condition_evaluated).dv), {});
 
     if (dc_res_val2(condition_as_bool))
-        return dang_eval(consequence);
+        return dang_eval(consequence, de);
 
     else if (alternative)
-        return dang_eval(alternative);
+        return dang_eval(alternative, de);
 
     else
         dc_res_ret_ok(dobj_null());
 }
 
-DObjResult dang_eval(DNode* dn)
+static DC_HT_HASH_FN_DECL(string_hash)
+{
+    DC_RES_u32();
+
+    string str = (string)_key;
+    u32 hash = 5381;
+    i32 c;
+    while ((c = *str++))
+    {
+        hash = ((hash << 5) + hash) + c;
+    }
+
+    dc_res_ret_ok(hash);
+}
+
+static DC_HT_KEY_CMP_FN_DECL(string_key_cmp)
+{
+    DC_RES_bool();
+
+    dc_res_ret_ok(strcmp((string)_key1, (string)_key2) == 0);
+}
+
+static DC_DV_FREE_FN_DECL(env_store_free)
+{
+    DC_RES_void();
+
+    if (_value && _value->type == dc_dvt(voidptr))
+    {
+        DCHashEntry* he = (DCHashEntry*)dc_dv_as(*_value, voidptr);
+
+        // as the value of the hash entry itself is also an allocated
+        // memory for DObject it needs to be freed first
+        // I could use a cast and free it but dc_dv_free takes care of it
+        // as it is already marked as allocated
+
+        dc_dv_free(&he->value, NULL);
+    }
+
+    dc_res_ret();
+}
+
+// ***************************************************************************************
+// * PUBLIC FUNCTIONS
+// ***************************************************************************************
+
+DObjResult dang_eval(DNode* dn, DEnv* de)
 {
     DC_RES2(DObjResult);
 
@@ -176,22 +225,22 @@ DObjResult dang_eval(DNode* dn)
     switch (dn->type)
     {
         case DN_PROGRAM:
-            return eval_statements(dn);
+            return eval_statements(dn, de);
 
         case DN_EXPRESSION_STATEMENT:
-            return dang_eval(dn_child(dn, 0));
+            return dang_eval(dn_child(dn, 0), de);
 
         case DN_PREFIX_EXPRESSION:
         {
-            dc_try_or_fail_with3(DObjResult, right, dang_eval(dn_child(dn, 0)), {});
+            dc_try_or_fail_with3(DObjResult, right, dang_eval(dn_child(dn, 0), de), {});
 
             return eval_prefix_expression(dn, &dc_res_val2(right));
         }
 
         case DN_INFIX_EXPRESSION:
         {
-            dc_try_or_fail_with3(DObjResult, left, dang_eval(dn_child(dn, 0)), {});
-            dc_try_or_fail_with3(DObjResult, right, dang_eval(dn_child(dn, 1)), {});
+            dc_try_or_fail_with3(DObjResult, left, dang_eval(dn_child(dn, 0), de), {});
+            dc_try_or_fail_with3(DObjResult, right, dang_eval(dn_child(dn, 1), de), {});
 
             return eval_infix_expression(dn, &dc_res_val2(left), &dc_res_val2(right));
         }
@@ -202,11 +251,19 @@ DObjResult dang_eval(DNode* dn)
         case DN_INTEGER_LITERAL:
             dc_res_ret_ok(dobj_int(dn_child_as(dn, 0, i64)));
 
+        case DN_IDENTIFIER:
+        {
+            dn_string_init(dn);
+            dc_try_or_fail_with3(DObjPResult, symbol, dang_denv_get(de, dn->text), {});
+
+            dc_res_ret_ok(*dc_res_val2(symbol));
+        }
+
         case DN_BLOCK_STATEMENT:
-            return eval_statements(dn);
+            return eval_statements(dn, de);
 
         case DN_IF_EXPRESSION:
-            return eval_if_expression(dn);
+            return eval_if_expression(dn, de);
 
         case DN_RETURN_STATEMENT:
         {
@@ -214,9 +271,52 @@ DObjResult dang_eval(DNode* dn)
 
             if (!ret_val) dc_res_ret_ok(dobj_return_null());
 
-            dc_try_or_fail_with3(DObjResult, value, dang_eval(ret_val), {});
+            dc_try_or_fail_with3(DObjResult, value, dang_eval(ret_val, de), {});
 
             dc_res_ret_ok(dobj_return(dc_res_val2(value)));
+        }
+
+        case DN_LET_STATEMENT:
+        {
+            DNode* var_name = dn_child(dn, 0);
+            dn_string_init(var_name);
+
+            DObjPResult check = dang_denv_get(de, var_name->text);
+            if (dc_res_is_ok2(check))
+            {
+                dc_dbg_log("symbol '%s' is already defined", var_name->text);
+
+                dc_res_ret_ea(-1, "symbol '%s' is already defined", var_name->text);
+            }
+
+            DNode* value_node = (dn_child_count(dn) > 1) ? dn_child(dn, 1) : NULL;
+
+            DObject* value = (DObject*)malloc(sizeof(DObject));
+            if (!value)
+            {
+                dc_dbg_log("Cannot initialize value object in let statement evaluation");
+
+                dc_res_ret_e(2, "cannot initialize value object in let statement");
+            }
+
+            if (value_node)
+            {
+                dc_try_or_fail_with3(DObjResult, v_res, dang_eval(value_node, de), {});
+
+                value->type = dc_res_val2(v_res).type;
+                value->dv = dc_res_val2(v_res).dv;
+                value->is_returned = dc_res_val2(v_res).is_returned;
+            }
+            else
+            {
+                value->type = DOBJ_NULL;
+                value->dv = dc_dv(voidptr, NULL);
+                value->is_returned = false;
+            }
+
+            dc_try_fail_temp(DObjPResult, dang_denv_set(de, var_name->text, value));
+
+            dc_res_ret_ok(dobj_null());
         }
 
         // todo:: this is temporary must be fixed to actual call evaluation
@@ -226,7 +326,7 @@ DObjResult dang_eval(DNode* dn)
 
             if (!ret_val) dc_res_ret_ok(dobj_null());
 
-            dc_try_or_fail_with3(DObjResult, value, dang_eval(ret_val), {});
+            dc_try_or_fail_with3(DObjResult, value, dang_eval(ret_val, de), {});
 
             dc_res_ret_ok(dc_res_val2(value));
         }
@@ -236,6 +336,67 @@ DObjResult dang_eval(DNode* dn)
     };
 
     dc_res_ret_ea(-1, "Unimplemented or unsupported node type: %s", tostr_DNType(dn->type));
+}
+
+DEnvResult dang_denv_new()
+{
+    DC_RES2(DEnvResult);
+
+    DEnv* de = (DEnv*)malloc(sizeof(DEnv));
+
+    if (de == NULL)
+    {
+        dc_dbg_log("Memory allocation failed");
+
+        dc_res_ret_e(2, "Memory allocation failed");
+    }
+
+    dc_try_or_fail_with3(DCResultVoid, res, dc_ht_init(&de->store, 17, string_hash, string_key_cmp, env_store_free), {
+        dc_dbg_log("cannot initialize dang environment hash table");
+
+        free(de);
+    });
+
+    dc_res_ret_ok(de);
+}
+
+DCResultVoid dang_denv_free(DEnv* de)
+{
+    DC_RES_void();
+
+    dc_try_fail(dc_ht_free(&de->store));
+
+    free(de);
+
+    dc_res_ret();
+}
+
+
+DObjPResult dang_denv_get(DEnv* de, string name)
+{
+    DC_RES2(DObjPResult);
+
+    DCDynVal* found = NULL;
+
+    dc_try_fail_temp(DCResultUsize, dc_ht_find_by_key(&de->store, name, &found));
+
+    if (!found)
+    {
+        dc_dbg_log("key '%s' not found in the environment", name);
+
+        dc_res_ret_ea(6, "'%s' is not defined", name);
+    }
+
+    dc_res_ret_ok((DObject*)dc_dv_as(*found, voidptr));
+}
+
+DObjPResult dang_denv_set(DEnv* de, string name, DObject* dobj)
+{
+    DC_RES2(DObjPResult);
+
+    dc_try_fail_temp(DCResultVoid, dc_ht_set(&de->store, name, dc_dva(voidptr, dobj)));
+
+    dc_res_ret_ok(dobj);
 }
 
 string tostr_DObjType(DObjType dobjt)

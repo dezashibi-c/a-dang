@@ -36,13 +36,19 @@ static DObjResult test_eval(string input)
         dc_res_ret_ea(-1, "parser has error on input '%s'", input);
     }
 
-    dc_try_or_fail_with(dang_eval(program), {
+    dc_try_or_fail_with3(DEnvResult, de, dang_denv_new(), {
+        dn_program_free(program);
+        dang_parser_free(&p);
+    });
+
+    dc_try_or_fail_with(dang_eval(program, dc_res_val2(de)), {
         dn_program_free(program);
         dang_parser_free(&p);
     });
 
     dn_program_free(program);
     dang_parser_free(&p);
+    dang_denv_free(dc_res_val2(de));
 
     dc_res_ret();
 }
@@ -259,6 +265,26 @@ CLOVE_TEST(return_statement)
         CLOVE_FAIL();
 }
 
+CLOVE_TEST(let_statement)
+{
+    TestCase tests[] = {
+        {.input = "let a; a", .expected = dobj_null()},
+
+        {.input = "let a 5 * 5; a", .expected = dobj_int(25)},
+
+        {.input = "let a 5; let b a; b", .expected = dobj_int(5)},
+
+        {.input = "let a 5; let b a; let c a + b + 5; c", .expected = dobj_int(15)},
+
+        {.input = "", .expected = dobj_null()},
+    };
+
+    if (perform_evaluation_tests(tests))
+        CLOVE_PASS();
+    else
+        CLOVE_FAIL();
+}
+
 CLOVE_TEST(error_handling)
 {
     string error_tests[] = {
@@ -276,6 +302,10 @@ CLOVE_TEST(error_handling)
 
         "if 10 > 1 { \n if 10 > 1 { \n return true + false \n } \n\n return 1 \n}",
 
+        "foobar", // does not exist
+
+        "let a; let a", // already is defined
+
         NULL,
     };
 
@@ -284,7 +314,7 @@ CLOVE_TEST(error_handling)
         DObjResult res = test_eval(*_it);
         if (dc_res_is_ok2(res))
         {
-            dc_log("expected input '%s' to cause error but evaluated to ok result", *_it);
+            dc_log("expected input '%s' to have error result but evaluated to ok result", *_it);
 
             CLOVE_FAIL();
         }

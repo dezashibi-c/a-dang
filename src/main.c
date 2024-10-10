@@ -20,12 +20,47 @@
 
 #define DANG_REPL_EXIT ":q"
 
+static DC_DV_FREE_FN_DECL(_dnode_free)
+{
+    DC_RES_void();
+
+    if (_value && _value->type == dc_dvt(voidptr))
+    {
+        DNode* program = (DNode*)dc_dv_as(*_value, voidptr);
+
+        dn_free(program);
+    }
+
+    dc_res_ret();
+}
+
 static void repl()
 {
     puts("" dc_colorize_fg(LGREEN, "dang") " REPL");
     printf("Hi %s! Type '%s' to exit.\n", dc_get_username(), dc_colorize_bg(RED, DANG_REPL_EXIT));
 
     char line[1024];
+
+    DEnvResult de_res = dang_denv_new();
+    if (dc_res_is_err2(de_res))
+    {
+        dc_res_err_log2(de_res, "cannot initialize environment");
+
+        return;
+    }
+
+    DEnv* de = dc_res_val2(de_res);
+    DCResultDa programs_res = dc_da_new(_dnode_free);
+    if (dc_res_is_err2(programs_res))
+    {
+        dc_res_err_log2(programs_res, "cannot initialize programs array");
+
+        dang_denv_free(de);
+
+        return;
+    }
+
+    DCDynArr* programs = dc_res_val2(programs_res);
 
     while (true)
     {
@@ -50,11 +85,12 @@ static void repl()
             dc_res_err_log2(res, DC_FG_LRED "Parser initialization error");
             printf("%s", DC_COLOR_RESET);
 
-            dang_parser_free(&p);
             continue;
         }
 
         ResultDNode program_res = dang_parser_parse_program(&p);
+
+        dc_da_push(programs, dc_dva(voidptr, dc_res_val2(program_res)));
 
         if (dc_res_is_err2(program_res))
             dc_log("parser could not finish the job properly: (code %d) %s", dc_res_err_code2(program_res),
@@ -69,7 +105,7 @@ static void repl()
             {
                 printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", dc_res_val2(program_res)->text);
 
-                DObjResult evaluated = dang_eval(dc_res_val2(program_res));
+                DObjResult evaluated = dang_eval(dc_res_val2(program_res), de);
                 if (dc_res_is_err2(evaluated))
                 {
                     dc_res_err_log2(evaluated, DC_FG_LRED "Evaluation error");
@@ -81,18 +117,22 @@ static void repl()
 
                     if (dobj_is_bool(dc_res_val2(evaluated)))
                         printf("%s\n", dc_tostr_bool(dobj_as_bool(dc_res_val2(evaluated))));
+                    else if (dobj_is_null(dc_res_val2(evaluated)))
+                        printf("%s", dc_colorize_fg(LRED, "(null)\n"));
                     else
                         dc_dv_println(&dc_res_val2(evaluated).dv);
 
                     printf("%s", DC_COLOR_RESET);
                 }
             }
-
-            dn_program_free(dc_res_val2(program_res));
         }
 
         dang_parser_free(&p);
     }
+
+    dc_da_free(programs);
+
+    dang_denv_free(de);
 }
 
 int main(int argc, string argv[])

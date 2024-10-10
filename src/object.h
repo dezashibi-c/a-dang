@@ -65,5 +65,6 @@ typedef struct DObject
 #define dobj_is_null(DOBJ) ((DOBJ).type == DOBJ_NULL)
 
 DCResultType(DObject, DObjResult);
+DCResultType(DObject*, DObjPResult);
 
 #endif // DANG_OBJECT_H
