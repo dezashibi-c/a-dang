@@ -472,6 +472,13 @@ DCResultVoid dang_obj_free(DObject* dobj)
 
     if (dobj->children.cap != 0) dc_try(dc_da_free(&dobj->children));
 
+    // free the end only if 1. it is not NULL and 2. it is an enclosed env
+    if (dobj->env && dobj->env->outer)
+    {
+        dc_try(dang_env_free(dobj->env));
+        dobj->env = NULL;
+    }
+
     dc_res_ret();
 }
 
