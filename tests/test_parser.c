@@ -687,6 +687,9 @@ CLOVE_TEST(string_output_comparision)
         "true",
         "true\n",
 
+        "'hello world'",
+        "hello world\n",
+
         "false",
         "false\n",
 
@@ -748,7 +751,14 @@ CLOVE_TEST(string_output_comparision)
         dang_scanner_init(&s, input);
 
         DParser p;
-        dang_parser_init(&p, &s);
+        DCResultVoid res = dang_parser_init(&p, &s);
+
+        if (dc_res_is_err2(res))
+        {
+            dc_res_err_log2(res, "error");
+
+            continue;
+        }
 
         ResultDNode program_res = dang_parser_parse_program(&p);
 

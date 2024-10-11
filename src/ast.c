@@ -199,7 +199,6 @@ void dn_string_init(DNode* dn)
             // DN_HASH_LITERAL,
             // DN_MACRO_LITERAL,
             // DN_BOOLEAN_LITERAL,
-            // DN_STRING_LITERAL,
             // DN_INTEGER_LITERAL,
     };
 }

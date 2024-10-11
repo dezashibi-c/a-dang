@@ -26,6 +26,7 @@ typedef enum
 
     TOK_IDENT,
     TOK_INT,
+    TOK_STRING,
 
     TOK_ASSIGN,
     TOK_PLUS,

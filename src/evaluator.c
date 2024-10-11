@@ -129,6 +129,28 @@ static DObjResult eval_boolean_infix_expression(DNode* dn, DObject* left, DObjec
         dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
 }
 
+static DObjResult eval_string_infix_expression(DNode* dn, DObject* left, DObject* right)
+{
+    DC_RES2(DObjResult);
+
+    string lval = dobj_as_string(*left);
+    string rval = dobj_as_string(*right);
+
+    if (dc_sv_str_eq(dn_text(dn), "+"))
+    {
+        string result;
+        dc_sprintf(&result, "%s%s", lval, rval);
+        DObject str_obj = dobj_string(result);
+
+        dc_dv_mark_alloc(str_obj.dv);
+
+        dc_res_ret_ok(str_obj);
+    }
+
+    else
+        dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
+}
+
 static DObjResult eval_infix_expression(DNode* dn, DObject* left, DObject* right)
 {
     DC_RES2(DObjResult);
@@ -149,6 +171,21 @@ static DObjResult eval_infix_expression(DNode* dn, DObject* left, DObject* right
     {
         DObject left2 = dobj_bool(dc_res_val2(dc_dv_as_bool(&left->dv)));
         return eval_boolean_infix_expression(dn, &left2, right);
+    }
+
+    else if (dobj_is_string(*right) && dobj_is_string(*left))
+        return eval_string_infix_expression(dn, left, right);
+
+    else if (dobj_is_string(*left))
+    {
+        DObject right2 = dobj_string(dc_res_val2(dc_tostr_dv(&right->dv)));
+        return eval_string_infix_expression(dn, left, &right2);
+    }
+
+    else if (dobj_is_string(*right))
+    {
+        DObject left2 = dobj_string(dc_res_val2(dc_tostr_dv(&left->dv)));
+        return eval_string_infix_expression(dn, &left2, right);
     }
 
     else
@@ -367,6 +404,10 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
 
         case DN_INTEGER_LITERAL:
             dc_res_ret_ok(dobj_int(dn_child_as(dn, 0, i64)));
+
+        case DN_STRING_LITERAL:
+            dn_string_init(dn);
+            dc_res_ret_ok(dobj_string(dn->text));
 
         case DN_IDENTIFIER:
         {
@@ -594,8 +635,9 @@ string tostr_DObjType(DObjType dobjt)
     {
         dc_str_case(DOBJ_INTEGER);
         dc_str_case(DOBJ_BOOLEAN);
-        dc_str_case(DOBJ_NULL);
+        dc_str_case(DOBJ_STRING);
         dc_str_case(DOBJ_FUNCTION);
+        dc_str_case(DOBJ_NULL);
 
         default:
             return "(unknown evaluated object type)";

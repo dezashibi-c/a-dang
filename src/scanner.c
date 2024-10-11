@@ -143,8 +143,6 @@ ResultToken dang_scanner_next_token(DScanner* s)
 {
     DC_RES2(ResultToken);
 
-    DToken* token;
-
     skip_whitespace(s);
 
     switch (s->c)
@@ -153,69 +151,90 @@ ResultToken dang_scanner_next_token(DScanner* s)
             if (peek(s) == '=')
             {
                 dc_try_fail(token_create(TOK_EQ, s->input, s->pos, 2));
-                token = dc_res_val();
                 read_char(s);
             }
             else
             {
                 dc_try_fail(token_create(TOK_ASSIGN, s->input, s->pos, 1));
-                token = dc_res_val();
             }
             break;
 
         case ';':
             dc_try_fail(token_create(TOK_SEMICOLON, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '(':
             dc_try_fail(token_create(TOK_LPAREN, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case ')':
             dc_try_fail(token_create(TOK_RPAREN, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case ',':
             dc_try_fail(token_create(TOK_COMMA, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '+':
             dc_try_fail(token_create(TOK_PLUS, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '-':
             dc_try_fail(token_create(TOK_MINUS, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '!':
             if (peek(s) == '=')
             {
                 dc_try_fail(token_create(TOK_NEQ, s->input, s->pos, 2));
-                token = dc_res_val();
                 read_char(s);
             }
             else
             {
                 dc_try_fail(token_create(TOK_BANG, s->input, s->pos, 1));
-                token = dc_res_val();
             }
             break;
 
         case '/':
             dc_try_fail(token_create(TOK_SLASH, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '*':
             dc_try_fail(token_create(TOK_ASTERISK, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
+
+        case '"':
+        case '\'':
+        {
+            char starter = s->c;
+            read_char(s); // bypass " or '
+
+            usize start = s->pos;
+            usize len;
+
+            DTokenType t = TOK_STRING;
+
+            while (true)
+            {
+                if (s->c == starter)
+                {
+                    len = s->pos - start;
+
+                    break;
+                }
+                else if (s->c == 0)
+                {
+                    len = 1;
+                    start--;
+                    t = TOK_ILLEGAL;
+                    break;
+                }
+                read_char(s);
+            }
+
+            dc_try_fail(token_create(t, s->input, start, len));
+            break;
+        }
 
         case '$':
         {
@@ -228,7 +247,6 @@ ResultToken dang_scanner_next_token(DScanner* s)
                 usize len = s->pos - start + 1;
 
                 dc_try_fail(token_create(TOK_IDENT, s->input, start, len));
-                token = dc_res_val();
             }
             else if (peek(s) == '"')
             {
@@ -237,6 +255,8 @@ ResultToken dang_scanner_next_token(DScanner* s)
 
                 usize start = s->pos;
                 usize len;
+
+                DTokenType t = TOK_IDENT;
 
                 while (true)
                 {
@@ -248,58 +268,51 @@ ResultToken dang_scanner_next_token(DScanner* s)
                     }
                     else if (s->c == 0 || s->c == '\n')
                     {
-                        token_create(TOK_ILLEGAL, s->input, start, s->pos - start);
+                        len = 1;
+                        start--;
+                        t = TOK_ILLEGAL;
                         break;
                     }
                     read_char(s);
                 }
 
-                dc_try_fail(token_create(TOK_IDENT, s->input, start, len));
-                token = dc_res_val();
+                dc_try_fail(token_create(t, s->input, start, len));
             }
             else if (peek(s) == '{')
             {
                 // ${
                 dc_try_fail(token_create(TOK_DOLLAR_LBRACE, s->input, s->pos, 2));
-                token = dc_res_val();
                 read_char(s);
             }
             else
             {
                 dc_try_fail(token_create(TOK_ILLEGAL, s->input, s->pos, 1));
-                token = dc_res_val();
             }
             break;
         }
 
         case '<':
             dc_try_fail(token_create(TOK_LT, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '>':
             dc_try_fail(token_create(TOK_GT, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '{':
             dc_try_fail(token_create(TOK_LBRACE, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '}':
             dc_try_fail(token_create(TOK_RBRACE, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '\n':
             dc_try_fail(token_create(TOK_NEWLINE, s->input, s->pos, 1));
-            token = dc_res_val();
             break;
 
         case '\0':
             dc_try_fail(token_create(TOK_EOF, s->input, s->pos, 0));
-            token = dc_res_val();
             break;
 
         default:
@@ -307,33 +320,32 @@ ResultToken dang_scanner_next_token(DScanner* s)
             if (is_letter(s->c))
             {
                 dc_try_fail(extract_identifier(s));
-                token = dc_res_val();
-                dc_da_push(&s->tokens, dc_dva(voidptr, token));
-                dc_res_ret_ok(token);
+                dc_da_push(&s->tokens, dc_dva(voidptr, dc_res_val()));
+                dc_res_ret();
             }
             else if (is_digit(s->c))
             {
                 dc_try_fail(extract_number(s));
-                token = dc_res_val();
-                dc_da_push(&s->tokens, dc_dva(voidptr, token));
-                dc_res_ret_ok(token);
+                dc_da_push(&s->tokens, dc_dva(voidptr, dc_res_val()));
+                dc_res_ret();
             }
             else
             {
                 dc_try_fail(token_create(TOK_ILLEGAL, s->input, s->pos, 1));
-                token = dc_res_val();
             }
         }
         break;
     }
 
+    dc_da_push(&s->tokens, dc_dva(voidptr, dc_res_val()));
+
+    if (dc_res_val()->type == TOK_ILLEGAL)
+    {
+        dc_dbg_log("DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_res_val()->text));
+        dc_res_ret_ea(-1, "DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_res_val()->text));
+    }
 
     read_char(s);
 
-    dc_da_push(&s->tokens, dc_dva(voidptr, token));
-
-    if (token->type == TOK_ILLEGAL)
-        dc_res_ret_ea(-1, "DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(token->text));
-
-    dc_res_ret_ok(token);
+    dc_res_ret();
 }

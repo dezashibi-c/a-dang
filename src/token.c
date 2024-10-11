@@ -24,6 +24,7 @@ string tostr_DTokenType(DTokenType dtt)
         dc_str_case(TOK_EOF);
         dc_str_case(TOK_IDENT);
         dc_str_case(TOK_INT);
+        dc_str_case(TOK_STRING);
         dc_str_case(TOK_ASSIGN);
         dc_str_case(TOK_PLUS);
         dc_str_case(TOK_MINUS);

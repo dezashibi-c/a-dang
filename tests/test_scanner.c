@@ -113,17 +113,21 @@ CLOVE_TEST(remaining_tokens)
 {
     const string input = "!-/*5\n"
                          "5 < 10 > 5\n"
-                         "5 == 10 != 5";
+                         "5 == 10 != 5\n"
+                         "\"foobar\"\n"
+                         "\'foo bar\'";
 
     TestExpectedResult tests[] = {
-        {.type = TOK_BANG, .text = "!"},     {.type = TOK_MINUS, .text = "-"}, {.type = TOK_SLASH, .text = "/"},
-        {.type = TOK_ASTERISK, .text = "*"}, {.type = TOK_INT, .text = "5"},   {.type = TOK_NEWLINE, .text = "\n"},
+        {.type = TOK_BANG, .text = "!"},        {.type = TOK_MINUS, .text = "-"},    {.type = TOK_SLASH, .text = "/"},
+        {.type = TOK_ASTERISK, .text = "*"},    {.type = TOK_INT, .text = "5"},      {.type = TOK_NEWLINE, .text = "\n"},
 
-        {.type = TOK_INT, .text = "5"},      {.type = TOK_LT, .text = "<"},    {.type = TOK_INT, .text = "10"},
-        {.type = TOK_GT, .text = ">"},       {.type = TOK_INT, .text = "5"},   {.type = TOK_NEWLINE, .text = "\n"},
+        {.type = TOK_INT, .text = "5"},         {.type = TOK_LT, .text = "<"},       {.type = TOK_INT, .text = "10"},
+        {.type = TOK_GT, .text = ">"},          {.type = TOK_INT, .text = "5"},      {.type = TOK_NEWLINE, .text = "\n"},
 
-        {.type = TOK_INT, .text = "5"},      {.type = TOK_EQ, .text = "=="},   {.type = TOK_INT, .text = "10"},
-        {.type = TOK_NEQ, .text = "!="},     {.type = TOK_INT, .text = "5"},
+        {.type = TOK_INT, .text = "5"},         {.type = TOK_EQ, .text = "=="},      {.type = TOK_INT, .text = "10"},
+        {.type = TOK_NEQ, .text = "!="},        {.type = TOK_INT, .text = "5"},      {.type = TOK_NEWLINE, .text = "\n"},
+
+        {.type = TOK_STRING, .text = "foobar"}, {.type = TOK_NEWLINE, .text = "\n"}, {.type = TOK_STRING, .text = "foo bar"},
 
         {.type = TOK_EOF, .text = ""},
     };

@@ -28,6 +28,7 @@ typedef enum
     DOBJ_INTEGER,
     DOBJ_BOOLEAN,
     DOBJ_FUNCTION,
+    DOBJ_STRING,
     DOBJ_NULL,
 } DObjType;
 
@@ -76,6 +77,7 @@ DCResultType(DObject*, DObjPResult);
 #define dobj_get_node(DOBJ) ((DNode*)dc_dv_as((DOBJ).dv, voidptr))
 
 #define dobj_int(INT_VAL) dobj(DOBJ_INTEGER, i64, INT_VAL)
+#define dobj_string(STR_VAL) dobj(DOBJ_STRING, string, STR_VAL)
 #define dobj_bool(BOOL_VAL) dobj(DOBJ_BOOLEAN, u8, BOOL_VAL)
 
 #define dobj_mark_as_return(DOBJ) (DOBJ).is_returned = true
@@ -95,8 +97,10 @@ DCResultType(DObject*, DObjPResult);
 
 #define dobj_as_int(DOBJ) (dc_dv_as((DOBJ).dv, i64))
 #define dobj_as_bool(DOBJ) (!!dc_dv_as((DOBJ).dv, u8))
+#define dobj_as_string(DOBJ) (dc_dv_as((DOBJ).dv, string))
 
 #define dobj_is_int(DOBJ) ((DOBJ).type == DOBJ_INTEGER)
+#define dobj_is_string(DOBJ) ((DOBJ).type == DOBJ_STRING)
 #define dobj_is_bool(DOBJ) ((DOBJ).type == DOBJ_BOOLEAN)
 #define dobj_is_return(DOBJ) ((DOBJ).is_returned)
 #define dobj_is_null(DOBJ) ((DOBJ).type == DOBJ_NULL)

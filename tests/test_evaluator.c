@@ -154,6 +154,29 @@ CLOVE_TEST(integer_expressions)
     }
 }
 
+CLOVE_TEST(string_literal)
+{
+    TestCase tests[] = {
+        {.input = "'Hello World!'", .expected = dobj_string("Hello World!")},
+
+        {.input = "'Hello' + ' ' + 'World!'", .expected = dobj_string("Hello World!")},
+
+        {.input = "'Hello' + ' ' + 5 + '!'", .expected = dobj_string("Hello 5!")},
+
+        {.input = "5 + ' ' + 'programmers!'", .expected = dobj_string("5 programmers!")},
+
+        {.input = "", .expected = dobj_null()},
+    };
+
+    if (perform_evaluation_tests(tests))
+        CLOVE_PASS();
+    else
+    {
+        dc_log("test has failed");
+        CLOVE_FAIL();
+    }
+}
+
 CLOVE_TEST(boolean_expressions)
 {
     TestCase tests[] = {
@@ -370,6 +393,8 @@ CLOVE_TEST(error_handling)
         "foobar", // does not exist
 
         "let a; let a", // already is defined
+
+        "'Hello' - 'World'",
 
         NULL,
     };

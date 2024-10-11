@@ -158,6 +158,11 @@ static ResultDNode parse_identifier(DParser* p)
     return dn_new(DN_IDENTIFIER, p->current_token, false);
 }
 
+static ResultDNode parse_string_literal(DParser* p)
+{
+    return dn_new(DN_STRING_LITERAL, p->current_token, false);
+}
+
 static ResultDNode parse_integer_literal(DParser* p)
 {
     DC_RES2(ResultDNode);
@@ -893,6 +898,7 @@ DCResultVoid dang_parser_init(DParser* p, DScanner* s)
     memset(p->parse_infix_fns, 0, sizeof(p->parse_infix_fns));
 
     p->parse_prefix_fns[TOK_IDENT] = parse_identifier;
+    p->parse_prefix_fns[TOK_STRING] = parse_string_literal;
     p->parse_prefix_fns[TOK_INT] = parse_integer_literal;
     p->parse_prefix_fns[TOK_BANG] = parse_prefix_expression;
     p->parse_prefix_fns[TOK_MINUS] = parse_prefix_expression;
@@ -905,6 +911,7 @@ DCResultVoid dang_parser_init(DParser* p, DScanner* s)
 
     // Illegal tokens that are supposed to be bypassed already
     p->parse_prefix_fns[TOK_EOF] = parse_illegal;
+    p->parse_prefix_fns[TOK_ILLEGAL] = parse_illegal;
     p->parse_prefix_fns[TOK_COMMA] = parse_illegal;
     p->parse_prefix_fns[TOK_NEWLINE] = parse_illegal;
     p->parse_prefix_fns[TOK_SEMICOLON] = parse_illegal;
