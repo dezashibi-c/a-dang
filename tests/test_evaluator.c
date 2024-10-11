@@ -327,6 +327,29 @@ CLOVE_TEST(function_application)
     }
 }
 
+CLOVE_TEST(closures)
+{
+    TestCase tests[] = {
+        {.input = "\n"
+                  "let new_adder fn(x) {\n"
+                  " fn(y) { x + y }\n"
+                  "}\n"
+                  "let add_two ${new_adder 2}\n"
+                  "add_two 2",
+         .expected = dobj_int(4)},
+
+        {.input = "", .expected = dobj_null()},
+    };
+
+    if (perform_evaluation_tests(tests))
+        CLOVE_PASS();
+    else
+    {
+        dc_log("test has failed");
+        CLOVE_FAIL();
+    }
+}
+
 CLOVE_TEST(error_handling)
 {
     string error_tests[] = {

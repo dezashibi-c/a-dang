@@ -58,28 +58,35 @@ DCResultType(DObject*, DObjPResult);
 #define dobj(OBJ_TYPE, VAL_TYPE, VAL)                                                                                          \
     (DObject)                                                                                                                  \
     {                                                                                                                          \
-        .type = OBJ_TYPE, .dv = dc_dv(VAL_TYPE, VAL), .is_returned = false, .env = NULL,                                       \
+        .type = OBJ_TYPE, .dv = dc_dv(VAL_TYPE, VAL), .is_returned = false, .env = NULL, .children = (DCDynArr)                \
+        {                                                                                                                      \
+            0                                                                                                                  \
+        }                                                                                                                      \
     }
 
-#define dobj_fn(NODE, ENV)                                                                                                     \
+#define dobj_fn(NODE, DENV)                                                                                                    \
     (DObject)                                                                                                                  \
     {                                                                                                                          \
-        .type = DOBJ_FUNCTION, .dv = dc_dv(voidptr, NODE), .is_returned = false, .env = (ENV),                                 \
+        .type = DOBJ_FUNCTION, .dv = dc_dv(voidptr, NODE), .is_returned = false, .env = (DENV), .children = (DCDynArr)         \
+        {                                                                                                                      \
+            0                                                                                                                  \
+        }                                                                                                                      \
     }
 
 #define dobj_get_node(DOBJ) ((DNode*)dc_dv_as((DOBJ).dv, voidptr))
 
 #define dobj_int(INT_VAL) dobj(DOBJ_INTEGER, i64, INT_VAL)
 #define dobj_bool(BOOL_VAL) dobj(DOBJ_BOOLEAN, u8, BOOL_VAL)
-#define dobj_return(DOBJ)                                                                                                      \
-    (DObject)                                                                                                                  \
-    {                                                                                                                          \
-        .type = (DOBJ).type, .dv = (DOBJ).dv, .is_returned = true, .env = NULL,                                                \
-    }
+
+#define dobj_mark_as_return(DOBJ) (DOBJ).is_returned = true
+
 #define dobj_return_null()                                                                                                     \
     (DObject)                                                                                                                  \
     {                                                                                                                          \
-        .type = DOBJ_NULL, .dv = dc_dv(voidptr, NULL), .is_returned = true, .env = NULL,                                       \
+        .type = DOBJ_NULL, .dv = dc_dv(voidptr, NULL), .is_returned = true, .env = NULL, .children = (DCDynArr)                \
+        {                                                                                                                      \
+            0                                                                                                                  \
+        }                                                                                                                      \
     }
 
 #define dobj_null() dobj(DOBJ_NULL, voidptr, NULL)
@@ -93,5 +100,7 @@ DCResultType(DObject*, DObjPResult);
 #define dobj_is_bool(DOBJ) ((DOBJ).type == DOBJ_BOOLEAN)
 #define dobj_is_return(DOBJ) ((DOBJ).is_returned)
 #define dobj_is_null(DOBJ) ((DOBJ).type == DOBJ_NULL)
+
+#define dobj_child(DOBJ, INDEX) ((DObject*)dc_da_get_as((DOBJ)->children, INDEX, voidptr))
 
 #endif // DANG_OBJECT_H

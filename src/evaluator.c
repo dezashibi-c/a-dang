@@ -20,7 +20,7 @@
 // * PRIVATE FUNCTIONS
 // ***************************************************************************************
 
-static DObjResult eval_statements(DNode* dn, DEnv* de)
+static DObjResult eval_block_statements(DNode* dn, DEnv* de)
 {
     DC_RES2(DObjResult);
 
@@ -31,8 +31,17 @@ static DObjResult eval_statements(DNode* dn, DEnv* de)
         DNode* stmt = dn_child(dn, _idx);
         dc_try_fail(dang_eval(stmt, de));
 
-        if (dobj_is_return(dc_res_val())) dc_res_ret();
+        if (dobj_is_return(dc_res_val())) break;
     }
+
+    dc_res_ret();
+}
+
+static DObjResult eval_program_statements(DNode* dn, DEnv* de)
+{
+    DC_TRY_DEF2(DObjResult, eval_block_statements(dn, de));
+
+    dc_res_val().is_returned = false;
 
     dc_res_ret();
 }
@@ -237,20 +246,16 @@ static DEnvResult extend_function_env(DObject* call_obj, DNode* fn_node)
     // with given evaluated objects assigning to them
     dc_da_for(fn_node->children)
     {
-        // last child is the body
-        if (_idx == dn_child_count(fn_node) - 1) break;
+        // we shouldn't get the last child as it is the function body
+        if (_idx >= (dn_child_count(fn_node) - 1)) break;
 
         DNode* arg_name = dn_child(fn_node, _idx);
         dn_string_init(arg_name);
 
         DObject* value = NULL;
+
         // if the number of passed arguments are not sufficient the arguments will be defined as NULL
-        if (_idx < call_obj->children.count)
-        {
-            dc_try_or_fail_with3(DCResultDv, arg_val_res, dc_da_get(&call_obj->children, _idx),
-                                 dc_res_err_dbg_log2(arg_val_res, "extending env error"));
-            value = (DObject*)dc_dv_as(*dc_res_val2(arg_val_res), voidptr);
-        }
+        if (_idx < call_obj->children.count) value = dobj_child(call_obj, _idx);
 
         dc_try_fail_temp(DObjPResult, dang_env_set(dc_res_val(), arg_name->text, value));
     }
@@ -272,7 +277,13 @@ static DObjResult apply_function(DObject* call_obj, DNode* fn_node)
 
     DNode* body = dn_child(fn_node, dn_child_count(fn_node) - 1);
 
-    return dang_eval(body, dc_res_val2(fn_env_res));
+    dc_try(dang_eval(body, dc_res_val2(fn_env_res)));
+
+    // if we've returned of a function that's ok
+    // but we don't need to pass it on to the upper level
+    dc_res_val().is_returned = false;
+
+    dc_res_ret();
 }
 
 static DC_HT_HASH_FN_DECL(string_hash)
@@ -331,7 +342,7 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
     switch (dn->type)
     {
         case DN_PROGRAM:
-            return eval_statements(dn, de);
+            return eval_program_statements(dn, de);
 
         case DN_EXPRESSION_STATEMENT:
             return dang_eval(dn_child(dn, 0), de);
@@ -366,7 +377,7 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
         }
 
         case DN_BLOCK_STATEMENT:
-            return eval_statements(dn, de);
+            return eval_block_statements(dn, de);
 
         case DN_IF_EXPRESSION:
             return eval_if_expression(dn, de);
@@ -379,7 +390,9 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
 
             dc_try_or_fail_with3(DObjResult, value, dang_eval(ret_val, de), {});
 
-            dc_res_ret_ok(dobj_return(dc_res_val2(value)));
+            dobj_mark_as_return(dc_res_val2(value));
+
+            dc_res_ret_ok(dc_res_val2(value));
         }
 
         case DN_LET_STATEMENT:
@@ -390,8 +403,12 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
 
         case DN_CALL_EXPRESSION:
         {
+            // function node is the first child
             DNode* fn_node = dn_child(dn, 0);
 
+            // evaluating it must return a function object
+            // that is in fact the function literal node saved in the environment before
+            // it also holds pointer to its environment
             dc_try_or_fail_with3(DObjResult, fn_res, dang_eval(fn_node, de), {});
 
             if (dc_res_val2(fn_res).type != DOBJ_FUNCTION)
@@ -401,9 +418,11 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
                 dc_res_ret_ea(-1, "not a function got: '%s'", tostr_DObjType(dc_res_val2(fn_res).type));
             }
 
+
+            // this is a temporary object to hold the evaluated children and the env
             // eval arguments (first element is function symbol the rest is arguments)
             DObject call_obj;
-            dang_obj_init(&call_obj, DOBJ_NULL, dc_dv(voidptr, NULL), de, false, true);
+            dang_obj_init(&call_obj, DOBJ_NULL, dc_dv(voidptr, NULL), dc_res_val2(fn_res).env, false, true);
 
             dc_try_fail_temp(DCResultVoid, eval_function_arguments(dn, &call_obj, de));
 
@@ -542,23 +561,15 @@ DObjPResult dang_env_get(DEnv* de, string name)
 
     DCDynVal* found = NULL;
 
-    if (de->outer)
-    {
-        dc_try_fail_temp(DCResultUsize, dc_ht_find_by_key(&de->outer->store, name, &found));
-
-        if (found) dc_res_ret_ok((DObject*)dc_dv_as(*found, voidptr));
-    }
-
     dc_try_fail_temp(DCResultUsize, dc_ht_find_by_key(&de->store, name, &found));
 
-    if (!found)
-    {
-        dc_dbg_log("key '%s' not found in the environment", name);
+    if (found) dc_res_ret_ok((DObject*)dc_dv_as(*found, voidptr));
 
-        dc_res_ret_ea(6, "'%s' is not defined", name);
-    }
+    if (de->outer) return dang_env_get(de->outer, name);
 
-    dc_res_ret_ok((DObject*)dc_dv_as(*found, voidptr));
+    dc_dbg_log("key '%s' not found in the environment", name);
+
+    dc_res_ret_ea(6, "'%s' is not defined", name);
 }
 
 DObjPResult dang_env_set(DEnv* de, string name, DObject* dobj)
