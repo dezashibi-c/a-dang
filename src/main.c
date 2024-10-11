@@ -41,7 +41,7 @@ static void repl()
 
     char line[1024];
 
-    DEnvResult de_res = dang_denv_new();
+    DEnvResult de_res = dang_env_new();
     if (dc_res_is_err2(de_res))
     {
         dc_res_err_log2(de_res, "cannot initialize environment");
@@ -55,7 +55,7 @@ static void repl()
     {
         dc_res_err_log2(programs_res, "cannot initialize programs array");
 
-        dang_denv_free(de);
+        dang_env_free(de);
 
         return;
     }
@@ -132,7 +132,7 @@ static void repl()
 
     dc_da_free(programs);
 
-    dang_denv_free(de);
+    dang_env_free(de);
 }
 
 int main(int argc, string argv[])

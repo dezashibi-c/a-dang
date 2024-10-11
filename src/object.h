@@ -31,20 +31,22 @@ typedef enum
     DOBJ_NULL,
 } DObjType;
 
-typedef struct
+typedef struct DEnv
 {
     DCHashTable store;
+    struct DEnv* outer;
 } DEnv;
 
 DCResultType(DEnv*, DEnvResult);
 
-typedef struct DObject
+typedef struct
 {
     DObjType type;
     DCDynVal dv;
     bool is_returned;
 
     DEnv* env;
+    DCDynArr children;
 } DObject;
 
 DCResultType(DObject, DObjResult);
@@ -65,17 +67,19 @@ DCResultType(DObject*, DObjPResult);
         .type = DOBJ_FUNCTION, .dv = dc_dv(voidptr, NODE), .is_returned = false, .env = (ENV),                                 \
     }
 
+#define dobj_get_node(DOBJ) ((DNode*)dc_dv_as((DOBJ).dv, voidptr))
+
 #define dobj_int(INT_VAL) dobj(DOBJ_INTEGER, i64, INT_VAL)
 #define dobj_bool(BOOL_VAL) dobj(DOBJ_BOOLEAN, u8, BOOL_VAL)
 #define dobj_return(DOBJ)                                                                                                      \
     (DObject)                                                                                                                  \
     {                                                                                                                          \
-        .type = (DOBJ).type, .dv = (DOBJ).dv, .is_returned = true                                                              \
+        .type = (DOBJ).type, .dv = (DOBJ).dv, .is_returned = true, .env = NULL,                                                \
     }
 #define dobj_return_null()                                                                                                     \
     (DObject)                                                                                                                  \
     {                                                                                                                          \
-        .type = DOBJ_NULL, .dv = dc_dv(voidptr, NULL), .is_returned = true                                                     \
+        .type = DOBJ_NULL, .dv = dc_dv(voidptr, NULL), .is_returned = true, .env = NULL,                                       \
     }
 
 #define dobj_null() dobj(DOBJ_NULL, voidptr, NULL)

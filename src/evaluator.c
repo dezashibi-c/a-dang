@@ -24,6 +24,8 @@ static DObjResult eval_statements(DNode* dn, DEnv* de)
 {
     DC_RES2(DObjResult);
 
+    dc_res_ok(dobj_null());
+
     dc_da_for(dn->children)
     {
         DNode* stmt = dn_child(dn, _idx);
@@ -174,7 +176,7 @@ static DObjResult eval_let_statement(DNode* dn, DEnv* de)
     DNode* var_name = dn_child(dn, 0);
     dn_string_init(var_name);
 
-    DObjPResult check = dang_denv_get(de, var_name->text);
+    DObjPResult check = dang_env_get(de, var_name->text);
     if (dc_res_is_ok2(check))
     {
         dc_dbg_log("symbol '%s' is already defined", var_name->text);
@@ -184,7 +186,7 @@ static DObjResult eval_let_statement(DNode* dn, DEnv* de)
 
     DNode* value_node = (dn_child_count(dn) > 1) ? dn_child(dn, 1) : NULL;
 
-    DObject* value;
+    DObject* value = NULL;
     DObjPResult val_obj_res;
 
     if (value_node)
@@ -192,19 +194,85 @@ static DObjResult eval_let_statement(DNode* dn, DEnv* de)
         dc_try_or_fail_with3(DObjResult, v_res, dang_eval(value_node, de), {});
 
         dc_try_or_fail_with2(val_obj_res, dang_obj_new_from(&dc_res_val2(v_res)), {});
-    }
-    else
-    {
-        dc_try_or_fail_with2(val_obj_res, dang_obj_new(DOBJ_NULL, dc_dv(voidptr, NULL), false), {});
+        value = dc_res_val2(val_obj_res);
+
+        // It doesn't matter if it was a returned value from some other function, etc.
+        // It must be reset as it is now have been saved in the environment.
+        value->is_returned = false;
     }
 
-    value = dc_res_val2(val_obj_res);
-    // should not break
-    value->is_returned = false;
-
-    dc_try_fail_temp(DObjPResult, dang_denv_set(de, var_name->text, value));
+    dc_try_fail_temp(DObjPResult, dang_env_set(de, var_name->text, value));
 
     dc_res_ret_ok(dobj_null());
+}
+
+static DCResultVoid eval_function_arguments(DNode* call_node, DObject* parent_result, DEnv* de)
+{
+    DC_RES_void();
+
+    if (dn_child_count(call_node) <= 1) dc_res_ret();
+
+    // first child is the function identifier or expression
+    // the rest is function argument
+    for (usize i = 1; i < dn_child_count(call_node); ++i)
+    {
+        dc_try_or_fail_with3(DObjResult, evaluated, dang_eval(dn_child(call_node, i), de), {});
+
+        dc_try_or_fail_with3(DObjPResult, arg_res, dang_obj_new_from(&dc_res_val2(evaluated)), {});
+
+        dc_try_or_fail_with3(DCResultVoid, res, dc_da_push(&parent_result->children, dc_dva(voidptr, dc_res_val2(arg_res))), {
+            dc_dbg_log("failed to push object to parent object");
+            dc_try_fail(dang_obj_free(dc_res_val2(arg_res)));
+        });
+    }
+
+    dc_res_ret();
+}
+
+static DEnvResult extend_function_env(DObject* call_obj, DNode* fn_node)
+{
+    DC_TRY_DEF2(DEnvResult, dang_env_new_enclosed(call_obj->env));
+
+    // extending the environment by defining arguments
+    // with given evaluated objects assigning to them
+    dc_da_for(fn_node->children)
+    {
+        // last child is the body
+        if (_idx == dn_child_count(fn_node) - 1) break;
+
+        DNode* arg_name = dn_child(fn_node, _idx);
+        dn_string_init(arg_name);
+
+        DObject* value = NULL;
+        // if the number of passed arguments are not sufficient the arguments will be defined as NULL
+        if (_idx < call_obj->children.count)
+        {
+            dc_try_or_fail_with3(DCResultDv, arg_val_res, dc_da_get(&call_obj->children, _idx),
+                                 dc_res_err_dbg_log2(arg_val_res, "extending env error"));
+            value = (DObject*)dc_dv_as(*dc_res_val2(arg_val_res), voidptr);
+        }
+
+        dc_try_fail_temp(DObjPResult, dang_env_set(dc_res_val(), arg_name->text, value));
+    }
+
+    dc_res_ret();
+}
+
+/**
+ * fn_obj's node is a pointer to the "fn" declaration node that has been saved in the env
+ * fn_obj's node's children are arguments except the last one that is the body
+ * call_obj holds all the evaluated object arguments in its children field
+ * call_obj holds current env as well
+ */
+static DObjResult apply_function(DObject* call_obj, DNode* fn_node)
+{
+    DC_RES2(DObjResult);
+
+    dc_try_or_fail_with3(DEnvResult, fn_env_res, extend_function_env(call_obj, fn_node), {});
+
+    DNode* body = dn_child(fn_node, dn_child_count(fn_node) - 1);
+
+    return dang_eval(body, dc_res_val2(fn_env_res));
 }
 
 static DC_HT_HASH_FN_DECL(string_hash)
@@ -238,7 +306,9 @@ static DC_DV_FREE_FN_DECL(env_store_free)
         DCHashEntry* he = (DCHashEntry*)dc_dv_as(*_value, voidptr);
         DObject* dobj = (DObject*)dc_dv_as(he->value, voidptr);
 
-        dc_try_fail(dang_dobj_free(dobj));
+        dc_try_fail(dang_obj_free(dobj));
+
+        free(dobj);
     }
 
     dc_res_ret();
@@ -290,7 +360,7 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
         case DN_IDENTIFIER:
         {
             dn_string_init(dn);
-            dc_try_or_fail_with3(DObjPResult, symbol, dang_denv_get(de, dn->text), {});
+            dc_try_or_fail_with3(DObjPResult, symbol, dang_env_get(de, dn->text), {});
 
             dc_res_ret_ok(*dc_res_val2(symbol));
         }
@@ -320,14 +390,24 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
 
         case DN_CALL_EXPRESSION:
         {
-            DNode* ret_val = dn_child(dn, 0);
+            DNode* fn_node = dn_child(dn, 0);
 
-            dc_try_or_fail_with3(DObjResult, fn_res, dang_eval(ret_val, de), {});
+            dc_try_or_fail_with3(DObjResult, fn_res, dang_eval(fn_node, de), {});
 
-            // function is a pointer to the "fn" declaration node that has been saved in the env
-            DObject function = dc_res_val2(fn_res);
+            if (dc_res_val2(fn_res).type != DOBJ_FUNCTION)
+            {
+                dc_dbg_log("not a function got: '%s'", tostr_DObjType(dc_res_val2(fn_res).type));
 
-            // todo:: eval arguments (first element is function symbol the rest is arguments)
+                dc_res_ret_ea(-1, "not a function got: '%s'", tostr_DObjType(dc_res_val2(fn_res).type));
+            }
+
+            // eval arguments (first element is function symbol the rest is arguments)
+            DObject call_obj;
+            dang_obj_init(&call_obj, DOBJ_NULL, dc_dv(voidptr, NULL), de, false, true);
+
+            dc_try_fail_temp(DCResultVoid, eval_function_arguments(dn, &call_obj, de));
+
+            return apply_function(&call_obj, dobj_get_node(dc_res_val2(fn_res)));
         }
 
         default:
@@ -337,27 +417,37 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
     dc_res_ret_ea(-1, "Unimplemented or unsupported node type: %s", tostr_DNType(dn->type));
 }
 
-void dang_obj_init(DObject* dobj, DObjType dobjt, DCDynVal dv, bool is_returned)
+DCResultVoid dang_obj_init(DObject* dobj, DObjType dobjt, DCDynVal dv, DEnv* de, bool is_returned, bool has_children)
 {
+    DC_RES_void();
+
     dobj->type = dobjt;
     dobj->dv = dv;
     dobj->is_returned = is_returned;
+
+    dobj->env = de;
+
+    dobj->children = (DCDynArr){0};
+
+    if (has_children) dc_try_fail(dc_da_init2(&dobj->children, 10, 3, dobj_child_free));
+
+    dc_res_ret();
 }
 
 
-DObjPResult dang_obj_new(DObjType dobjt, DCDynVal dv, bool is_returned)
+DObjPResult dang_obj_new(DObjType dobjt, DCDynVal dv, DEnv* de, bool is_returned, bool has_children)
 {
     DC_RES2(DObjPResult);
 
     DObject* dobj = (DObject*)malloc(sizeof(DObject));
     if (!dobj)
     {
-        dc_dbg_log("Cannot initialize dang object");
+        dc_dbg_log("Memory allocation failed");
 
-        dc_res_ret_e(2, "cannot initialize dang object");
+        dc_res_ret_e(2, "Memory allocation failed");
     }
 
-    dang_obj_init(dobj, dobjt, dv, is_returned);
+    dc_try_fail_temp(DCResultVoid, dang_obj_init(dobj, dobjt, dv, de, is_returned, has_children));
 
     dc_res_ret_ok(dobj);
 }
@@ -368,30 +458,38 @@ DObjPResult dang_obj_new_from(DObject* dobj)
 
     if (!dobj)
     {
-        dc_dbg_log("Cannot initialize dang object");
+        dc_dbg_log("Cannot initialize dang object from uninitialized objects");
 
-        dc_res_ret_e(2, "cannot initialize dang object");
+        dc_res_ret_e(2, "cannot initialize dang object from uninitialized objects");
     }
 
-    return dang_obj_new(dobj->type, dobj->dv, dobj->is_returned);
+    return dang_obj_new(dobj->type, dobj->dv, dobj->env, dobj->is_returned, dobj->children.count != 0);
 }
 
-DCResultVoid dang_dobj_free(DObject* dobj)
+DCResultVoid dang_obj_free(DObject* dobj)
 {
     DC_TRY_DEF2(DCResultVoid, dc_dv_free(&dobj->dv, NULL));
 
-    free(dobj);
-    dobj = NULL;
+    if (dobj->children.cap != 0) dc_try(dc_da_free(&dobj->children));
 
     dc_res_ret();
 }
 
-DEnvResult dang_denv_new()
+DC_DV_FREE_FN_DECL(dobj_child_free)
+{
+    DC_RES_void();
+
+    if (dc_dv_is(*_value, voidptr) && dc_dv_as(*_value, voidptr) != NULL)
+        dc_try(dang_obj_free((DObject*)dc_dv_as(*_value, voidptr)));
+
+    dc_res_ret();
+}
+
+DEnvResult dang_env_new()
 {
     DC_RES2(DEnvResult);
 
     DEnv* de = (DEnv*)malloc(sizeof(DEnv));
-
     if (de == NULL)
     {
         dc_dbg_log("Memory allocation failed");
@@ -405,10 +503,21 @@ DEnvResult dang_denv_new()
         free(de);
     });
 
+    de->outer = NULL;
+
     dc_res_ret_ok(de);
 }
 
-DCResultVoid dang_denv_free(DEnv* de)
+DEnvResult dang_env_new_enclosed(DEnv* outer)
+{
+    DC_TRY_DEF2(DEnvResult, dang_env_new());
+
+    dc_res_val()->outer = outer;
+
+    dc_res_ret();
+}
+
+DCResultVoid dang_env_free(DEnv* de)
 {
     DC_RES_void();
 
@@ -420,11 +529,18 @@ DCResultVoid dang_denv_free(DEnv* de)
 }
 
 
-DObjPResult dang_denv_get(DEnv* de, string name)
+DObjPResult dang_env_get(DEnv* de, string name)
 {
     DC_RES2(DObjPResult);
 
     DCDynVal* found = NULL;
+
+    if (de->outer)
+    {
+        dc_try_fail_temp(DCResultUsize, dc_ht_find_by_key(&de->outer->store, name, &found));
+
+        if (found) dc_res_ret_ok((DObject*)dc_dv_as(*found, voidptr));
+    }
 
     dc_try_fail_temp(DCResultUsize, dc_ht_find_by_key(&de->store, name, &found));
 
@@ -438,9 +554,16 @@ DObjPResult dang_denv_get(DEnv* de, string name)
     dc_res_ret_ok((DObject*)dc_dv_as(*found, voidptr));
 }
 
-DObjPResult dang_denv_set(DEnv* de, string name, DObject* dobj)
+DObjPResult dang_env_set(DEnv* de, string name, DObject* dobj)
 {
     DC_RES2(DObjPResult);
+
+    if (!dobj)
+    {
+        dc_try_or_fail_with3(DObjPResult, dobj_res, dang_obj_new(DOBJ_NULL, dc_dv(voidptr, NULL), NULL, false, false), {});
+
+        dobj = dc_res_val2(dobj_res);
+    }
 
     dc_try_fail_temp(DCResultVoid, dc_ht_set(&de->store, name, dc_dva(voidptr, dobj)));
 
@@ -454,6 +577,7 @@ string tostr_DObjType(DObjType dobjt)
         dc_str_case(DOBJ_INTEGER);
         dc_str_case(DOBJ_BOOLEAN);
         dc_str_case(DOBJ_NULL);
+        dc_str_case(DOBJ_FUNCTION);
 
         default:
             return "(unknown evaluated object type)";

@@ -256,11 +256,11 @@ DC_CLEANUP_FN_DECL(dn_cleanup)
     return dn_free((DNode*)_value);
 }
 
-DCResultVoid dn_child_free(DCDynVal* child)
+DC_DV_FREE_FN_DECL(dn_child_free)
 {
     DC_RES_void();
 
-    if (dc_dv_is(*child, voidptr) && dc_dv_as(*child, voidptr) != NULL) dc_try(dn_free((DNode*)dc_dv_as(*child, voidptr)));
+    if (dc_dv_is(*_value, voidptr) && dc_dv_as(*_value, voidptr) != NULL) dc_try(dn_free((DNode*)dc_dv_as(*_value, voidptr)));
 
     dc_res_ret();
 }

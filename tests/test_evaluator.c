@@ -36,7 +36,7 @@ static DObjResult test_eval(string input)
         dc_res_ret_ea(-1, "parser has error on input '%s'", input);
     }
 
-    dc_try_or_fail_with3(DEnvResult, de, dang_denv_new(), {
+    dc_try_or_fail_with3(DEnvResult, de, dang_env_new(), {
         dn_program_free(program);
         dang_parser_free(&p);
     });
@@ -48,7 +48,7 @@ static DObjResult test_eval(string input)
 
     dn_program_free(program);
     dang_parser_free(&p);
-    dang_denv_free(dc_res_val2(de));
+    dang_env_free(dc_res_val2(de));
 
     dc_res_ret();
 }
@@ -148,7 +148,10 @@ CLOVE_TEST(integer_expressions)
     if (perform_evaluation_tests(tests))
         CLOVE_PASS();
     else
+    {
+        dc_log("test has failed");
         CLOVE_FAIL();
+    }
 }
 
 CLOVE_TEST(boolean_expressions)
@@ -210,7 +213,10 @@ CLOVE_TEST(boolean_expressions)
     if (perform_evaluation_tests(tests))
         CLOVE_PASS();
     else
+    {
+        dc_log("test has failed");
         CLOVE_FAIL();
+    }
 }
 
 CLOVE_TEST(if_else_expressions)
@@ -238,7 +244,10 @@ CLOVE_TEST(if_else_expressions)
     if (perform_evaluation_tests(tests))
         CLOVE_PASS();
     else
+    {
+        dc_log("test has failed");
         CLOVE_FAIL();
+    }
 }
 
 CLOVE_TEST(return_statement)
@@ -248,11 +257,11 @@ CLOVE_TEST(return_statement)
 
         {.input = "return", .expected = dobj_null()},
 
-        {.input = "return 10; 9", .expected = dobj_int(10)},
+        {.input = "return 10\n 9", .expected = dobj_int(10)},
 
-        {.input = "return 2 * 5; 9", .expected = dobj_int(10)},
+        {.input = "return 2 * 5\n 9", .expected = dobj_int(10)},
 
-        {.input = "9; return 2 * 5; 9", .expected = dobj_int(10)},
+        {.input = "9\n return 2 * 5\n 9", .expected = dobj_int(10)},
 
         {.input = "if 10 > 1 {\n if 10 > 1 {\n return 10 \n } \n return 1 \n}", .expected = dobj_int(10)},
 
@@ -262,7 +271,10 @@ CLOVE_TEST(return_statement)
     if (perform_evaluation_tests(tests))
         CLOVE_PASS();
     else
+    {
+        dc_log("test has failed");
         CLOVE_FAIL();
+    }
 }
 
 CLOVE_TEST(let_statement)
@@ -282,7 +294,10 @@ CLOVE_TEST(let_statement)
     if (perform_evaluation_tests(tests))
         CLOVE_PASS();
     else
+    {
+        dc_log("test has failed");
         CLOVE_FAIL();
+    }
 }
 
 CLOVE_TEST(function_application)
@@ -306,7 +321,10 @@ CLOVE_TEST(function_application)
     if (perform_evaluation_tests(tests))
         CLOVE_PASS();
     else
+    {
+        dc_log("test has failed");
         CLOVE_FAIL();
+    }
 }
 
 CLOVE_TEST(error_handling)
@@ -314,13 +332,13 @@ CLOVE_TEST(error_handling)
     string error_tests[] = {
         "5 + true",
 
-        "5 + true; 5",
+        "5 + true\n 5",
 
         "-true",
 
         "true + false",
 
-        "5; true + false; 5",
+        "5\n true + false\n 5",
 
         "if 10 > 1 { true + false }",
 
