@@ -28,6 +28,7 @@ typedef enum
     DOBJ_INTEGER,
     DOBJ_BOOLEAN,
     DOBJ_FUNCTION,
+    DOBJ_BUILTIN,
     DOBJ_STRING,
     DOBJ_NULL,
 } DObjType;
@@ -53,9 +54,15 @@ typedef struct
 DCResultType(DObject, DObjResult);
 DCResultType(DObject*, DObjPResult);
 
+typedef DObjResult (*DBuiltinFunction)(DObject* call_obj);
+
 // ***************************************************************************************
 // * MACROS
 // ***************************************************************************************
+
+
+#define DECL_DBUILTIN_FUNCTION(NAME) DObjResult NAME(DObject* call_obj)
+
 #define dobj(OBJ_TYPE, VAL_TYPE, VAL)                                                                                          \
     (DObject)                                                                                                                  \
     {                                                                                                                          \
@@ -69,6 +76,16 @@ DCResultType(DObject*, DObjPResult);
     (DObject)                                                                                                                  \
     {                                                                                                                          \
         .type = DOBJ_FUNCTION, .dv = dc_dv(voidptr, NODE), .is_returned = false, .env = (DENV), .children = (DCDynArr)         \
+        {                                                                                                                      \
+            0                                                                                                                  \
+        }                                                                                                                      \
+    }
+
+#define dobj_bfn(FN)                                                                                                           \
+    (DObject)                                                                                                                  \
+    {                                                                                                                          \
+        .type = DOBJ_BUILTIN, .dv = dc_dv(voidptr, *(voidptr*)(&FN)), .is_returned = false, .env = NULL,                       \
+        .children = (DCDynArr)                                                                                                 \
         {                                                                                                                      \
             0                                                                                                                  \
         }                                                                                                                      \

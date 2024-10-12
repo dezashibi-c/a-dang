@@ -323,10 +323,10 @@ CLOVE_TEST(let_statement)
     }
 }
 
-CLOVE_TEST(function_application)
+CLOVE_TEST(functions)
 {
     TestCase tests[] = {
-        {.input = "let my_fn fn(x) {}; my_fn;", .expected = dobj_null()},
+        {.input = "let my_fn fn() {}; my_fn;", .expected = dobj_null()},
 
         {.input = "let identity fn(x) { x }; identity 5", .expected = dobj_int(5)},
 
@@ -337,6 +337,27 @@ CLOVE_TEST(function_application)
         {.input = "let add fn(x, y) { x + y }; add 5 5", .expected = dobj_int(10)},
 
         {.input = "let add fn(x, y) { x + y }; add 5 + 5 ${add 5 5}", .expected = dobj_int(20)},
+
+        {.input = "", .expected = dobj_null()},
+    };
+
+    if (perform_evaluation_tests(tests))
+        CLOVE_PASS();
+    else
+    {
+        dc_log("test has failed");
+        CLOVE_FAIL();
+    }
+}
+
+CLOVE_TEST(builtin_functions)
+{
+    TestCase tests[] = {
+        {.input = "len ''", .expected = dobj_int(0)},
+
+        {.input = "len 'four'", .expected = dobj_int(4)},
+
+        {.input = "len 'hello world'", .expected = dobj_int(11)},
 
         {.input = "", .expected = dobj_null()},
     };
@@ -395,6 +416,12 @@ CLOVE_TEST(error_handling)
         "let a; let a", // already is defined
 
         "'Hello' - 'World'",
+
+        "len 1",
+
+        "len;",
+
+        "len 'one' 'two'",
 
         NULL,
     };

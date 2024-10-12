@@ -58,7 +58,7 @@ static DObjResult eval_minus_prefix_operator(DObject* right)
     DC_RES2(DObjResult);
 
     if (!dobj_is_int(*right))
-        dc_res_ret_ea(-1, "'-' operator does not support right value of type: %s", dc_tostr_dvt(&right->dv));
+        dc_res_ret_ea(-1, "'-' operator does not support right value of type '%s'", dc_tostr_dvt(&right->dv));
 
     dc_res_ret_ok(dobj_int(-dobj_as_int(*right)));
 }
@@ -109,7 +109,8 @@ static DObjResult eval_integer_infix_expression(DNode* dn, DObject* left, DObjec
         dc_res_ret_ok(dobj_bool(lval != rval));
 
     else
-        dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
+        dc_res_ret_ea(-1, "unimplemented infix operator '" DCPRIsv "' for '%s' and '%s'", dc_sv_fmt(dn_text(dn)),
+                      dc_tostr_dvt(&left->dv), dc_tostr_dvt(&right->dv));
 }
 
 static DObjResult eval_boolean_infix_expression(DNode* dn, DObject* left, DObject* right)
@@ -126,7 +127,8 @@ static DObjResult eval_boolean_infix_expression(DNode* dn, DObject* left, DObjec
         dc_res_ret_ok(dobj_bool(lval != rval));
 
     else
-        dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
+        dc_res_ret_ea(-1, "unimplemented infix operator '" DCPRIsv "' for '%s' and '%s'", dc_sv_fmt(dn_text(dn)),
+                      dc_tostr_dvt(&left->dv), dc_tostr_dvt(&right->dv));
 }
 
 static DObjResult eval_string_infix_expression(DNode* dn, DObject* left, DObject* right)
@@ -147,8 +149,12 @@ static DObjResult eval_string_infix_expression(DNode* dn, DObject* left, DObject
         dc_res_ret_ok(str_obj);
     }
 
+    if (dc_sv_str_eq(dn_text(dn), "=="))
+        dc_res_ret_ok(dobj_bool(strcmp(lval, rval) == 0));
+
     else
-        dc_res_ret_ea(-1, "unimplemented prefix operator '" DCPRIsv "'", dc_sv_fmt(dn_text(dn)));
+        dc_res_ret_ea(-1, "unimplemented infix operator '" DCPRIsv "' for '%s' and '%s'", dc_sv_fmt(dn_text(dn)),
+                      dc_tostr_dvt(&left->dv), dc_tostr_dvt(&right->dv));
 }
 
 static DObjResult eval_infix_expression(DNode* dn, DObject* left, DObject* right)
@@ -176,20 +182,20 @@ static DObjResult eval_infix_expression(DNode* dn, DObject* left, DObject* right
     else if (dobj_is_string(*right) && dobj_is_string(*left))
         return eval_string_infix_expression(dn, left, right);
 
-    else if (dobj_is_string(*left))
+    else if (dobj_is_string(*left) && !dc_sv_str_eq(dn_text(dn), "=="))
     {
         DObject right2 = dobj_string(dc_res_val2(dc_tostr_dv(&right->dv)));
         return eval_string_infix_expression(dn, left, &right2);
     }
 
-    else if (dobj_is_string(*right))
+    else if (dobj_is_string(*right) && !dc_sv_str_eq(dn_text(dn), "=="))
     {
         DObject left2 = dobj_string(dc_res_val2(dc_tostr_dv(&left->dv)));
         return eval_string_infix_expression(dn, &left2, right);
     }
 
     else
-        dc_res_ret_ea(-1, "unimplemented infix for '" DCPRIsv "' operator between '%s' and '%s'", dc_sv_fmt(dn_text(dn)),
+        dc_res_ret_ea(-1, "unimplemented infix operator '" DCPRIsv "' for '%s' and '%s'", dc_sv_fmt(dn_text(dn)),
                       dc_tostr_dvt(&left->dv), dc_tostr_dvt(&right->dv));
 }
 
@@ -279,6 +285,10 @@ static DEnvResult extend_function_env(DObject* call_obj, DNode* fn_node)
 {
     DC_TRY_DEF2(DEnvResult, dang_env_new_enclosed(call_obj->env));
 
+    if (call_obj->children.count != dn_child_count(fn_node) - 1)
+        dc_res_ret_ea(-1, "function needs at least %" PRIuMAX " arguments, got=%" PRIuMAX, dn_child_count(fn_node) - 1,
+                      call_obj->children.count);
+
     // extending the environment by defining arguments
     // with given evaluated objects assigning to them
     dc_da_for(fn_node->children)
@@ -322,6 +332,50 @@ static DObjResult apply_function(DObject* call_obj, DNode* fn_node)
 
     dc_res_ret();
 }
+
+// ***************************************************************************************
+// * BUILTIN FUNCTIONS
+// ***************************************************************************************
+
+static DECL_DBUILTIN_FUNCTION(len)
+{
+    DC_RES2(DObjResult);
+
+    if (call_obj->children.count != 1)
+        dc_res_ret_ea(-1, "invalid number of argument passed to 'len', expected=1, got=%" PRIuMAX, call_obj->children.count);
+
+    DObject* arg = dobj_child(call_obj, 0);
+
+    if (arg->type != DOBJ_STRING) dc_res_ret_ea(-1, "cannot calculate length of '%s'", tostr_DObjType(arg->type));
+
+    i64 len = 0;
+
+    if (dobj_as_string(*arg)) len = (i64)strlen(dobj_as_string(*arg));
+
+    dc_res_ret_ok(dobj_int(len));
+}
+
+DBuiltinFunction len_ptr = len;
+
+static DObjResult find_builtin(string name)
+{
+    DC_RES2(DObjResult);
+
+    if (strcmp(name, "len") == 0)
+        dc_res_ret_ok(dobj_bfn(len_ptr));
+
+
+    else
+    {
+        dc_dbg_log("key '%s' not found in the environment", name);
+
+        dc_res_ret_ea(6, "'%s' is not defined", name);
+    }
+}
+
+// ***************************************************************************************
+// * PRIVATE HELPER FUNCTIONS
+// ***************************************************************************************
 
 static DC_HT_HASH_FN_DECL(string_hash)
 {
@@ -412,9 +466,12 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
         case DN_IDENTIFIER:
         {
             dn_string_init(dn);
-            dc_try_or_fail_with3(DObjPResult, symbol, dang_env_get(de, dn->text), {});
 
-            dc_res_ret_ok(*dc_res_val2(symbol));
+            DObjPResult symbol = dang_env_get(de, dn->text);
+
+            if (dc_res_is_ok2(symbol)) dc_res_ret_ok(*dc_res_val2(symbol));
+
+            return find_builtin(dn->text);
         }
 
         case DN_BLOCK_STATEMENT:
@@ -452,22 +509,30 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
             // it also holds pointer to its environment
             dc_try_or_fail_with3(DObjResult, fn_res, dang_eval(fn_node, de), {});
 
-            if (dc_res_val2(fn_res).type != DOBJ_FUNCTION)
+            DObject fn_obj = dc_res_val2(fn_res);
+
+            if (fn_obj.type != DOBJ_FUNCTION && fn_obj.type != DOBJ_BUILTIN)
             {
-                dc_dbg_log("not a function got: '%s'", tostr_DObjType(dc_res_val2(fn_res).type));
+                dc_dbg_log("not a function got: '%s'", tostr_DObjType(fn_obj.type));
 
-                dc_res_ret_ea(-1, "not a function got: '%s'", tostr_DObjType(dc_res_val2(fn_res).type));
+                dc_res_ret_ea(-1, "not a function got: '%s'", tostr_DObjType(fn_obj.type));
             }
-
 
             // this is a temporary object to hold the evaluated children and the env
             // eval arguments (first element is function symbol the rest is arguments)
             DObject call_obj;
-            dang_obj_init(&call_obj, DOBJ_NULL, dc_dv(voidptr, NULL), dc_res_val2(fn_res).env, false, true);
+            dang_obj_init(&call_obj, DOBJ_NULL, dc_dv(voidptr, NULL), fn_obj.env, false, true);
 
             dc_try_fail_temp(DCResultVoid, eval_function_arguments(dn, &call_obj, de));
 
-            return apply_function(&call_obj, dobj_get_node(dc_res_val2(fn_res)));
+
+            if (fn_obj.type == DOBJ_BUILTIN)
+            {
+                DBuiltinFunction fn = dc_dv_as(fn_obj.dv, voidptr);
+                return fn(&call_obj);
+            }
+
+            return apply_function(&call_obj, dobj_get_node(fn_obj));
         }
 
         default:
@@ -637,6 +702,7 @@ string tostr_DObjType(DObjType dobjt)
         dc_str_case(DOBJ_BOOLEAN);
         dc_str_case(DOBJ_STRING);
         dc_str_case(DOBJ_FUNCTION);
+        dc_str_case(DOBJ_BUILTIN);
         dc_str_case(DOBJ_NULL);
 
         default:
