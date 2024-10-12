@@ -165,6 +165,8 @@ CLOVE_TEST(string_literal)
 
         {.input = "5 + ' ' + 'programmers!'", .expected = dobj_string("5 programmers!")},
 
+        {.input = "'hello' == 'hello'", .expected = dobj_true()},
+
         {.input = "", .expected = dobj_null()},
     };
 
