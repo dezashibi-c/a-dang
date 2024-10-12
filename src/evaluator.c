@@ -258,7 +258,7 @@ static DObjResult eval_let_statement(DNode* dn, DEnv* de)
     dc_res_ret_ok(dobj_null());
 }
 
-static DCResultVoid eval_function_arguments(DNode* call_node, DObject* parent_result, DEnv* de)
+static DCResultVoid eval_children_nodes(DNode* call_node, DObject* parent_result, usize child_start_index, DEnv* de)
 {
     DC_RES_void();
 
@@ -266,7 +266,7 @@ static DCResultVoid eval_function_arguments(DNode* call_node, DObject* parent_re
 
     // first child is the function identifier or expression
     // the rest is function argument
-    for (usize i = 1; i < dn_child_count(call_node); ++i)
+    for (usize i = child_start_index; i < dn_child_count(call_node); ++i)
     {
         dc_try_or_fail_with3(DObjResult, evaluated, dang_eval(dn_child(call_node, i), de), {});
 
@@ -499,6 +499,16 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
         case DN_FUNCTION_LITERAL:
             dc_res_ret_ok(dobj_fn(dn, de));
 
+        case DN_ARRAY_LITERAL:
+        {
+            DObject call_obj;
+            dang_obj_init(&call_obj, DOBJ_ARRAY, dc_dv(voidptr, NULL), de, false, true);
+
+            dc_try_fail_temp(DCResultVoid, eval_children_nodes(dn, &call_obj, 0, de));
+
+            dc_res_ret_ok(call_obj);
+        }
+
         case DN_CALL_EXPRESSION:
         {
             // function node is the first child
@@ -519,11 +529,12 @@ DObjResult dang_eval(DNode* dn, DEnv* de)
             }
 
             // this is a temporary object to hold the evaluated children and the env
-            // eval arguments (first element is function symbol the rest is arguments)
             DObject call_obj;
             dang_obj_init(&call_obj, DOBJ_NULL, dc_dv(voidptr, NULL), fn_obj.env, false, true);
 
-            dc_try_fail_temp(DCResultVoid, eval_function_arguments(dn, &call_obj, de));
+            // eval arguments (first element is function symbol the rest is arguments)
+            // so we start evaluating children at index 1
+            dc_try_fail_temp(DCResultVoid, eval_children_nodes(dn, &call_obj, 1, de));
 
 
             if (fn_obj.type == DOBJ_BUILTIN)
@@ -588,7 +599,13 @@ DObjPResult dang_obj_new_from(DObject* dobj)
         dc_res_ret_e(2, "cannot initialize dang object from uninitialized objects");
     }
 
-    return dang_obj_new(dobj->type, dobj->dv, dobj->env, dobj->is_returned, dobj->children.count != 0);
+    bool has_children = dobj->children.count > 0;
+
+    dc_try_fail(dang_obj_new(dobj->type, dobj->dv, dobj->env, dobj->is_returned, has_children));
+
+    if (has_children) dc_da_for(dobj->children) dc_da_push(&dc_res_val()->children, dc_dv(voidptr, dobj_child(dobj, _idx)));
+
+    dc_res_ret();
 }
 
 DCResultVoid dang_obj_free(DObject* dobj)
@@ -703,6 +720,7 @@ string tostr_DObjType(DObjType dobjt)
         dc_str_case(DOBJ_STRING);
         dc_str_case(DOBJ_FUNCTION);
         dc_str_case(DOBJ_BUILTIN);
+        dc_str_case(DOBJ_ARRAY);
         dc_str_case(DOBJ_NULL);
 
         default:

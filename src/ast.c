@@ -186,6 +186,33 @@ void dn_string_init(DNode* dn)
 
             break;
 
+        case DN_ARRAY_LITERAL:
+            dc_sprintf(&dn->text, "%s", "[");
+            dc_da_for(dn->children)
+            {
+                dn_string_init(dn_child(dn, _idx));
+
+                dc_sappend(&dn->text, "%s", dn_child(dn, _idx)->text);
+
+                if (_idx < dn_child_count(dn) - 1) dc_sappend(&dn->text, "%s", ", ");
+            }
+
+            dc_sappend(&dn->text, "%s", "]");
+
+            break;
+
+        case DN_INDEX_EXPRESSION:
+            dn_string_init(dn_child(dn, 0));
+            dn_string_init(dn_child(dn, 1));
+
+            dc_sprintf(&dn->text, "(%s%s", dn_child(dn, 0)->text, "[");
+
+            dc_sappend(&dn->text, "%s", dn_child(dn, 1)->text);
+
+            dc_sappend(&dn->text, "%s", "])");
+
+            break;
+
         default:
             dc_sprintf(&dn->text, DCPRIsv, dc_sv_fmt(dn_text(dn)));
             break;
@@ -193,9 +220,7 @@ void dn_string_init(DNode* dn)
 
             // DN_IDENTIFIER,
             // DN_WHILE_EXPRESSION,
-            // DN_INDEX_EXPRESSION,
 
-            // DN_ARRAY_LITERAL,
             // DN_HASH_LITERAL,
             // DN_MACRO_LITERAL,
             // DN_BOOLEAN_LITERAL,

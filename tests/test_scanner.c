@@ -115,7 +115,7 @@ CLOVE_TEST(remaining_tokens)
                          "5 < 10 > 5\n"
                          "5 == 10 != 5\n"
                          "\"foobar\"\n"
-                         "\'foo bar\'";
+                         "\'foo bar\' []";
 
     TestExpectedResult tests[] = {
         {.type = TOK_BANG, .text = "!"},        {.type = TOK_MINUS, .text = "-"},    {.type = TOK_SLASH, .text = "/"},
@@ -128,6 +128,7 @@ CLOVE_TEST(remaining_tokens)
         {.type = TOK_NEQ, .text = "!="},        {.type = TOK_INT, .text = "5"},      {.type = TOK_NEWLINE, .text = "\n"},
 
         {.type = TOK_STRING, .text = "foobar"}, {.type = TOK_NEWLINE, .text = "\n"}, {.type = TOK_STRING, .text = "foo bar"},
+        {.type = TOK_LBRACKET, .text = "["},    {.type = TOK_RBRACKET, .text = "]"},
 
         {.type = TOK_EOF, .text = ""},
     };

@@ -52,8 +52,10 @@ static ResultDNode parse_statement(DParser* p);
  * @param TOK must be whether 'current' or 'peek' without single or double quotes
  */
 #define token_is_end_of_the_statement(P, TOK)                                                                                  \
-    (((P)->loc != LOC_BODY && TOK##_token_is(P, TOK_RBRACE)) ||                                                                \
-     ((P)->loc != LOC_CALL && (TOK##_token_is(P, TOK_SEMICOLON) || TOK##_token_is(P, TOK_NEWLINE))))
+    ((((P)->loc == LOC_CALL || (P)->loc == LOC_BLOCK) && TOK##_token_is(P, TOK_RBRACE)) ||                                     \
+     (((P)->loc == LOC_ARRAY) && TOK##_token_is(P, TOK_RBRACKET)) ||                                                           \
+     (((P)->loc != LOC_CALL && (P)->loc != LOC_ARRAY) &&                                                                       \
+      (TOK##_token_is(P, TOK_SEMICOLON) || TOK##_token_is(P, TOK_NEWLINE))))
 
 #define try_moving_to_the_end_of_statement(P)                                                                                  \
     while (!token_is_end_of_the_statement(P, current) && current_token_is_not(P, TOK_EOF))                                     \
@@ -138,6 +140,9 @@ static Precedence get_precedence(DTokenType type)
 
         case TOK_DOLLAR_LBRACE:
             return PREC_CALL;
+
+        case TOK_LBRACKET:
+            return PREC_INDEX;
 
         default:
             break;
@@ -283,7 +288,7 @@ static ResultDNode parse_function_literal(DParser* p)
  * Until it reaches the proper end of statement that is proper for current location
  * Generally they are '\n' and ';' but also EOF, '}' based on the context
  */
-static DCResultVoid parse_call(DParser* p, DNode* parent_node)
+static DCResultVoid parse_expression_list(DParser* p, DNode* parent_node)
 {
     DC_RES_void();
 
@@ -307,14 +312,14 @@ static DCResultVoid parse_call(DParser* p, DNode* parent_node)
 
 /**
  * Expression call is a function call inside '${' and '}'
- *
- * '${' command (param ','?)* '}'
+
+ *  '${' command (expression ','?)* '}'
  */
 static ResultDNode parse_call_expression(DParser* p)
 {
     DC_RES2(ResultDNode);
 
-    // Bypass '${'
+    // Bypass opening '${'
     dc_try_fail_temp(DCResultVoid, next_token(p));
 
     DCResultVoid res;
@@ -325,7 +330,34 @@ static ResultDNode parse_call_expression(DParser* p)
 
     // Switch to call loc to specify proper ending signal
     dang_parser_location_set(p, LOC_CALL);
-    res = parse_call(p, dc_res_val());
+    res = parse_expression_list(p, dc_res_val());
+
+    dang_parser_location_revert(p);
+
+    dc_res_ret_if_err2(res, { dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val())); });
+
+    dc_res_ret();
+}
+
+/**
+ * Array Literal '[' (expression ','?)*  ']'
+ */
+static ResultDNode parse_array_literal(DParser* p)
+{
+    DC_RES2(ResultDNode);
+
+    // Bypass opening '['
+    dc_try_fail_temp(DCResultVoid, next_token(p));
+
+    DCResultVoid res;
+
+    dc_try_or_fail_with(dn_new(DN_ARRAY_LITERAL, NULL, true), {});
+
+    dang_parser_location_preserve(p);
+
+    // Switch to array loc to specify proper ending signal
+    dang_parser_location_set(p, LOC_ARRAY);
+    res = parse_expression_list(p, dc_res_val());
 
     dang_parser_location_revert(p);
 
@@ -529,6 +561,51 @@ static ResultDNode parse_infix_expression(DParser* p, DNode* left)
     });
 
     dang_parser_dbg_log_tokens(p);
+
+    dc_res_ret();
+}
+
+static ResultDNode parse_index_expression(DParser* p, DNode* left)
+{
+    DC_TRY_DEF2(ResultDNode, dn_new(DN_INDEX_EXPRESSION, p->current_token, true));
+
+    DCResultVoid res = dn_child_push(dc_res_val(), left);
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the value to expression");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    res = next_token(p);
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not move to the next token");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    dang_parser_location_preserve(p);
+    ResultDNode expression = parse_expression(p, PREC_LOWEST);
+    dang_parser_location_revert(p);
+
+    dc_res_ret_if_err2(expression, {
+        dc_res_err_dbg_log2(expression, "could not parse expression hand side");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
+
+    res = dn_child_push(dc_res_val(), dc_res_val2(expression));
+    dc_res_ret_if_err2(res, {
+        dc_res_err_dbg_log2(res, "could not push the value to expression");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(expression)));
+    });
+
+    dc_try_or_fail_with2(res, move_if_peek_token_is(p, TOK_RBRACKET), {
+        dc_res_err_dbg_log2(res, "index expression must have one expression and closed with ']'");
+
+        dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val()));
+    });
 
     dc_res_ret();
 }
@@ -793,7 +870,7 @@ static ResultDNode parse_expression_statement(DParser* p)
     dc_res_ret_if_err2(call, {});
 
     dang_parser_location_preserve(p);
-    res = parse_call(p, dc_res_val2(call));
+    res = parse_expression_list(p, dc_res_val2(call));
     dang_parser_location_revert(p);
 
     dc_res_ret_if_err2(res, { dc_try_fail_temp(DCResultVoid, dn_free(dc_res_val2(call))); });
@@ -905,6 +982,7 @@ DCResultVoid dang_parser_init(DParser* p, DScanner* s)
     p->parse_prefix_fns[TOK_TRUE] = parse_boolean_literal;
     p->parse_prefix_fns[TOK_FALSE] = parse_boolean_literal;
     p->parse_prefix_fns[TOK_LPAREN] = parse_grouped_expression;
+    p->parse_prefix_fns[TOK_LBRACKET] = parse_array_literal;
     p->parse_prefix_fns[TOK_IF] = parse_if_expression;
     p->parse_prefix_fns[TOK_FUNCTION] = parse_function_literal;
     p->parse_prefix_fns[TOK_DOLLAR_LBRACE] = parse_call_expression;
@@ -917,6 +995,7 @@ DCResultVoid dang_parser_init(DParser* p, DScanner* s)
     p->parse_prefix_fns[TOK_SEMICOLON] = parse_illegal;
     p->parse_prefix_fns[TOK_RBRACE] = parse_illegal;
     p->parse_prefix_fns[TOK_RPAREN] = parse_illegal;
+    p->parse_prefix_fns[TOK_RBRACKET] = parse_illegal;
 
     p->parse_infix_fns[TOK_PLUS] = parse_infix_expression;
     p->parse_infix_fns[TOK_MINUS] = parse_infix_expression;
@@ -926,6 +1005,7 @@ DCResultVoid dang_parser_init(DParser* p, DScanner* s)
     p->parse_infix_fns[TOK_NEQ] = parse_infix_expression;
     p->parse_infix_fns[TOK_LT] = parse_infix_expression;
     p->parse_infix_fns[TOK_GT] = parse_infix_expression;
+    p->parse_infix_fns[TOK_LBRACKET] = parse_index_expression;
 
     // Update current and peek tokens
     dc_try_fail(next_token(p));

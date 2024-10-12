@@ -33,7 +33,8 @@ typedef enum
     PREC_SUM,
     PREC_PROD,
     PREC_PREFIX,
-    PREC_CALL
+    PREC_CALL,
+    PREC_INDEX,
 } Precedence;
 
 typedef enum
@@ -41,6 +42,7 @@ typedef enum
     LOC_BODY,
     LOC_BLOCK,
     LOC_CALL,
+    LOC_ARRAY,
 } DParserStatementLoc;
 
 typedef struct DParser

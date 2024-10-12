@@ -30,6 +30,7 @@ typedef enum
     DOBJ_FUNCTION,
     DOBJ_BUILTIN,
     DOBJ_STRING,
+    DOBJ_ARRAY,
     DOBJ_NULL,
 } DObjType;
 
@@ -119,6 +120,7 @@ typedef DObjResult (*DBuiltinFunction)(DObject* call_obj);
 #define dobj_is_int(DOBJ) ((DOBJ).type == DOBJ_INTEGER)
 #define dobj_is_string(DOBJ) ((DOBJ).type == DOBJ_STRING)
 #define dobj_is_bool(DOBJ) ((DOBJ).type == DOBJ_BOOLEAN)
+#define dobj_is_array(DOBJ) ((DOBJ).type == DOBJ_ARRAY)
 #define dobj_is_return(DOBJ) ((DOBJ).is_returned)
 #define dobj_is_null(DOBJ) ((DOBJ).type == DOBJ_NULL)
 

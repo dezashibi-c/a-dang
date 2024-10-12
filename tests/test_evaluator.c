@@ -84,6 +84,13 @@ static bool test_evaluated_literal(DObject* obj, DObject* expected)
     return dc_res_val2(res);
 }
 
+static bool test_evaluated_array_literal(DObject* obj, DObject* expected)
+{
+    dc_da_for(expected->children) if (!test_evaluated_literal(dobj_child(obj, _idx), dobj_child(expected, _idx))) return false;
+
+    return true;
+}
+
 typedef struct
 {
     string input;
@@ -101,7 +108,11 @@ static bool perform_evaluation_tests(TestCase tests[])
             return false;
         }
 
-        dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), return false, "wrong evaluation result");
+        if (_it->expected.type == DOBJ_ARRAY)
+            dc_action_on(!test_evaluated_array_literal(&dc_res_val2(res), &_it->expected), return false,
+                         "wrong evaluation result");
+        else
+            dc_action_on(!test_evaluated_literal(&dc_res_val2(res), &_it->expected), return false, "wrong evaluation result");
     }
 
     return true;
@@ -231,6 +242,36 @@ CLOVE_TEST(boolean_expressions)
         {.input = "(1 > 2) == true", .expected = dobj_false()},
 
         {.input = "(1 > 2) == false", .expected = dobj_true()},
+
+        {.input = "", .expected = dobj_null()},
+    };
+
+    if (perform_evaluation_tests(tests))
+        CLOVE_PASS();
+    else
+    {
+        dc_log("test has failed");
+        CLOVE_FAIL();
+    }
+}
+
+CLOVE_TEST(array_literal)
+{
+    DObject expected_result = {0};
+    dang_obj_init(&expected_result, DOBJ_ARRAY, DC_DV_NULL, NULL, false, true);
+
+    DObject o1 = dobj_int(1);
+    DObject o2 = dobj_int(4);
+    DObject o3 = dobj_int(6);
+
+    dc_da_push(&expected_result.children, dc_dv(voidptr, &o1));
+    dc_da_push(&expected_result.children, dc_dv(voidptr, &o2));
+    dc_da_push(&expected_result.children, dc_dv(voidptr, &o3));
+
+    TestCase tests[] = {
+        {.input = "[1 2 * 2 3 + 3]", .expected = expected_result},
+
+        {.input = "let a [1 2 * 2 3 + 3]; a", .expected = expected_result},
 
         {.input = "", .expected = dobj_null()},
     };

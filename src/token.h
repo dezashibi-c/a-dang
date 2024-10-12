@@ -50,6 +50,8 @@ typedef enum
     TOK_RPAREN,
     TOK_LBRACE,
     TOK_RBRACE,
+    TOK_LBRACKET,
+    TOK_RBRACKET,
 
     TOK_FUNCTION,
     TOK_LET,

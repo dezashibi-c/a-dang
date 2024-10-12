@@ -44,6 +44,8 @@ string tostr_DTokenType(DTokenType dtt)
         dc_str_case(TOK_RPAREN);
         dc_str_case(TOK_LBRACE);
         dc_str_case(TOK_RBRACE);
+        dc_str_case(TOK_LBRACKET);
+        dc_str_case(TOK_RBRACKET);
         dc_str_case(TOK_FUNCTION);
         dc_str_case(TOK_LET);
         dc_str_case(TOK_TRUE);

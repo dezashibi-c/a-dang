@@ -34,6 +34,27 @@ static DC_DV_FREE_FN_DECL(_program_free)
     dc_res_ret();
 }
 
+static void print_obj(DObject* obj)
+{
+    if (dobj_is_bool(*obj))
+        printf("%s", dc_tostr_bool(dobj_as_bool(*obj)));
+    else if (dobj_is_array(*obj))
+    {
+        printf("%s", "[ ");
+        dc_da_for(obj->children)
+        {
+            print_obj(dobj_child(obj, _idx));
+
+            if (_idx < obj->children.count - 1) printf("%s", ", ");
+        }
+        printf("%s", " ]");
+    }
+    else if (dobj_is_null(*obj))
+        printf("%s", dc_colorize_fg(LRED, "(null)"));
+    else
+        dc_dv_print(&obj->dv);
+}
+
 static void repl()
 {
     puts("" dc_colorize_fg(LGREEN, "dang") " REPL");
@@ -115,14 +136,9 @@ static void repl()
                 {
                     printf("%s", "Result: " DC_FG_LGREEN);
 
-                    if (dobj_is_bool(dc_res_val2(evaluated)))
-                        printf("%s\n", dc_tostr_bool(dobj_as_bool(dc_res_val2(evaluated))));
-                    else if (dobj_is_null(dc_res_val2(evaluated)))
-                        printf("%s", dc_colorize_fg(LRED, "(null)\n"));
-                    else
-                        dc_dv_println(&dc_res_val2(evaluated).dv);
+                    print_obj(&dc_res_val2(evaluated));
 
-                    printf("%s", DC_COLOR_RESET);
+                    printf("\n%s", DC_COLOR_RESET);
                 }
             }
         }

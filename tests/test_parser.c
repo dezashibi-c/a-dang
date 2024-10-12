@@ -714,6 +714,15 @@ CLOVE_TEST(string_output_comparision)
         "!(true == true)",
         "(!(true == true))\n",
 
+        "[1 2 'hello' 1 - 1, -1]",
+        "[1, 2, hello, (1 - 1), (-1)]\n",
+
+        "my_array[1 + 1]",
+        "(my_array[(1 + 1)])\n",
+
+        "a * [1 2 3 4 5][a * c] * d",
+        "((a * ([1, 2, 3, 4, 5][(a * c)])) * d)\n",
+
         "add 1 2 3",
         "add(1, 2, 3)\n",
 
@@ -725,6 +734,9 @@ CLOVE_TEST(string_output_comparision)
 
         "a + ${add b * c} + d",
         "((a + add((b * c))) + d)\n",
+
+        "add a * b[2] b[1] 2 * [1 2][1], [1]", // to stop the index we need to use comma
+        "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])), [1])\n",
 
         "add a b 1 2*3, 4+5 ${add 6 7 * 8}",
         "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))\n",

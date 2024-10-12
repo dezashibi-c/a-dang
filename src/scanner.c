@@ -307,6 +307,14 @@ ResultToken dang_scanner_next_token(DScanner* s)
             dc_try_fail(token_create(TOK_RBRACE, s->input, s->pos, 1));
             break;
 
+        case '[':
+            dc_try_fail(token_create(TOK_LBRACKET, s->input, s->pos, 1));
+            break;
+
+        case ']':
+            dc_try_fail(token_create(TOK_RBRACKET, s->input, s->pos, 1));
+            break;
+
         case '\n':
             dc_try_fail(token_create(TOK_NEWLINE, s->input, s->pos, 1));
             break;
