@@ -22,8 +22,8 @@
 
 typedef struct DParser DParser;
 
-typedef ResultDNode (*ParsePrefixFn)(DParser*);
-typedef ResultDNode (*ParseInfixFn)(DParser*, DNode*);
+typedef ResNode (*ParsePrefixFn)(DParser*);
+typedef ResNode (*ParseInfixFn)(DParser*, DNode*);
 
 typedef enum
 {
@@ -49,8 +49,8 @@ typedef struct DParser
 {
     DScanner* scanner;
 
-    DToken* current_token;
-    DToken* peek_token;
+    DTok current_token;
+    DTok peek_token;
 
     DCDynArr errors;
 
@@ -62,9 +62,9 @@ typedef struct DParser
 
 #define dang_parser_has_error(P) ((P)->errors.count != 0)
 
-DCResultVoid dang_parser_init(DParser* p, DScanner* s);
-DCResultVoid dang_parser_free(DParser* p);
-ResultDNode dang_parser_parse_program(DParser* p);
+DCResVoid dang_parser_init(DParser* p, DScanner* s);
+DCResVoid dang_parser_free(DParser* p);
+ResNode dang_parser_parse_program(DParser* p);
 void dang_parser_log_errors(DParser* p);
 
 #endif // DANG_PARSER_H

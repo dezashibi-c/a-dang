@@ -22,7 +22,7 @@
 
 #include "dcommon.h"
 
-DCResultI8 dc_str_to_i8(const string str)
+DCResI8 dc_str_to_i8(const string str)
 {
     DC_RES_i8();
 
@@ -56,7 +56,7 @@ DCResultI8 dc_str_to_i8(const string str)
     dc_res_ret_ok((i8)val);
 }
 
-DCResultI16 dc_str_to_i16(const string str)
+DCResI16 dc_str_to_i16(const string str)
 {
     DC_RES_i16();
 
@@ -90,7 +90,7 @@ DCResultI16 dc_str_to_i16(const string str)
     dc_res_ret_ok((i16)val);
 }
 
-DCResultI32 dc_str_to_i32(const string str)
+DCResI32 dc_str_to_i32(const string str)
 {
     DC_RES_i32();
 
@@ -115,7 +115,7 @@ DCResultI32 dc_str_to_i32(const string str)
     dc_res_ret_ok((i32)val);
 }
 
-DCResultI64 dc_str_to_i64(const string str)
+DCResI64 dc_str_to_i64(const string str)
 {
     DC_RES_i64();
 
@@ -140,7 +140,7 @@ DCResultI64 dc_str_to_i64(const string str)
     dc_res_ret_ok((i64)val);
 }
 
-DCResultU8 dc_str_to_u8(const string str)
+DCResU8 dc_str_to_u8(const string str)
 {
     DC_RES_u8();
 
@@ -165,7 +165,7 @@ DCResultU8 dc_str_to_u8(const string str)
     dc_res_ret_ok((u8)val);
 }
 
-DCResultU16 dc_str_to_u16(const string str)
+DCResU16 dc_str_to_u16(const string str)
 {
     DC_RES_u16();
 
@@ -190,7 +190,7 @@ DCResultU16 dc_str_to_u16(const string str)
     dc_res_ret_ok((u16)val);
 }
 
-DCResultU32 dc_str_to_u32(const string str)
+DCResU32 dc_str_to_u32(const string str)
 {
     DC_RES_u32();
 
@@ -215,7 +215,7 @@ DCResultU32 dc_str_to_u32(const string str)
     dc_res_ret_ok((u32)val);
 }
 
-DCResultU64 dc_str_to_u64(const string str)
+DCResU64 dc_str_to_u64(const string str)
 {
     DC_RES_u64();
 
@@ -240,7 +240,7 @@ DCResultU64 dc_str_to_u64(const string str)
     dc_res_ret_ok((u64)val);
 }
 
-DCResultF32 dc_str_to_f32(const string str)
+DCResF32 dc_str_to_f32(const string str)
 {
     DC_RES_f32();
 
@@ -265,7 +265,7 @@ DCResultF32 dc_str_to_f32(const string str)
     dc_res_ret_ok((f32)val);
 }
 
-DCResultF64 dc_str_to_f64(const string str)
+DCResF64 dc_str_to_f64(const string str)
 {
     DC_RES_f64();
 

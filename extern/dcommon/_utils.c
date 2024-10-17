@@ -37,7 +37,7 @@
 // * STRINGS AND PATHS
 // ***************************************************************************************
 
-DCResultUsize dc_sprintf(string* str, string fmt, ...)
+DCResUsize dc_sprintf(string* str, string fmt, ...)
 {
     DC_RES_usize();
 
@@ -79,7 +79,7 @@ DCResultUsize dc_sprintf(string* str, string fmt, ...)
     dc_res_ret_ok((usize)len);
 }
 
-DCResultUsize dc_sappend(string* str, const string fmt, ...)
+DCResUsize dc_sappend(string* str, const string fmt, ...)
 {
     DC_RES_usize();
 
@@ -130,7 +130,7 @@ DCResultUsize dc_sappend(string* str, const string fmt, ...)
     dc_res_ret_ok(current_len + len);
 }
 
-DCResultString dc_strdup(const string in)
+DCResString dc_strdup(const string in)
 {
     DC_RES_string();
 
@@ -143,12 +143,12 @@ DCResultString dc_strdup(const string in)
 
     string out;
 
-    dc_try_fail_temp(DCResultUsize, dc_sprintf(&out, "%s", in));
+    dc_try_fail_temp(DCResUsize, dc_sprintf(&out, "%s", in));
 
     dc_res_ret_ok(out);
 }
 
-DCResultString dc_tostr_dv(DCDynVal* dv)
+DCResString dc_tostr_dv(DCDynVal* dv)
 {
     DC_RES_string();
 
@@ -181,6 +181,10 @@ DCResultString dc_tostr_dv(DCDynVal* dv)
         stringify(size);
         stringify(usize);
 
+        case dc_dvt(DCStringView):
+            dc_sprintf(&result, DCPRIsv, dc_sv_fmt(dc_dv_as(*dv, DCStringView)));
+            break;
+
         default:
             dc_sprintf(&result, "%s", "(unknown dynamic value)");
             break;
@@ -191,11 +195,11 @@ DCResultString dc_tostr_dv(DCDynVal* dv)
 #undef stringify
 }
 
-DCResultVoid dc_dv_print(DCDynVal* dv)
+DCResVoid dc_dv_print(DCDynVal* dv)
 {
     DC_RES_void();
 
-    dc_try_or_fail_with3(DCResultString, res, dc_tostr_dv(dv), {});
+    dc_try_or_fail_with3(DCResString, res, dc_tostr_dv(dv), {});
 
     printf("%s", dc_res_val2(res));
 
@@ -204,16 +208,16 @@ DCResultVoid dc_dv_print(DCDynVal* dv)
     dc_res_ret();
 }
 
-DCResultVoid dc_dv_println(DCDynVal* dv)
+DCResVoid dc_dv_println(DCDynVal* dv)
 {
-    DC_TRY_DEF2(DCResultVoid, dc_dv_print(dv));
+    DC_TRY_DEF2(DCResVoid, dc_dv_print(dv));
 
     printf("%s", "\n");
 
     dc_res_ret();
 }
 
-DCResultVoid dc_normalize_path_to_posix(string path)
+DCResVoid dc_normalize_path_to_posix(string path)
 {
     DC_RES_void();
 
@@ -237,7 +241,7 @@ DCResultVoid dc_normalize_path_to_posix(string path)
     dc_res_ret();
 }
 
-DCResultString dc_replace_file_in_path(string path, const string file_name)
+DCResString dc_replace_file_in_path(string path, const string file_name)
 {
     DC_RES_string();
 
@@ -248,7 +252,7 @@ DCResultString dc_replace_file_in_path(string path, const string file_name)
         dc_res_ret_e(1, "got NULL path or file_name");
     }
 
-    dc_try_fail_temp(DCResultVoid, dc_normalize_path_to_posix(path));
+    dc_try_fail_temp(DCResVoid, dc_normalize_path_to_posix(path));
     const string last_sep = strrchr(path, '/');
 
     size_t dir_length = (last_sep != NULL) ? (last_sep - path + 1) : 0;
@@ -439,7 +443,7 @@ void dc_cleanup_pool_init2(usize count, usize batch_capacity)
         exit(2);
     }
 
-    DCResultVoid res;
+    DCResVoid res;
 
     for (usize i = 0; i < count; ++i)
     {
@@ -450,10 +454,10 @@ void dc_cleanup_pool_init2(usize count, usize batch_capacity)
 
     __DC_CLEANUP_REGISTER_SIGNALS;
 
-    dc_result_free(&res);
+    dc_res_free(&res);
 }
 
-DCResultVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
+DCResVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
 {
     DC_RES_void();
 
@@ -465,14 +469,13 @@ DCResultVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
     dc_dbg_log("cleaning up '%" PRIuMAX "' elements", batch->count);
 
     // run cleanup of each item
-    dc_da_for(*batch)
-    {
-        DCCleanupJob* entry = dc_da_get_as(*batch, _idx, voidptr);
+    dc_da_for(*batch, {
+        DCCleanupJob* key_value = dc_da_get_as(*batch, _idx, voidptr);
 
-        dc_dbg_log("cleaning index: '%" PRIuMAX "', cleanup perform: %p", _idx, (*entry).element);
+        dc_dbg_log("cleaning index: '%" PRIuMAX "', cleanup perform: %p", _idx, (*key_value).element);
 
-        dc_try_fail(dc_cleanup_job_run(*entry));
-    }
+        dc_try_fail(dc_cleanup_job_run(*key_value));
+    });
 
     // clean up the dc_cleanup itself
     dc_dbg_log("freeing cleanup batch, current capacity: '%" PRIuMAX "', current "
@@ -503,8 +506,7 @@ void dc_cleanup_pool_run(i32 selection)
 
             dc_dbg_log("performing pool cleanup");
 
-            dc_da_for(dc_cleanup_pool)
-            {
+            dc_for(dc_cleanup_pool.pool, DCCleanupBatch, dc_cleanup_pool.count, {
                 dc_dbg_log("cleaning up the batch index [%" PRIuMAX "]", _idx);
                 dc_try(dc_cleanup_batch_run(&dc_cleanup_pool.pool[_idx]));
 
@@ -515,7 +517,7 @@ void dc_cleanup_pool_run(i32 selection)
 
                     exit(dc_res_err_code());
                 }
-            }
+            });
 
             if (dc_cleanup_pool.pool)
             {
@@ -586,7 +588,7 @@ void dc_cleanup_push2(DCCleanupBatch* batch, voidptr element, DCCleanupFn cleanu
 
     if (dc_res_is_err())
     {
-        dc_dbg_log("An error occurred while pushing cleanup job entry to the "
+        dc_dbg_log("An error occurred while pushing cleanup job key_value to the "
                    "cleanup batch index: (code %d) %s",
                    dc_res_err_code(), dc_res_err_msg());
 
@@ -594,7 +596,7 @@ void dc_cleanup_push2(DCCleanupBatch* batch, voidptr element, DCCleanupFn cleanu
     }
 }
 
-DCResultVoid dc_free(voidptr variable)
+DCResVoid dc_free(voidptr variable)
 {
     DC_RES_void();
 
@@ -605,7 +607,7 @@ DCResultVoid dc_free(voidptr variable)
     dc_res_ret();
 }
 
-DCResultVoid dc_free_file(voidptr variable)
+DCResVoid dc_free_file(voidptr variable)
 {
     DC_RES_void();
 
@@ -620,13 +622,13 @@ DCResultVoid dc_free_file(voidptr variable)
 // * RESULT
 // ***************************************************************************************
 
-DCResultVoid dc_result_free(voidptr res_ptr)
+DCResVoid dc_res_free(voidptr res_ptr)
 {
     DC_RES_void();
 
     if (!res_ptr) dc_res_ret_e(1, "got NULL result");
 
-    DCResultVoid* result = (DCResultVoid*)res_ptr;
+    DCResVoid* result = (DCResVoid*)res_ptr;
 
 
     if (dc_res_is_err2(*result) && result->data.e.allocated) free(result->data.e.message);
@@ -641,7 +643,7 @@ DCResultVoid dc_result_free(voidptr res_ptr)
 // * Files
 // ***************************************************************************************
 
-DCResultFileptr dc_file_open(const string file, const string mode)
+DCResFileptr dc_file_open(const string file, const string mode)
 {
     DC_RES_fileptr();
 

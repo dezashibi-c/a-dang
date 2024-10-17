@@ -11,19 +11,20 @@
 //     or concerns, please feel free to contact me at the email address provided
 //     above.
 // ***************************************************************************************
-// *  Description: Main `dcommon` library entry point
+// *  Description: Main `dcommon` library key_value point
 // ***************************************************************************************
 
 #ifndef DC_MAIN_HEADER_H
 #define DC_MAIN_HEADER_H
 
+
+#include "dcommon_primitives.h"
+
 #define __DC_BYPASS_PRIVATE_PROTECTION
 
-#include "_headers/general.h"
+#include "_headers/macros.h"
 
 #include "_headers/aliases.h"
-
-#include "_headers/macros.h"
 
 // ***************************************************************************************
 // * FUNCTION DECLARATIONS
@@ -32,82 +33,82 @@
 /**
  * Converts a string to number of type i8
  *
- * @return DCResultI8 (If OK i8 value can be retrieved otherwise it contains
+ * @return DCResI8 (If OK i8 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultI8 dc_str_to_i8(const string str);
+DCResI8 dc_str_to_i8(const string str);
 
 /**
  * Converts a string to number of type i16
  *
- * @return DCResultI16 (If OK i16 value can be retrieved otherwise it contains
+ * @return DCResI16 (If OK i16 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultI16 dc_str_to_i16(const string str);
+DCResI16 dc_str_to_i16(const string str);
 
 /**
  * Converts a string to number of type i32
  *
- * @return DCResultI32 (If OK i32 value can be retrieved otherwise it contains
+ * @return DCResI32 (If OK i32 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultI32 dc_str_to_i32(const string str);
+DCResI32 dc_str_to_i32(const string str);
 
 /**
  * Converts a string to number of type i64
  *
- * @return DCResultI64 (If OK i64 value can be retrieved otherwise it contains
+ * @return DCResI64 (If OK i64 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultI64 dc_str_to_i64(const string str);
+DCResI64 dc_str_to_i64(const string str);
 
 /**
  * Converts a string to number of type u8
  *
- * @return DCResultU8 (If OK u8 value can be retrieved otherwise it contains
+ * @return DCResU8 (If OK u8 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultU8 dc_str_to_u8(const string str);
+DCResU8 dc_str_to_u8(const string str);
 
 /**
  * Converts a string to number of type u16
  *
- * @return DCResultU16 (If OK u16 value can be retrieved otherwise it contains
+ * @return DCResU16 (If OK u16 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultU16 dc_str_to_u16(const string str);
+DCResU16 dc_str_to_u16(const string str);
 
 /**
  * Converts a string to number of type u32
  *
- * @return DCResultU32 (If OK u32 value can be retrieved otherwise it contains
+ * @return DCResU32 (If OK u32 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultU32 dc_str_to_u32(const string str);
+DCResU32 dc_str_to_u32(const string str);
 
 /**
  * Converts a string to number of type u64
  *
- * @return DCResultU64 (If OK u64 value can be retrieved otherwise it contains
+ * @return DCResU64 (If OK u64 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultU64 dc_str_to_u64(const string str);
+DCResU64 dc_str_to_u64(const string str);
 
 /**
  * Converts a string to number of type f32
  *
- * @return DCResultF32 (If OK f32 value can be retrieved otherwise it contains
+ * @return DCResF32 (If OK f32 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultF32 dc_str_to_f32(const string str);
+DCResF32 dc_str_to_f32(const string str);
 
 /**
  * Converts a string to number of type f64
  *
- * @return DCResultF64 (If OK f64 value can be retrieved otherwise it contains
+ * @return DCResF64 (If OK f64 value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultF64 dc_str_to_f64(const string str);
+DCResF64 dc_str_to_f64(const string str);
 
 // ***************************************************************************************
 
@@ -127,12 +128,12 @@ string dc_tostr_dvt(DCDynVal* dv);
 
 /**
  * Checks for falsy values in a given dynamic value and return the result as
- * DCResultBool
+ * DCResBool
  *
- * @return DCResultBool (If OK bool value can be retrieved otherwise it contains
+ * @return DCResBool (If OK bool value can be retrieved otherwise it contains
  * proper error)
  */
-DCResultBool dc_dv_as_bool(DCDynVal* dv);
+DCResBool dc_dv_as_bool(DCDynVal* dv);
 
 /**
  * Initializes a given pointer to dynamic array
@@ -142,7 +143,7 @@ DCResultBool dc_dv_as_bool(DCDynVal* dv);
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_init(DCDynArr* darr, DCDynValFreeFn element_free_fn);
+DCResVoid dc_da_init(DCDynArr* darr, DCDynValFreeFn element_free_fn);
 
 /**
  * Initializes a given pointer to dynamic array with custom capacity and grow
@@ -153,7 +154,7 @@ DCResultVoid dc_da_init(DCDynArr* darr, DCDynValFreeFn element_free_fn);
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_init2(DCDynArr* darr, usize capacity, usize capacity_grow_multiplier, DCDynValFreeFn element_free_fn);
+DCResVoid dc_da_init2(DCDynArr* darr, usize capacity, usize capacity_grow_multiplier, DCDynValFreeFn element_free_fn);
 
 /**
  * Creates, allocates, initializes and returns a pointer to dynamic array
@@ -165,7 +166,7 @@ DCResultVoid dc_da_init2(DCDynArr* darr, usize capacity, usize capacity_grow_mul
  *
  * NOTE: Allocates memory
  */
-DCResultDa dc_da_new(DCDynValFreeFn element_free_fn);
+DCResDa dc_da_new(DCDynValFreeFn element_free_fn);
 
 /**
  * Creates, initializes and returns a pointer to dynamic array with custom
@@ -178,7 +179,7 @@ DCResultDa dc_da_new(DCDynValFreeFn element_free_fn);
  *
  * NOTE: Allocates memory
  */
-DCResultDa dc_da_new2(usize capacity, usize capacity_grow_multiplier, DCDynValFreeFn element_free_fn);
+DCResDa dc_da_new2(usize capacity, usize capacity_grow_multiplier, DCDynValFreeFn element_free_fn);
 
 /**
  * Initializes a dynamic array with given array of dynamic value
@@ -189,7 +190,7 @@ DCResultDa dc_da_new2(usize capacity, usize capacity_grow_multiplier, DCDynValFr
  *
  * @return nothing or error
  */
-DCResultVoid __dc_da_init_with_values(DCDynArr* darr, usize count, DCDynValFreeFn element_free_fn, DCDynVal values[]);
+DCResVoid __dc_da_init_with_values(DCDynArr* darr, usize count, DCDynValFreeFn element_free_fn, DCDynVal values[]);
 
 /**
  * Grows the capacity of given dynamic array pointer by current capacity *
@@ -199,7 +200,7 @@ DCResultVoid __dc_da_init_with_values(DCDynArr* darr, usize count, DCDynValFreeF
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_grow(DCDynArr* darr);
+DCResVoid dc_da_grow(DCDynArr* darr);
 
 /**
  * Grows the capacity of given dynamic array pointer by current capacity +
@@ -207,21 +208,21 @@ DCResultVoid dc_da_grow(DCDynArr* darr);
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_grow_by(DCDynArr* darr, usize amount);
+DCResVoid dc_da_grow_by(DCDynArr* darr, usize amount);
 
 /**
  * Grows the capacity of given dynamic array pointer to provided amount
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_grow_to(DCDynArr* darr, usize amount);
+DCResVoid dc_da_grow_to(DCDynArr* darr, usize amount);
 
 /**
  * Truncates unused capacity of given dynamic array pointer
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_trunc(DCDynArr* darr);
+DCResVoid dc_da_trunc(DCDynArr* darr);
 
 /**
  * Pops out the elements of a given dynamic array by amount of the given count
@@ -232,14 +233,14 @@ DCResultVoid dc_da_trunc(DCDynArr* darr);
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_pop(DCDynArr* darr, usize count, DCDynVal** out_popped, bool truncate);
+DCResVoid dc_da_pop(DCDynArr* darr, usize count, DCDynVal** out_popped, bool truncate);
 
 /**
  * Pushes given dynamic value to the given dynamic array
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_push(DCDynArr* darr, DCDynVal value);
+DCResVoid dc_da_push(DCDynArr* darr, DCDynVal value);
 
 /**
  * Pushes multiple values to the given array with causes to check/grow the
@@ -250,7 +251,7 @@ DCResultVoid dc_da_push(DCDynArr* darr, DCDynVal value);
  *
  * @return nothing or error
  */
-DCResultVoid __dc_da_append_values(DCDynArr* darr, usize count, DCDynVal values[]);
+DCResVoid __dc_da_append_values(DCDynArr* darr, usize count, DCDynVal values[]);
 
 /**
  * Appends the elements from the `from` dynamic array to the given `darr`
@@ -258,39 +259,60 @@ DCResultVoid __dc_da_append_values(DCDynArr* darr, usize count, DCDynVal values[
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_append(DCDynArr* darr, DCDynArr* from);
+DCResVoid dc_da_append(DCDynArr* darr, DCDynArr* from);
 
 /**
  * Returns a pointer to an element of a dynamic array by its index
  *
  * @return a pointer to dynamic value or an error
  */
-DCResultDv dc_da_get(DCDynArr* darr, usize index);
+DCResDv dc_da_get(DCDynArr* darr, usize index);
+
+/**
+ * Checks whether two given pointers to dynamic values are equal or not
+ *
+ * @return bool or error
+ */
+DCResBool dc_dv_eq(DCDynVal* dv1, DCDynVal* dv2);
+
+/**
+ * Checks whether a pointer to a dynamic values is equal to
+ * the given dynamic value or not
+ *
+ * @return bool or error
+ */
+DCResBool dc_dv_eq2(DCDynVal* dv1, DCDynVal dv2);
 
 /**
  * Checks whether two given dynamic values are equal or not
  *
  * @return bool or error
  */
-DCResultBool dc_dv_eq(DCDynVal* dv1, DCDynVal* dv2);
+DCResBool dc_dv_eq3(DCDynVal dv1, DCDynVal dv2);
 
 /**
  * Searches for given element (a pointer to a dynamic value) in an array
  *
+ * @param dv_eq_fn is a function that compares custom extra types added to
+ *                 dynamic value
+ *
  * @return index or error
  *
  * NOTE: error code 6 means not found, other error types might happen as well
  */
-DCResultUsize dc_da_findp(DCDynArr* darr, DCDynVal* el);
+DCResUsize dc_da_findp(DCDynArr* darr, DCDynVal* el, DCDvEqFn dv_eq_fn);
 
 /**
  * Searches for given element (a literal dynamic value) in an array
  *
+ * @param dv_eq_fn is a function that compares custom extra types added to
+ *                 dynamic value
+ *
  * @return index or error
  *
  * NOTE: error code 6 means not found, other error types might happen as well
  */
-DCResultUsize dc_da_find(DCDynArr* darr, DCDynVal el);
+DCResUsize dc_da_find(DCDynArr* darr, DCDynVal el, DCDvEqFn dv_eq_fn);
 
 /**
  * Frees allocated string or voidptr, does nothing for the rest of dynamic value
@@ -307,7 +329,7 @@ DCResultUsize dc_da_find(DCDynArr* darr, DCDynVal el);
  *
  * @return nothing or error
  */
-DCResultVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn);
+DCResVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn);
 
 /**
  * General function for cleanup process of a dynamic value
@@ -320,7 +342,7 @@ DCResultVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn);
  *
  * @return nothing or error
  */
-DCResultVoid __dc_dv_free(voidptr dv);
+DCResVoid __dc_dv_free(voidptr dv);
 
 /**
  * Frees all the dynamic values of the given dynamic array and then the array
@@ -328,7 +350,7 @@ DCResultVoid __dc_dv_free(voidptr dv);
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_free(DCDynArr* darr);
+DCResVoid dc_da_free(DCDynArr* darr);
 
 /**
  * General function for cleanup process of a dynamic array
@@ -341,41 +363,47 @@ DCResultVoid dc_da_free(DCDynArr* darr);
  *
  * @return nothing or error
  */
-DCResultVoid __dc_da_free(voidptr darr);
+DCResVoid __dc_da_free(voidptr darr);
 
 /**
  * Tries to delete an element by index in the given darr
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_delete(DCDynArr* darr, usize index);
+DCResVoid dc_da_delete(DCDynArr* darr, usize index);
 
 /**
  * Tries to delete an element by pointer in the given darr
  *
+ * @param dv_eq_fn is a function that compares custom extra types added to
+ *                 dynamic value
+ *
  * NOTE: it first tries to find the item then it will delete it, so an error
  * with code 6 (not found) can happen.
  *
  * @return nothing or error (including code 6 -> not found)
  */
-DCResultVoid dc_da_delete_elp(DCDynArr* darr, DCDynVal* el);
+DCResVoid dc_da_delete_elp(DCDynArr* darr, DCDynVal* el, DCDvEqFn dv_eq_fn);
 
 /**
  * Tries to delete an element in the given darr
  *
+ * @param dv_eq_fn is a function that compares custom extra types added to
+ *                 dynamic value
+ *
  * NOTE: it first tries to find the item then it will delete it, so an error
  * with code 6 (not found) can happen.
  *
  * @return nothing or error (including code 6 -> not found)
  */
-DCResultVoid dc_da_delete_el(DCDynArr* darr, DCDynVal el);
+DCResVoid dc_da_delete_el(DCDynArr* darr, DCDynVal el, DCDvEqFn dv_eq_fn);
 
 /**
  * Inserts given value at the given `start_index` (resize might happen)
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_insert(DCDynArr* darr, usize index, DCDynVal value);
+DCResVoid dc_da_insert(DCDynArr* darr, usize index, DCDynVal value);
 
 /**
  * Inserts multiple values at once at the given `start_index` (resize might
@@ -385,7 +413,7 @@ DCResultVoid dc_da_insert(DCDynArr* darr, usize index, DCDynVal value);
  *
  * @return nothing or error
  */
-DCResultVoid __dc_da_insert_values(DCDynArr* darr, usize start_index, usize count, DCDynVal values[]);
+DCResVoid __dc_da_insert_values(DCDynArr* darr, usize start_index, usize count, DCDynVal values[]);
 
 /**
  * Inserts items from a given `from` array to the original `darr` array at the
@@ -393,7 +421,7 @@ DCResultVoid __dc_da_insert_values(DCDynArr* darr, usize start_index, usize coun
  *
  * @return nothing or error
  */
-DCResultVoid dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from);
+DCResVoid dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -406,7 +434,7 @@ DCResultVoid dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_i8_da_to_flat_arr(DCDynArr* arr, i8** out_arr, bool must_fail);
+DCResUsize dc_i8_da_to_flat_arr(DCDynArr* arr, i8** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -419,7 +447,7 @@ DCResultUsize dc_i8_da_to_flat_arr(DCDynArr* arr, i8** out_arr, bool must_fail);
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_i16_da_to_flat_arr(DCDynArr* arr, i16** out_arr, bool must_fail);
+DCResUsize dc_i16_da_to_flat_arr(DCDynArr* arr, i16** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -432,7 +460,7 @@ DCResultUsize dc_i16_da_to_flat_arr(DCDynArr* arr, i16** out_arr, bool must_fail
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_i32_da_to_flat_arr(DCDynArr* arr, i32** out_arr, bool must_fail);
+DCResUsize dc_i32_da_to_flat_arr(DCDynArr* arr, i32** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -445,7 +473,7 @@ DCResultUsize dc_i32_da_to_flat_arr(DCDynArr* arr, i32** out_arr, bool must_fail
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_i64_da_to_flat_arr(DCDynArr* arr, i64** out_arr, bool must_fail);
+DCResUsize dc_i64_da_to_flat_arr(DCDynArr* arr, i64** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -458,7 +486,7 @@ DCResultUsize dc_i64_da_to_flat_arr(DCDynArr* arr, i64** out_arr, bool must_fail
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_u8_da_to_flat_arr(DCDynArr* arr, u8** out_arr, bool must_fail);
+DCResUsize dc_u8_da_to_flat_arr(DCDynArr* arr, u8** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -471,7 +499,7 @@ DCResultUsize dc_u8_da_to_flat_arr(DCDynArr* arr, u8** out_arr, bool must_fail);
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_u16_da_to_flat_arr(DCDynArr* arr, u16** out_arr, bool must_fail);
+DCResUsize dc_u16_da_to_flat_arr(DCDynArr* arr, u16** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -484,7 +512,7 @@ DCResultUsize dc_u16_da_to_flat_arr(DCDynArr* arr, u16** out_arr, bool must_fail
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_u32_da_to_flat_arr(DCDynArr* arr, u32** out_arr, bool must_fail);
+DCResUsize dc_u32_da_to_flat_arr(DCDynArr* arr, u32** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -497,7 +525,7 @@ DCResultUsize dc_u32_da_to_flat_arr(DCDynArr* arr, u32** out_arr, bool must_fail
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_u64_da_to_flat_arr(DCDynArr* arr, u64** out_arr, bool must_fail);
+DCResUsize dc_u64_da_to_flat_arr(DCDynArr* arr, u64** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -510,7 +538,7 @@ DCResultUsize dc_u64_da_to_flat_arr(DCDynArr* arr, u64** out_arr, bool must_fail
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_f32_da_to_flat_arr(DCDynArr* arr, f32** out_arr, bool must_fail);
+DCResUsize dc_f32_da_to_flat_arr(DCDynArr* arr, f32** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -523,7 +551,7 @@ DCResultUsize dc_f32_da_to_flat_arr(DCDynArr* arr, f32** out_arr, bool must_fail
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_f64_da_to_flat_arr(DCDynArr* arr, f64** out_arr, bool must_fail);
+DCResUsize dc_f64_da_to_flat_arr(DCDynArr* arr, f64** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -536,7 +564,7 @@ DCResultUsize dc_f64_da_to_flat_arr(DCDynArr* arr, f64** out_arr, bool must_fail
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_uptr_da_to_flat_arr(DCDynArr* arr, uptr** out_arr, bool must_fail);
+DCResUsize dc_uptr_da_to_flat_arr(DCDynArr* arr, uptr** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -549,7 +577,7 @@ DCResultUsize dc_uptr_da_to_flat_arr(DCDynArr* arr, uptr** out_arr, bool must_fa
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_char_da_to_flat_arr(DCDynArr* arr, char** out_arr, bool must_fail);
+DCResUsize dc_char_da_to_flat_arr(DCDynArr* arr, char** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -562,7 +590,7 @@ DCResultUsize dc_char_da_to_flat_arr(DCDynArr* arr, char** out_arr, bool must_fa
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_size_da_to_flat_arr(DCDynArr* arr, size** out_arr, bool must_fail);
+DCResUsize dc_size_da_to_flat_arr(DCDynArr* arr, size** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -575,7 +603,7 @@ DCResultUsize dc_size_da_to_flat_arr(DCDynArr* arr, size** out_arr, bool must_fa
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_usize_da_to_flat_arr(DCDynArr* arr, usize** out_arr, bool must_fail);
+DCResUsize dc_usize_da_to_flat_arr(DCDynArr* arr, usize** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -588,7 +616,7 @@ DCResultUsize dc_usize_da_to_flat_arr(DCDynArr* arr, usize** out_arr, bool must_
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_string_da_to_flat_arr(DCDynArr* arr, string** out_arr, bool must_fail);
+DCResUsize dc_string_da_to_flat_arr(DCDynArr* arr, string** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -601,7 +629,7 @@ DCResultUsize dc_string_da_to_flat_arr(DCDynArr* arr, string** out_arr, bool mus
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_voidptr_da_to_flat_arr(DCDynArr* arr, voidptr** out_arr, bool must_fail);
+DCResUsize dc_voidptr_da_to_flat_arr(DCDynArr* arr, voidptr** out_arr, bool must_fail);
 
 /**
  * Converts given array to actual array of literal values in dynamic values
@@ -614,7 +642,20 @@ DCResultUsize dc_voidptr_da_to_flat_arr(DCDynArr* arr, voidptr** out_arr, bool m
  *
  * @return the number of exported values or error
  */
-DCResultUsize dc_fileptr_da_to_flat_arr(DCDynArr* arr, fileptr** out_arr, bool must_fail);
+DCResUsize dc_fileptr_da_to_flat_arr(DCDynArr* arr, fileptr** out_arr, bool must_fail);
+
+/**
+ * Converts given array to actual array of literal values in dynamic values
+ * supposing all or most of the values are of a same type (see `must_fail`
+ * parameter)
+ *
+ * @param must_fail when true causes the process to break with error code -1
+ * when receives any type other than DCStringView, when false the unmatched types
+ * will be ignored
+ *
+ * @return the number of exported values or error
+ */
+DCResUsize dc_DCStringView_da_to_flat_arr(DCDynArr* arr, DCStringView** out_arr, bool must_fail);
 
 // ***************************************************************************************
 
@@ -630,13 +671,13 @@ DCResultUsize dc_fileptr_da_to_flat_arr(DCDynArr* arr, fileptr** out_arr, bool m
  * @param key_cmp_fn is the function that compares a provided key and keys in
  * the buckets
  *
- * @param element_free_fn as they values are dynamic values if they must be
+ * @param key_value_free_fn as each hash key_value is saved as a dynamic value if they must be
  * freed using special process this is the parameter to be provided
  *
  * @return nothing or error
  */
-DCResultVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn,
-                        DCDynValFreeFn element_free_fn);
+DCResVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn,
+                     DCHtKeyValuePairFreeFn key_value_free_fn);
 
 /**
  * Creates, allocates, initializes and returns a pointer to hash table
@@ -645,21 +686,21 @@ DCResultVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn, DCKey
  *
  * NOTE: Allocates memory
  */
-DCResultHt dc_ht_new(usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn, DCDynValFreeFn element_free_fn);
+DCResHt dc_ht_new(usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn, DCHtKeyValuePairFreeFn key_value_free_fn);
 
 /**
  * Frees the given hash table and all the values
  *
  * @return nothing or error
  */
-DCResultVoid dc_ht_free(DCHashTable* ht);
+DCResVoid dc_ht_free(DCHashTable* ht);
 
 /**
  * General free function for cleanup process see `dc_cleanup_push_ht` in macros
  *
  * @return nothing or error
  */
-DCResultVoid __dc_ht_free(voidptr ht);
+DCResVoid __dc_ht_free(voidptr ht);
 
 /**
  * Searches for the key and provides the value
@@ -669,48 +710,60 @@ DCResultVoid __dc_ht_free(voidptr ht);
  *
  * @return index of the value in its bucket or error
  */
-DCResultUsize dc_ht_find_by_key(DCHashTable* ht, voidptr key, DCDynVal** out_result);
+DCResUsize dc_ht_find_by_key(DCHashTable* ht, DCDynVal key, DCDynVal** out_result);
 
 /**
  * Sets a value for the given key
  *
+ * @param set_status indicates the action that must be taken when setting the key_value see `DCHashTableSetStatus`, in case of
+ * failure error code 7 will be returned
+ *
  * @return nothing or error
  */
-DCResultVoid dc_ht_set(DCHashTable* ht, voidptr key, DCDynVal value);
+DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSetStatus set_status);
 
 /**
  * Inserts multiple key/values at once
+ *
+ * @param set_status indicates the action that must be taken when setting the key_value see `DCHashTableSetStatus`, in case of
+ * failure error code 7 will be returned
  *
  * NOTE: see `dc_ht_set_multiple` macro in macro.h for easy addition without
  * providing count
  *
  * @return nothing or error
  */
-DCResultVoid __dc_ht_set_multiple(DCHashTable* ht, usize count, DCHashEntry entries[]);
+DCResVoid __dc_ht_set_multiple(DCHashTable* ht, usize count, DCKeyValuePair entries[], DCHashTableSetStatus set_status);
 
 /**
  * Merges and overwrites the key/values from the `from` hash table to the
  * original `ht` hash table
  *
+ * @param set_status indicates the action that must be taken when setting the key_value see `DCHashTableSetStatus`, in case of
+ * failure error code 7 will be returned
+ *
  * @return nothing or error
  */
-DCResultVoid dc_ht_merge(DCHashTable* ht, DCHashTable* from);
+DCResVoid dc_ht_merge(DCHashTable* ht, DCHashTable* from, DCHashTableSetStatus set_status);
 
 /**
  * Deletes the given key if key does not exists return false
  *
  * @return true if key exists, false if it doesn't or error
  */
-DCResultBool dc_ht_delete(DCHashTable* ht, voidptr key);
+DCResBool dc_ht_delete(DCHashTable* ht, DCDynVal key);
 
 /**
- * Exports all the stored keys to the provided `out_arr`
+ * Exports pointers to all the stored keys to the provided `out_arr` terminated with
+ * dynamic value of null `dc_dv_nullptr()`
  *
  * @return the number of exported keys or error
  *
+ * NOTE: Making changes in the array's element can tend into undefined behavior
+ *
  * NOTE: Allocates memory
  */
-DCResultUsize dc_ht_keys(DCHashTable* ht, voidptr** out_arr);
+DCResUsize dc_ht_keys(DCHashTable* ht, DCDynVal** out_arr);
 
 // ***************************************************************************************
 
@@ -719,7 +772,7 @@ DCResultUsize dc_ht_keys(DCHashTable* ht, voidptr** out_arr);
  *
  * @return a literal DCStringView or error
  */
-DCResultSv dc_sv_create(string base, usize start, usize length);
+DCResSv dc_sv_create(string base, usize start, usize length);
 
 /**
  * Renders the string view into the cstr field or returns it if it is already
@@ -727,14 +780,14 @@ DCResultSv dc_sv_create(string base, usize start, usize length);
  *
  * @return string or error
  */
-DCResultString dc_sv_as_cstr(DCStringView* sv);
+DCResString dc_sv_as_cstr(DCStringView* sv);
 
 /**
  * Frees the string view's cstr field if it is initiated
  *
  * @return nothing or error
  */
-DCResultVoid dc_sv_free(DCStringView* sv);
+DCResVoid dc_sv_free(DCStringView* sv);
 
 // ***************************************************************************************
 
@@ -745,7 +798,7 @@ DCResultVoid dc_sv_free(DCStringView* sv);
  *
  * NOTE: Allocates memory
  */
-DCResultUsize dc_sprintf(string* str, string fmt, ...) __dc_attribute((format(printf, 2, 3)));
+DCResUsize dc_sprintf(string* str, string fmt, ...) __dc_attribute((format(printf, 2, 3)));
 
 /**
  * Appends the given string `str` with given formats and data
@@ -754,7 +807,7 @@ DCResultUsize dc_sprintf(string* str, string fmt, ...) __dc_attribute((format(pr
  *
  * NOTE: Allocates memory when str is empty or reallocates it
  */
-DCResultUsize dc_sappend(string* str, const string fmt, ...) __dc_attribute((format(printf, 2, 3)));
+DCResUsize dc_sappend(string* str, const string fmt, ...) __dc_attribute((format(printf, 2, 3)));
 
 /**
  * Duplicates given string and returns it
@@ -763,35 +816,35 @@ DCResultUsize dc_sappend(string* str, const string fmt, ...) __dc_attribute((for
  *
  * NOTE: Allocates memory
  */
-DCResultString dc_strdup(const string in);
+DCResString dc_strdup(const string in);
 
 /**
  * Converts the current value of the dynamic value to string
  *
  * @return string or error
  */
-DCResultString dc_tostr_dv(DCDynVal* dv);
+DCResString dc_tostr_dv(DCDynVal* dv);
 
 /**
  * Prints the current value of the dynamic value (no new line)
  *
  * @return nothing or error
  */
-DCResultVoid dc_dv_print(DCDynVal* dv);
+DCResVoid dc_dv_print(DCDynVal* dv);
 
 /**
  * Prints the current value of the dynamic value (with new line)
  *
  * @return nothing or error
  */
-DCResultVoid dc_dv_println(DCDynVal* dv);
+DCResVoid dc_dv_println(DCDynVal* dv);
 
 /**
  * Replaces all the '\' with '/' in the original provided path
  *
  * @return nothing or error
  */
-DCResultVoid dc_normalize_path_to_posix(string path);
+DCResVoid dc_normalize_path_to_posix(string path);
 
 /**
  * Replaces the filename in the path with the given filename and returns a new
@@ -801,7 +854,7 @@ DCResultVoid dc_normalize_path_to_posix(string path);
  *
  * NOTE: Allocates memory
  */
-DCResultString dc_replace_file_in_path(const string path, const string file_name);
+DCResString dc_replace_file_in_path(const string path, const string file_name);
 
 /**
  * Returns address of user's home directory
@@ -862,7 +915,7 @@ void dc_cleanup_pool_init2(usize count, usize batch_capacity);
  *
  * @return nothing or error
  */
-DCResultVoid dc_cleanup_batch_run(DCCleanupBatch* batch);
+DCResVoid dc_cleanup_batch_run(DCCleanupBatch* batch);
 
 /**
  * Performs the whole pool or selected cleanup or nothing
@@ -890,7 +943,7 @@ void dc_cleanup_push2(DCCleanupBatch* batch, voidptr element, DCCleanupFn cleanu
  * NOTE: Non-Null allocated pointer must be sent otherwise undefined behavior
  * might happen
  */
-DCResultVoid dc_free(voidptr variable);
+DCResVoid dc_free(voidptr variable);
 
 /**
  * Frees the error message of result variables if they have any allocated error
@@ -903,7 +956,7 @@ DCResultVoid dc_free(voidptr variable);
  *
  * NOTE: Checkout aliases.h if you want to create your own compatible type
  */
-DCResultVoid dc_result_free(voidptr res_ptr);
+DCResVoid dc_res_free(voidptr res_ptr);
 
 // ***************************************************************************************
 // * Files
@@ -913,7 +966,7 @@ DCResultVoid dc_result_free(voidptr res_ptr);
  * Tries to open a file and return proper fileptr or error code with error
  * message
  */
-DCResultFileptr dc_file_open(const string file, const string mode);
+DCResFileptr dc_file_open(const string file, const string mode);
 
 // ***************************************************************************************
 // * ERROR LOGS

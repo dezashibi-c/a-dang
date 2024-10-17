@@ -17,7 +17,7 @@
 #ifndef DANG_SCANNER_H
 #define DANG_SCANNER_H
 
-#include "dcommon/dcommon.h"
+#include "types.h"
 
 #include "token.h"
 
@@ -27,11 +27,9 @@ typedef struct
     usize pos;
     usize read_pos;
     char c;
-    DCDynArr tokens;
 } DScanner;
 
-DCResultVoid dang_scanner_init(DScanner* s, const string input);
-DCResultVoid dang_scanner_free(DScanner* s);
-ResultToken dang_scanner_next_token(DScanner* s);
+DCResVoid dang_scanner_init(DScanner* s, const string input);
+ResTok dang_scanner_next_token(DScanner* s);
 
 #endif // DANG_SCANNER_H

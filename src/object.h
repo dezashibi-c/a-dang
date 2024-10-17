@@ -17,7 +17,7 @@
 #ifndef DANG_OBJECT_H
 #define DANG_OBJECT_H
 
-#include "dcommon/dcommon.h"
+#include "types.h"
 
 // ***************************************************************************************
 // * TYPES
@@ -32,17 +32,21 @@ typedef enum
     DOBJ_STRING,
     DOBJ_ARRAY,
     DOBJ_NULL,
+
+    DOBJ__MAX,
 } DObjType;
 
 typedef struct DEnv
 {
     DCHashTable store;
     struct DEnv* outer;
+
+    DCDynArr nodes;
 } DEnv;
 
-DCResultType(DEnv*, DEnvResult);
+DCResType(DEnv*, DEnvResult);
 
-typedef struct
+struct DObj
 {
     DObjType type;
     DCDynVal dv;
@@ -50,22 +54,22 @@ typedef struct
 
     DEnv* env;
     DCDynArr children;
-} DObject;
+};
 
-DCResultType(DObject, DObjResult);
-DCResultType(DObject*, DObjPResult);
-
-typedef DObjResult (*DBuiltinFunction)(DObject* call_obj);
+extern DObj dobj_null;
+extern DObj dobj_null_return;
+extern DObj dobj_true;
+extern DObj dobj_false;
 
 // ***************************************************************************************
 // * MACROS
 // ***************************************************************************************
 
 
-#define DECL_DBUILTIN_FUNCTION(NAME) DObjResult NAME(DObject* call_obj)
+#define DECL_DBUILTIN_FUNCTION(NAME) ResObj NAME(DObj* call_obj)
 
 #define dobj(OBJ_TYPE, VAL_TYPE, VAL)                                                                                          \
-    (DObject)                                                                                                                  \
+    (DObj)                                                                                                                     \
     {                                                                                                                          \
         .type = OBJ_TYPE, .dv = dc_dv(VAL_TYPE, VAL), .is_returned = false, .env = NULL, .children = (DCDynArr)                \
         {                                                                                                                      \
@@ -74,44 +78,30 @@ typedef DObjResult (*DBuiltinFunction)(DObject* call_obj);
     }
 
 #define dobj_fn(NODE, DENV)                                                                                                    \
-    (DObject)                                                                                                                  \
+    (DObj)                                                                                                                     \
     {                                                                                                                          \
-        .type = DOBJ_FUNCTION, .dv = dc_dv(voidptr, NODE), .is_returned = false, .env = (DENV), .children = (DCDynArr)         \
+        .type = DOBJ_FUNCTION, .dv = dc_dv(DNodePtr, NODE), .is_returned = false, .env = (DENV), .children = (DCDynArr)        \
         {                                                                                                                      \
             0                                                                                                                  \
         }                                                                                                                      \
     }
 
 #define dobj_bfn(FN)                                                                                                           \
-    (DObject)                                                                                                                  \
+    (DObj)                                                                                                                     \
     {                                                                                                                          \
-        .type = DOBJ_BUILTIN, .dv = dc_dv(voidptr, *(voidptr*)(&FN)), .is_returned = false, .env = NULL,                       \
-        .children = (DCDynArr)                                                                                                 \
+        .type = DOBJ_BUILTIN, .dv = dc_dv(DBuiltinFunction, FN), .is_returned = false, .env = NULL, .children = (DCDynArr)     \
         {                                                                                                                      \
             0                                                                                                                  \
         }                                                                                                                      \
     }
 
-#define dobj_get_node(DOBJ) ((DNode*)dc_dv_as((DOBJ).dv, voidptr))
+#define dobj_get_node(DOBJ) (dc_dv_as((DOBJ).dv, DNodePtr))
 
 #define dobj_int(INT_VAL) dobj(DOBJ_INTEGER, i64, INT_VAL)
 #define dobj_string(STR_VAL) dobj(DOBJ_STRING, string, STR_VAL)
 #define dobj_bool(BOOL_VAL) dobj(DOBJ_BOOLEAN, u8, BOOL_VAL)
 
-#define dobj_mark_as_return(DOBJ) (DOBJ).is_returned = true
-
-#define dobj_return_null()                                                                                                     \
-    (DObject)                                                                                                                  \
-    {                                                                                                                          \
-        .type = DOBJ_NULL, .dv = dc_dv(voidptr, NULL), .is_returned = true, .env = NULL, .children = (DCDynArr)                \
-        {                                                                                                                      \
-            0                                                                                                                  \
-        }                                                                                                                      \
-    }
-
-#define dobj_null() dobj(DOBJ_NULL, voidptr, NULL)
-#define dobj_true() dobj_bool(true)
-#define dobj_false() dobj_bool(false)
+#define dobj_mark_as_return(DOBJ) (DOBJ)->is_returned = true
 
 #define dobj_as_int(DOBJ) (dc_dv_as((DOBJ).dv, i64))
 #define dobj_as_bool(DOBJ) (!!dc_dv_as((DOBJ).dv, u8))
@@ -121,9 +111,9 @@ typedef DObjResult (*DBuiltinFunction)(DObject* call_obj);
 #define dobj_is_string(DOBJ) ((DOBJ).type == DOBJ_STRING)
 #define dobj_is_bool(DOBJ) ((DOBJ).type == DOBJ_BOOLEAN)
 #define dobj_is_array(DOBJ) ((DOBJ).type == DOBJ_ARRAY)
-#define dobj_is_return(DOBJ) ((DOBJ).is_returned)
+#define dobj_is_return(DOBJ) ((DOBJ)->is_returned)
 #define dobj_is_null(DOBJ) ((DOBJ).type == DOBJ_NULL)
 
-#define dobj_child(DOBJ, INDEX) ((DObject*)dc_da_get_as((DOBJ)->children, INDEX, voidptr))
+#define dobj_child(DOBJ, INDEX) (dc_da_get_as((DOBJ)->children, INDEX, DObjPtr))
 
 #endif // DANG_OBJECT_H

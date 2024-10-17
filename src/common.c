@@ -16,7 +16,7 @@
 
 #define DCOMMON_IMPL
 
-#include "dcommon/dcommon.h"
+#include "types.h"
 
 #include "common.h"
 

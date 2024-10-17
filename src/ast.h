@@ -17,7 +17,7 @@
 #ifndef DANG_AST_H
 #define DANG_AST_H
 
-#include "dcommon/dcommon.h"
+#include "types.h"
 
 #include "token.h"
 
@@ -65,7 +65,7 @@ typedef enum
     ((NODE_TYPE) == DN_PROGRAM || dn_group_is_expression(NODE_TYPE) || dn_group_is_statement(NODE_TYPE) ||                     \
      dn_group_is_literal(NODE_TYPE))
 
-#define dn_child(NODE, INDEX) ((DNode*)dc_da_get_as(NODE->children, INDEX, voidptr))
+#define dn_child(NODE, INDEX) (dc_da_get_as(NODE->children, INDEX, DNodePtr))
 
 #define dn_child_dv(NODE, INDEX) (dc_da_get2(NODE->children, INDEX))
 
@@ -73,31 +73,29 @@ typedef enum
 
 #define dn_child_count(NODE) ((NODE)->children.count)
 
-#define dn_text(NODE) (NODE)->token->text
+#define dn_data(NODE) (NODE)->data
 
-#define dn_child_push(NODE, CHILD) dc_da_push(&NODE->children, dc_dva(voidptr, CHILD))
+#define dn_data_as(NODE, TYPE) dc_dv_as(dn_data(NODE), TYPE)
 
-#define dn_val_push(NODE, TYPE, VALUE) dc_da_push(&NODE->children, dc_dv(TYPE, VALUE))
+#define dn_child_push(NODE, CHILD) dc_da_push(&NODE->children, dc_dva(DNodePtr, CHILD))
 
-#define dn_vala_push(NODE, TYPE, VALUE) dc_da_push(&NODE->children, dc_dva(TYPE, VALUE))
-
-typedef struct
+struct DNode
 {
     DNType type;
-    DToken* token;
-    string text;
+    DCDynVal data;
     DCDynArr children;
-} DNode;
+};
 
-DCResultType(DNode*, ResultDNode);
+DCResType(DNode*, ResNode);
 
 string tostr_DNType(DNType dnt);
-void dn_string_init(DNode* dn);
+DCResVoid dang_node_inspect(DNode* dn, string* result);
 
-ResultDNode dn_new(DNType type, DToken* token, bool has_children);
-DCResultVoid dn_program_free(DNode* program);
-DCResultVoid dn_free(DNode* dn);
+ResNode dn_new(DNType type, DCDynVal data, bool has_children);
+DCResVoid dn_program_free(DNode* program);
+DCResVoid dn_free(DNode* dn);
+
 DC_CLEANUP_FN_DECL(dn_cleanup);
-DCResultVoid dn_child_free(DCDynVal* child);
+DC_DV_FREE_FN_DECL(dn_child_free);
 
 #endif // DANG_AST_H

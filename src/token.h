@@ -17,7 +17,7 @@
 #ifndef DANG_TOKEN_H
 #define DANG_TOKEN_H
 
-#include "dcommon/dcommon.h"
+#include "types.h"
 
 typedef enum
 {
@@ -62,20 +62,19 @@ typedef enum
     TOK_RET,
 
     TOK_TYPE_MAX,
-} DTokenType;
+} DTokType;
 
 typedef struct
 {
-    DTokenType type;
+    DTokType type;
     DCStringView text;
-} DToken;
+} DTok;
 
-DCResultType(DToken*, ResultToken);
+DCResType(DTok, ResTok);
 
-string tostr_DTokenType(DTokenType dtt);
-DTokenType is_keyword(DCStringView* text);
+string tostr_DTokType(DTokType dtt);
+DTokType is_keyword(DCStringView* text);
 
-ResultToken token_create(DTokenType type, string str, usize start, usize len);
-DCResultVoid token_free(DToken* t);
+ResTok token_create(DTokType type, string str, usize start, usize len);
 
 #endif // DANG_TOKEN_H

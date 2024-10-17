@@ -20,19 +20,19 @@
 #include "ast.h"
 #include "object.h"
 
-DObjResult dang_eval(DNode* dn, DEnv* de);
+ResObj dang_eval(DNode* dn, DEnv* de);
 
-DCResultVoid dang_obj_init(DObject* dobj, DObjType dobjt, DCDynVal dv, DEnv* de, bool is_returned, bool has_children);
-DObjPResult dang_obj_new(DObjType dobjt, DCDynVal dv, DEnv* de, bool is_returned, bool has_children);
-DObjPResult dang_obj_new_from(DObject* dobj);
-DCResultVoid dang_obj_free(DObject* dobj);
+DCResVoid dang_obj_init(DObj* dobj, DObjType dobjt, DCDynVal dv, DEnv* de, bool is_returned, bool has_children);
+ResObj dang_obj_new(DObjType dobjt, DCDynVal dv, DEnv* de, bool is_returned, bool has_children);
+ResObj dang_obj_copy(DObj* dobj);
+DCResVoid dang_obj_free(DObj* dobj);
 DC_DV_FREE_FN_DECL(dobj_child_free);
 
 DEnvResult dang_env_new();
 DEnvResult dang_env_new_enclosed(DEnv* outer);
-DCResultVoid dang_env_free(DEnv* de);
-DObjPResult dang_env_get(DEnv* de, string name);
-DObjPResult dang_env_set(DEnv* de, string name, DObject* dobj);
+DCResVoid dang_env_free(DEnv* de);
+ResObj dang_env_get(DEnv* de, string name);
+ResObj dang_env_set(DEnv* de, string name, DObj* dobj, bool update_only);
 
 string tostr_DObjType(DObjType dobjt);
 

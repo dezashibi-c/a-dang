@@ -20,6 +20,8 @@
 
 #define DANG_REPL_EXIT ":q"
 
+#if 0
+
 static DC_DV_FREE_FN_DECL(_program_free)
 {
     DC_RES_void();
@@ -34,19 +36,20 @@ static DC_DV_FREE_FN_DECL(_program_free)
     dc_res_ret();
 }
 
-static void print_obj(DObject* obj)
+static void print_obj(DObj* obj)
 {
     if (dobj_is_bool(*obj))
         printf("%s", dc_tostr_bool(dobj_as_bool(*obj)));
     else if (dobj_is_array(*obj))
     {
         printf("%s", "[ ");
-        dc_da_for(obj->children)
-        {
+
+        dc_da_for(obj->children, {
             print_obj(dobj_child(obj, _idx));
 
             if (_idx < obj->children.count - 1) printf("%s", ", ");
-        }
+        });
+
         printf("%s", " ]");
     }
     else if (dobj_is_null(*obj))
@@ -71,7 +74,7 @@ static void repl()
     }
 
     DEnv* de = dc_res_val2(de_res);
-    DCResultDa programs_res = dc_da_new(_program_free);
+    DCResDa programs_res = dc_da_new(_program_free);
     if (dc_res_is_err2(programs_res))
     {
         dc_res_err_log2(programs_res, "cannot initialize programs array");
@@ -99,7 +102,7 @@ static void repl()
         dang_scanner_init(&s, line);
 
         DParser p;
-        DCResultVoid res = dang_parser_init(&p, &s);
+        DCResVoid res = dang_parser_init(&p, &s);
 
         if (dc_res_is_err2(res))
         {
@@ -109,7 +112,7 @@ static void repl()
             continue;
         }
 
-        ResultDNode program_res = dang_parser_parse_program(&p);
+        ResNode program_res = dang_parser_parse_program(&p);
 
         dc_da_push(programs, dc_dva(voidptr, dc_res_val2(program_res)));
 
@@ -126,7 +129,7 @@ static void repl()
             {
                 printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", dc_res_val2(program_res)->text);
 
-                DObjResult evaluated = dang_eval(dc_res_val2(program_res), de);
+                ResObj evaluated = dang_eval(dc_res_val2(program_res), de);
                 if (dc_res_is_err2(evaluated))
                 {
                     dc_res_err_log2(evaluated, DC_FG_LRED "Evaluation error");
@@ -167,5 +170,12 @@ int main(int argc, string argv[])
         fprintf(stderr, "Usage: dang [path]\n");
     }
 
+    return 0;
+}
+
+#endif
+
+int main()
+{
     return 0;
 }

@@ -16,7 +16,7 @@
 
 #include "token.h"
 
-string tostr_DTokenType(DTokenType dtt)
+string tostr_DTokType(DTokType dtt)
 {
     switch (dtt)
     {
@@ -61,7 +61,7 @@ string tostr_DTokenType(DTokenType dtt)
     return NULL;
 }
 
-DTokenType is_keyword(DCStringView* text)
+DTokType is_keyword(DCStringView* text)
 {
     if (dc_sv_str_eq((*text), "fn"))
         return TOK_FUNCTION;
@@ -88,9 +88,9 @@ DTokenType is_keyword(DCStringView* text)
         return TOK_IDENT;
 }
 
-ResultToken token_create(DTokenType type, string str, usize start, usize len)
+ResTok token_create(DTokType type, string str, usize start, usize len)
 {
-    DC_RES2(ResultToken);
+    DC_RES2(ResTok);
 
     if (type != TOK_EOF && (!str || start >= strlen(str)))
     {
@@ -99,25 +99,13 @@ ResultToken token_create(DTokenType type, string str, usize start, usize len)
         dc_res_ret_e(1, "Only TOK_EOF can be created with NULL string");
     }
 
-    DToken* token = (DToken*)malloc(sizeof(DToken));
-    if (!token)
-    {
-        dc_dbg_log("Token memory allocation has failed");
+    DTok token = (DTok){0};
 
-        dc_res_ret_e(2, "Token memory allocation has failed");
-    }
-
-    DCResultSv sv_res = dc_sv_create(str, start, len);
-
+    DCResSv sv_res = dc_sv_create(str, start, len);
     dc_res_fail_if_err2(sv_res);
 
-    token->text = dc_res_val2(sv_res);
-    token->type = type;
+    token.text = dc_res_val2(sv_res);
+    token.type = type;
 
     dc_res_ret_ok(token);
-}
-
-DCResultVoid token_free(DToken* t)
-{
-    return dc_sv_free(&t->text);
 }

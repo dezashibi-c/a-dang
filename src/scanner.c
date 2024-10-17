@@ -49,9 +49,9 @@ static void skip_whitespace(DScanner* s)
     while (is_whitespace(s->c)) read_char(s);
 }
 
-static ResultToken extract_identifier(DScanner* s)
+static ResTok extract_identifier(DScanner* s)
 {
-    DC_RES2(ResultToken);
+    DC_RES2(ResTok);
 
     usize start = s->pos;
 
@@ -61,7 +61,7 @@ static ResultToken extract_identifier(DScanner* s)
 
     dc_try_fail(token_create(TOK_IDENT, s->input, start, len));
 
-    DToken* t = dc_res_val();
+    DTok* t = &dc_res_val();
 
     switch (s->input[start])
     {
@@ -79,69 +79,47 @@ static ResultToken extract_identifier(DScanner* s)
             break;
     }
 
-    dc_res_ret_ok(t);
+    dc_res_ret();
 }
 
-static ResultToken extract_number(DScanner* s)
+static ResTok extract_number(DScanner* s)
 {
-    DC_RES2(ResultToken);
-
     usize start = s->pos;
 
     while (is_digit(s->c)) read_char(s);
 
     usize len = s->pos - start;
 
-    dc_try_fail(token_create(TOK_INT, s->input, start, len));
-
-    DToken* t = dc_res_val();
-
-    dc_res_ret_ok(t);
-}
-
-static DC_DV_FREE_FN_DECL(custom_token_free)
-{
-    DC_RES_void();
-
-    switch (_value->type)
-    {
-        case dc_dvt(voidptr):
-            return token_free((DToken*)(dc_dv_as(*_value, voidptr)));
-            break;
-
-        default:
-            break;
-    }
-
-    dc_res_ret();
+    return token_create(TOK_INT, s->input, start, len);
 }
 
 // ***************************************************************************************
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-DCResultVoid dang_scanner_init(DScanner* s, const string input)
+DCResVoid dang_scanner_init(DScanner* s, const string input)
 {
     DC_RES_void();
+
+    if (!input)
+    {
+        dc_dbg_log("Cannot initialize scanner with null input");
+
+        dc_res_ret_e(dc_err_code(NV), "cannot initialize scanner with null input");
+    }
 
     s->pos = 0;
     s->read_pos = 0;
     s->input = input;
-    dc_try(dc_da_init(&s->tokens, custom_token_free));
 
     read_char(s);
 
     dc_res_ret();
 }
 
-DCResultVoid dang_scanner_free(DScanner* s)
+ResTok dang_scanner_next_token(DScanner* s)
 {
-    return dc_da_free(&s->tokens);
-}
-
-ResultToken dang_scanner_next_token(DScanner* s)
-{
-    DC_RES2(ResultToken);
+    DC_RES2(ResTok);
 
     skip_whitespace(s);
 
@@ -212,7 +190,7 @@ ResultToken dang_scanner_next_token(DScanner* s)
             usize start = s->pos;
             usize len;
 
-            DTokenType t = TOK_STRING;
+            DTokType t = TOK_STRING;
 
             while (true)
             {
@@ -256,14 +234,14 @@ ResultToken dang_scanner_next_token(DScanner* s)
                 usize start = s->pos;
                 usize len;
 
-                DTokenType t = TOK_IDENT;
+                DTokType t = TOK_IDENT;
 
                 while (true)
                 {
                     if (s->c == '"')
                     {
                         len = s->pos - start;
-                        read_char(s); // bypass ending '"'
+
                         break;
                     }
                     else if (s->c == 0 || s->c == '\n')
@@ -328,13 +306,11 @@ ResultToken dang_scanner_next_token(DScanner* s)
             if (is_letter(s->c))
             {
                 dc_try_fail(extract_identifier(s));
-                dc_da_push(&s->tokens, dc_dva(voidptr, dc_res_val()));
                 dc_res_ret();
             }
             else if (is_digit(s->c))
             {
                 dc_try_fail(extract_number(s));
-                dc_da_push(&s->tokens, dc_dva(voidptr, dc_res_val()));
                 dc_res_ret();
             }
             else
@@ -345,12 +321,10 @@ ResultToken dang_scanner_next_token(DScanner* s)
         break;
     }
 
-    dc_da_push(&s->tokens, dc_dva(voidptr, dc_res_val()));
-
-    if (dc_res_val()->type == TOK_ILLEGAL)
+    if (dc_res_val().type == TOK_ILLEGAL)
     {
-        dc_dbg_log("DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_res_val()->text));
-        dc_res_ret_ea(-1, "DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_res_val()->text));
+        dc_dbg_log("DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_res_val().text));
+        dc_res_ret_ea(-1, "DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_res_val().text));
     }
 
     read_char(s);
