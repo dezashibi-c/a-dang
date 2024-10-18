@@ -112,6 +112,8 @@ static bool perform_evaluation_tests(TestCase tests[])
         if (dc_res_is_err2(res))
         {
             dc_res_err_log2(res, "evaluation failed");
+            dang_env_free(de);
+
             return false;
         }
 
@@ -479,28 +481,30 @@ CLOVE_TEST(error_handling)
         NULL,
     };
 
-    ResEnv de_res = dang_env_new();
-
-    if (dc_res_is_err2(de_res))
-    {
-        dc_res_err_log2(de_res, "initializing environment error");
-        CLOVE_FAIL();
-    }
-
-    DEnv* de = dc_res_val2(de_res);
 
     dc_foreach(error_tests, string, {
+        ResEnv de_res = dang_env_new();
+
+        if (dc_res_is_err2(de_res))
+        {
+            dc_res_err_log2(de_res, "initializing environment error");
+            CLOVE_FAIL();
+        }
+
+        DEnv* de = dc_res_val2(de_res);
         ResObj res = test_eval(*_it, de);
         if (dc_res_is_ok2(res))
         {
             dc_log("test #" dc_fmt(usize) " error, expected input '%s' to have error result but evaluated to ok result", _idx,
                    *_it);
 
+            dang_env_free(de);
+
             CLOVE_FAIL();
         }
+        dang_env_free(de);
     });
 
-    dang_env_free(de);
 
     CLOVE_PASS();
 }
