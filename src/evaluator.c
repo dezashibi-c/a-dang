@@ -295,8 +295,6 @@ static DCResVoid eval_children_nodes(DNode* call_node, DObj* parent_result, usiz
     {
         dc_try_or_fail_with3(ResObj, arg_res, perform_evaluation_process(dn_child(call_node, i), de), {});
 
-        // todo:: do I need this? // dc_try_or_fail_with3(ResObj, arg_res, dang_obj_copy(dc_res_val2(evaluated)), {});
-
         dc_try_or_fail_with3(DCResVoid, res, dc_da_push(&parent_result->children, dc_dva(DObjPtr, dc_res_val2(arg_res))), {
             dc_dbg_log("failed to push object to parent object");
             dc_try_fail(dang_obj_free(dc_res_val2(arg_res)));
@@ -322,11 +320,7 @@ static ResEnv extend_function_env(DObj* call_obj, DNode* fn_node)
 
         string arg_name = dn_child_data_as(fn_node, _idx, string);
 
-        // todo:: Do I need this? // DObj* value = NULL;
         DObj* value = dobj_child(call_obj, _idx);
-
-        // if the number of passed arguments are not sufficient the arguments will be defined as NULL
-        // todo:: Do I need this? // if (_idx < call_obj->children.count) value = dobj_child(call_obj, _idx);
 
         dc_try_fail_temp(ResObj, dang_env_set(dc_res_val(), arg_name, value, false));
     });
