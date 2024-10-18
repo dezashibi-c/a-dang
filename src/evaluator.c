@@ -560,7 +560,6 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
             // so we start evaluating children at index 1
             dc_try_fail_temp(DCResVoid, eval_children_nodes(dn, call_obj, 1, de));
 
-
             if (fn_obj->type == DOBJ_BUILTIN)
             {
                 DBuiltinFunction fn = dc_dv_as(fn_obj->dv, DBuiltinFunction);
