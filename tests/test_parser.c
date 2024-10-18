@@ -269,6 +269,9 @@ CLOVE_TEST(expressions)
         "!(true == true)",
         "(!(true == true))\n",
 
+        "[1]",
+        "[1]\n",
+
         "[1 2 'hello' 1 - 1, -1]",
         "[1, 2, \"hello\", (1 - 1), (-1)]\n",
 

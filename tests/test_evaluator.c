@@ -13,7 +13,7 @@ typedef struct
     DObj expected;
 } TestCase;
 
-#define DC_STOPPER_TestCase ((TestCase){"", dobj_null})
+#define DC_STOPPER_TestCase ((TestCase){"", dobj(DOBJ_NULL, voidptr, NULL)})
 #define DC_IS_STOPPER_TestCase(EL) (strlen((EL).input) == 0)
 
 
@@ -103,6 +103,7 @@ static bool perform_evaluation_tests(TestCase tests[])
 
         if (dc_res_is_err2(de_res))
         {
+            dc_log("test '" dc_fmt(usize) "' failed", _idx);
             dc_res_err_log2(de_res, "initializing environment error");
             return false;
         }
@@ -111,6 +112,7 @@ static bool perform_evaluation_tests(TestCase tests[])
         ResObj res = test_eval(_it->input, de);
         if (dc_res_is_err2(res))
         {
+            dc_log("test '" dc_fmt(usize) "' failed", _idx);
             dc_res_err_log2(res, "evaluation failed");
             dang_env_free(de);
 
@@ -119,9 +121,10 @@ static bool perform_evaluation_tests(TestCase tests[])
 
         if (_it->expected.type == DOBJ_ARRAY)
             dc_action_on(!test_evaluated_array_literal(dc_res_val2(res), &_it->expected), return false,
-                         "wrong evaluation result");
+                         "array test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
         else
-            dc_action_on(!test_evaluated_literal(dc_res_val2(res), &_it->expected), return false, "wrong evaluation result");
+            dc_action_on(!test_evaluated_literal(dc_res_val2(res), &_it->expected), return false,
+                         "literal test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
 
         dang_env_free(de);
     });
@@ -165,7 +168,7 @@ CLOVE_TEST(integer_expressions)
 
         {.input = "(5 + 10 * 2 + 15 / 3) * 2 + -10", .expected = dobj_int(50)},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))
@@ -190,7 +193,7 @@ CLOVE_TEST(string_literal)
 
         {.input = "'hello' == 'hello'", .expected = dobj_true},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))
@@ -255,7 +258,7 @@ CLOVE_TEST(boolean_expressions)
 
         {.input = "(1 > 2) == false", .expected = dobj_true},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))
@@ -285,7 +288,44 @@ CLOVE_TEST(array_literal)
 
         {.input = "let a [1 2 * 2 3 + 3]; a", .expected = expected_result},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
+    };
+
+    if (perform_evaluation_tests(tests))
+        CLOVE_PASS();
+    else
+    {
+        dc_log("test has failed");
+        CLOVE_FAIL();
+    }
+}
+
+CLOVE_TEST(array_index_expressions)
+{
+    TestCase tests[] = {
+        {.input = "[1 2 3][0]", .expected = dobj_int(1)},
+
+        {.input = "[1 2 3][1]", .expected = dobj_int(2)},
+
+        {.input = "[1 2 3][2]", .expected = dobj_int(3)},
+
+        {.input = "let i 0; [1][i]", .expected = dobj_int(1)},
+
+        {.input = "[1 2 3][1 + 1]", .expected = dobj_int(3)},
+
+        {.input = "let arr [1 2 3]; arr[2]", .expected = dobj_int(3)},
+
+        {.input = "let arr [1 2 3]; arr[0] + arr[1] + arr[2]", .expected = dobj_int(6)},
+
+        {.input = "let arr [1 2 3]; let i arr[0]; arr[i]", .expected = dobj_int(2)},
+
+        {.input = "[1 2 3][99]", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
+
+        {.input = "[1 2 3][3]", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
+
+        {.input = "[1 2 3][-1]", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
+
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))
@@ -302,7 +342,7 @@ CLOVE_TEST(if_else_expressions)
     TestCase tests[] = {
         {.input = "if true { 10 }", .expected = dobj_int(10)},
 
-        {.input = "if false { 10 }", .expected = dobj_null},
+        {.input = "if false { 10 }", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
 
         {.input = "if 1 { 10 }", .expected = dobj_int(10)},
 
@@ -310,13 +350,13 @@ CLOVE_TEST(if_else_expressions)
 
         {.input = "if 1 < 2 { 10 }", .expected = dobj_int(10)},
 
-        {.input = "if 1 > 2 { 10 }", .expected = dobj_null},
+        {.input = "if 1 > 2 { 10 }", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
 
         {.input = "if 1 > 2 {\n 10 \n\n\n} else {\n\n 20 \n}\n", .expected = dobj_int(20)},
 
         {.input = "if 1 < 2 { 10 } else { 20 }", .expected = dobj_int(10)},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))
@@ -333,7 +373,7 @@ CLOVE_TEST(return_statement)
     TestCase tests[] = {
         {.input = "return 10", .expected = dobj_int(10)},
 
-        {.input = "return", .expected = dobj_null},
+        {.input = "return", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
 
         {.input = "return 10\n 9", .expected = dobj_int(10)},
 
@@ -343,7 +383,7 @@ CLOVE_TEST(return_statement)
 
         {.input = "if 10 > 1 {\n if 10 > 1 {\n return 10 \n } \n return 1 \n}", .expected = dobj_int(10)},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))
@@ -358,7 +398,7 @@ CLOVE_TEST(return_statement)
 CLOVE_TEST(let_statement)
 {
     TestCase tests[] = {
-        {.input = "let a; a", .expected = dobj_null},
+        {.input = "let a; a", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
 
         {.input = "let a 5 * 5; a", .expected = dobj_int(25)},
 
@@ -366,7 +406,7 @@ CLOVE_TEST(let_statement)
 
         {.input = "let a 5; let b a; let c a + b + 5; c", .expected = dobj_int(15)},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))
@@ -381,7 +421,7 @@ CLOVE_TEST(let_statement)
 CLOVE_TEST(functions)
 {
     TestCase tests[] = {
-        {.input = "let my_fn fn() {}; my_fn;", .expected = dobj_null},
+        {.input = "let my_fn fn() {}; my_fn;", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
 
         {.input = "let identity fn(x) { x }; identity 5", .expected = dobj_int(5)},
 
@@ -393,7 +433,7 @@ CLOVE_TEST(functions)
 
         {.input = "let add fn(x, y) { x + y }; add 5 + 5 ${add 5 5}", .expected = dobj_int(20)},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))
@@ -414,7 +454,7 @@ CLOVE_TEST(builtin_functions)
 
         {.input = "len 'hello world'", .expected = dobj_int(11)},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))
@@ -437,7 +477,7 @@ CLOVE_TEST(closures)
                   "add_two 2",
          .expected = dobj_int(4)},
 
-        {.input = "", .expected = dobj_null},
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
 
     if (perform_evaluation_tests(tests))

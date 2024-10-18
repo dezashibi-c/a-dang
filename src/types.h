@@ -29,6 +29,8 @@ DCResType(DObjPtr, ResObj);
 
 typedef ResObj (*DBuiltinFunction)(DObj* call_obj);
 
+typedef DCKeyValuePair* KeyValPtr;
+
 #define DC_DV_EXTRA_TYPES dc_dvt(DNodePtr), dc_dvt(DObjPtr), dc_dvt(DBuiltinFunction),
 #define DC_DV_EXTRA_FIELDS                                                                                                     \
     dc_dvf_decl(DNodePtr);                                                                                                     \

@@ -236,6 +236,23 @@ static ResObj eval_infix_expression(DNode* dn, DObj* left, DObj* right)
                   dc_tostr_dvt(&right->dv));
 }
 
+static ResObj eval_index_expression(DObj* left, DObj* index)
+{
+    DC_RES2(ResObj);
+
+    usize idx = (usize)(dobj_as_int(*index));
+
+    if (idx > left->children.count - 1)
+    {
+        dc_try_fail_temp(DCResVoid, dang_obj_free(left));
+        dc_try_fail_temp(DCResVoid, dang_obj_free(index));
+
+        dc_res_ret_ok(&dobj_null);
+    }
+
+    dc_res_ret_ok(dobj_child(left, idx));
+}
+
 static ResObj eval_if_expression(DNode* dn, DEnv* de)
 {
     DC_RES2(ResObj);
@@ -286,8 +303,6 @@ static ResObj eval_let_statement(DNode* dn, DEnv* de)
 static DCResVoid eval_children_nodes(DNode* call_node, DObj* parent_result, usize child_start_index, DEnv* de)
 {
     DC_RES_void();
-
-    if (dn_child_count(call_node) <= 1) dc_res_ret();
 
     // first child is the function identifier or expression
     // the rest is function argument
@@ -365,15 +380,105 @@ static DECL_DBUILTIN_FUNCTION(len)
 
     DObj* arg = dobj_child(call_obj, 0);
 
-    if (arg->type != DOBJ_STRING) dc_res_ret_ea(-1, "cannot calculate length of '%s'", tostr_DObjType(arg->type));
+    if (arg->type != DOBJ_STRING && arg->type != DOBJ_ARRAY)
+        dc_res_ret_ea(-1, "cannot calculate length of '%s'", tostr_DObjType(arg->type));
 
     i64 len = 0;
 
-    if (dobj_as_string(*arg)) len = (i64)strlen(dobj_as_string(*arg));
+    if (arg->type == DOBJ_STRING)
+    {
+        if (dobj_as_string(*arg)) len = (i64)strlen(dobj_as_string(*arg));
+    }
+    else if (arg->type == DOBJ_ARRAY)
+    {
+        len = (i64)arg->children.count;
+    }
 
     dc_try_fail(dang_obj_new(DOBJ_INTEGER, dc_dv(i64, len), NULL, false, false));
 
     dc_res_ret();
+}
+
+static DECL_DBUILTIN_FUNCTION(first)
+{
+    DC_RES2(ResObj);
+
+    if (call_obj->children.count != 1)
+        dc_res_ret_ea(-1, "invalid number of argument passed to 'first', expected=1, got=%" PRIuMAX, call_obj->children.count);
+
+    DObj* arg = dobj_child(call_obj, 0);
+
+    if (arg->type != DOBJ_ARRAY) dc_res_ret_ea(-1, "cannot retrieve first element of '%s'", tostr_DObjType(arg->type));
+
+    if (arg->children.count == 0) dc_res_ret_ok(&dobj_null);
+
+    dc_res_ret_ok(dobj_child(arg, 0));
+}
+
+static DECL_DBUILTIN_FUNCTION(last)
+{
+    DC_RES2(ResObj);
+
+    if (call_obj->children.count != 1)
+        dc_res_ret_ea(-1, "invalid number of argument passed to 'last', expected=1, got=%" PRIuMAX, call_obj->children.count);
+
+    DObj* arg = dobj_child(call_obj, 0);
+
+    if (arg->type != DOBJ_ARRAY) dc_res_ret_ea(-1, "cannot retrieve last element of '%s'", tostr_DObjType(arg->type));
+
+    if (arg->children.count == 0) dc_res_ret_ok(&dobj_null);
+
+    dc_res_ret_ok(dobj_child(arg, arg->children.count - 1));
+}
+
+static DECL_DBUILTIN_FUNCTION(rest)
+{
+    DC_RES2(ResObj);
+
+    if (call_obj->children.count != 1)
+        dc_res_ret_ea(-1, "invalid number of argument passed to 'rest', expected=1, got=%" PRIuMAX, call_obj->children.count);
+
+    DObj* arg = dobj_child(call_obj, 0);
+
+    if (arg->type != DOBJ_ARRAY) dc_res_ret_ea(-1, "cannot retrieve rest elements of '%s'", tostr_DObjType(arg->type));
+
+    if (arg->children.count == 0) dc_res_ret_ok(&dobj_null);
+
+    dc_try_fail(dang_obj_new(DOBJ_ARRAY, dc_dv_nullptr(), NULL, false, true));
+
+    dc_da_for(arg->children, {
+        // not the first child but the rest
+        if (_idx == 0) continue;
+
+        dc_try_or_fail_with3(ResObj, el_res, dang_obj_copy(dc_dv_as(*_it, DObjPtr)), {
+            // try to free the generated array object
+            dc_try_fail_temp(DCResVoid, dang_obj_free(dc_res_val()));
+        });
+
+        dc_try_or_fail_with3(DCResVoid, temp_res, dc_da_push(&dc_res_val()->children, dc_dva(DObjPtr, dc_res_val2(el_res))), {
+            // try to free the generated array object
+            dc_try_fail_temp(DCResVoid, dang_obj_free(dc_res_val()));
+        });
+    });
+
+    dc_res_ret();
+}
+
+static DECL_DBUILTIN_FUNCTION(push)
+{
+    DC_RES2(ResObj);
+
+    if (call_obj->children.count != 2)
+        dc_res_ret_ea(-1, "invalid number of argument passed to 'push', expected=2, got=%" PRIuMAX, call_obj->children.count);
+
+    DObj* arr = dobj_child(call_obj, 0);
+    DObj* el = dobj_child(call_obj, 1);
+
+    if (arr->type != DOBJ_ARRAY) dc_res_ret_ea(-1, "cannot push element to '%s'", tostr_DObjType(arr->type));
+
+    dc_try_fail_temp(DCResVoid, dc_da_push(&arr->children, dc_dva(DObjPtr, el)));
+
+    dc_res_ret_ok(arr);
 }
 
 static ResObj find_builtin(string name)
@@ -384,6 +489,18 @@ static ResObj find_builtin(string name)
 
     if (strcmp(name, "len") == 0)
         fn = len;
+
+    else if (strcmp(name, "first") == 0)
+        fn = first;
+
+    else if (strcmp(name, "last") == 0)
+        fn = last;
+
+    else if (strcmp(name, "rest") == 0)
+        fn = rest;
+
+    else if (strcmp(name, "push") == 0)
+        fn = push;
 
     else
     {
@@ -531,6 +648,35 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
             dc_try_or_fail_with3(DCResVoid, temp_res, eval_children_nodes(dn, dc_res_val(), 0, de),
                                  dc_try_fail_temp(DCResVoid, dang_obj_free(dc_res_val())));
             dc_res_ret();
+        }
+
+        case DN_INDEX_EXPRESSION:
+        {
+            dc_try_or_fail_with3(ResObj, left_res, perform_evaluation_process(dn_child(dn, 0), de), {});
+            DObjPtr left = dc_res_val2(left_res);
+
+            dc_try_or_fail_with3(ResObj, index_res, perform_evaluation_process(dn_child(dn, 1), de),
+                                 dc_try_fail_temp(DCResVoid, dang_obj_free(left)));
+            DObjPtr index = dc_res_val2(index_res);
+
+            if (left->type != DOBJ_ARRAY || index->type != DOBJ_INTEGER)
+            {
+                dc_try_fail_temp(DCResVoid, dang_obj_free(left));
+                dc_try_fail_temp(DCResVoid, dang_obj_free(index));
+
+                dc_dbg_log("indexing of '%s' is not supporting on '%s'", tostr_DObjType(index), tostr_DObjType(left));
+                dc_res_ret_e(-1, "indexing is not supporting on this type");
+            }
+
+            if (dobj_as_int(*index) < 0)
+            {
+                dc_try_fail_temp(DCResVoid, dang_obj_free(left));
+                dc_try_fail_temp(DCResVoid, dang_obj_free(index));
+
+                dc_res_ret_ok(&dobj_null);
+            }
+
+            return eval_index_expression(left, index);
         }
 
         case DN_CALL_EXPRESSION:
