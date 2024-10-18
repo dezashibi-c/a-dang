@@ -520,6 +520,8 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
             return eval_let_statement(dn, de);
 
         case DN_FUNCTION_LITERAL:
+            // function literal holds actual node in object's dv
+            // also holds the pointer to the environment it's being evaluated
             dc_try_fail(dang_obj_new(DOBJ_FUNCTION, dc_dv(DNodePtr, dn), de, false, false));
             dc_res_ret();
 
