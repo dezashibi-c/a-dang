@@ -170,10 +170,19 @@ static ResNode parse_identifier(DParser* p)
 static ResNode parse_string_literal(DParser* p)
 {
     DC_RES2(ResNode);
-    string data = NULL;
-    dc_try_fail_temp(DCResUsize, dc_sprintf(&data, DCPRIsv, dc_sv_fmt(p->current_token.text)));
 
-    return dn_new(DN_STRING_LITERAL, dc_dva(string, data), false);
+    string data_str = NULL;
+    DCDynVal data;
+
+    if (p->current_token.text.len == 0)
+        data = dc_dv(string, "");
+    else
+    {
+        dc_try_fail_temp(DCResUsize, dc_sprintf(&data_str, DCPRIsv, dc_sv_fmt(p->current_token.text)));
+        data = dc_dva(string, data_str);
+    }
+
+    return dn_new(DN_STRING_LITERAL, data, false);
 }
 
 static ResNode parse_integer_literal(DParser* p)

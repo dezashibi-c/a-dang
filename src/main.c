@@ -20,26 +20,11 @@
 
 #define DANG_REPL_EXIT ":q"
 
-#if 0
-
-static DC_DV_FREE_FN_DECL(_program_free)
-{
-    DC_RES_void();
-
-    if (_value && _value->type == dc_dvt(voidptr))
-    {
-        DNode* program = (DNode*)dc_dv_as(*_value, voidptr);
-
-        dn_free(program);
-    }
-
-    dc_res_ret();
-}
-
 static void print_obj(DObj* obj)
 {
     if (dobj_is_bool(*obj))
         printf("%s", dc_tostr_bool(dobj_as_bool(*obj)));
+
     else if (dobj_is_array(*obj))
     {
         printf("%s", "[ ");
@@ -52,8 +37,17 @@ static void print_obj(DObj* obj)
 
         printf("%s", " ]");
     }
+
     else if (dobj_is_null(*obj))
         printf("%s", dc_colorize_fg(LRED, "(null)"));
+
+    else if (dobj_is_string(*obj))
+    {
+        printf("%s", "\"");
+        if (strlen(dc_dv_as(obj->dv, string)) > 0) dc_dv_print(&obj->dv);
+        printf("%s", "\"");
+    }
+
     else
         dc_dv_print(&obj->dv);
 }
@@ -65,7 +59,7 @@ static void repl()
 
     char line[1024];
 
-    DEnvResult de_res = dang_env_new();
+    ResEnv de_res = dang_env_new();
     if (dc_res_is_err2(de_res))
     {
         dc_res_err_log2(de_res, "cannot initialize environment");
@@ -74,17 +68,6 @@ static void repl()
     }
 
     DEnv* de = dc_res_val2(de_res);
-    DCResDa programs_res = dc_da_new(_program_free);
-    if (dc_res_is_err2(programs_res))
-    {
-        dc_res_err_log2(programs_res, "cannot initialize programs array");
-
-        dang_env_free(de);
-
-        return;
-    }
-
-    DCDynArr* programs = dc_res_val2(programs_res);
 
     while (true)
     {
@@ -113,9 +96,6 @@ static void repl()
         }
 
         ResNode program_res = dang_parser_parse_program(&p);
-
-        dc_da_push(programs, dc_dva(voidptr, dc_res_val2(program_res)));
-
         if (dc_res_is_err2(program_res))
             dc_log("parser could not finish the job properly: (code %d) %s", dc_res_err_code2(program_res),
                    dc_res_err_msg2(program_res));
@@ -123,11 +103,17 @@ static void repl()
         {
             if (dang_parser_has_error(&p)) dang_parser_log_errors(&p);
 
-            dn_string_init(dc_res_val2(program_res));
+            DNode* program = dc_res_val2(program_res);
 
-            if (dc_res_val2(program_res)->text)
+            string result = NULL;
+            DCResVoid inspection_res = dang_node_inspect(program, &result);
+            if (dc_res_is_err2(inspection_res))
             {
-                printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", dc_res_val2(program_res)->text);
+                dc_res_err_log2(inspection_res, "Inspection error");
+            }
+            else
+            {
+                printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", result);
 
                 ResObj evaluated = dang_eval(dc_res_val2(program_res), de);
                 if (dc_res_is_err2(evaluated))
@@ -139,7 +125,7 @@ static void repl()
                 {
                     printf("%s", "Result: " DC_FG_LGREEN);
 
-                    print_obj(&dc_res_val2(evaluated));
+                    print_obj(dc_res_val2(evaluated));
 
                     printf("\n%s", DC_COLOR_RESET);
                 }
@@ -148,8 +134,6 @@ static void repl()
 
         dang_parser_free(&p);
     }
-
-    dc_da_free(programs);
 
     dang_env_free(de);
 }
@@ -170,12 +154,5 @@ int main(int argc, string argv[])
         fprintf(stderr, "Usage: dang [path]\n");
     }
 
-    return 0;
-}
-
-#endif
-
-int main()
-{
     return 0;
 }

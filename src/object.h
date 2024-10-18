@@ -44,7 +44,7 @@ typedef struct DEnv
     DCDynArr nodes;
 } DEnv;
 
-DCResType(DEnv*, DEnvResult);
+DCResType(DEnv*, ResEnv);
 
 struct DObj
 {

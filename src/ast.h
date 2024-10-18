@@ -77,6 +77,10 @@ typedef enum
 
 #define dn_data_as(NODE, TYPE) dc_dv_as(dn_data(NODE), TYPE)
 
+#define dn_child_data(NODE, INDEX) (dn_child(NODE, INDEX)->data)
+
+#define dn_child_data_as(NODE, INDEX, TYPE) dc_dv_as(dn_child_data(NODE, INDEX), TYPE)
+
 #define dn_child_push(NODE, CHILD) dc_da_push(&NODE->children, dc_dva(DNodePtr, CHILD))
 
 struct DNode

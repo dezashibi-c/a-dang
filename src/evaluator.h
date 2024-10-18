@@ -28,8 +28,8 @@ ResObj dang_obj_copy(DObj* dobj);
 DCResVoid dang_obj_free(DObj* dobj);
 DC_DV_FREE_FN_DECL(dobj_child_free);
 
-DEnvResult dang_env_new();
-DEnvResult dang_env_new_enclosed(DEnv* outer);
+ResEnv dang_env_new();
+ResEnv dang_env_new_enclosed(DEnv* outer);
 DCResVoid dang_env_free(DEnv* de);
 ResObj dang_env_get(DEnv* de, string name);
 ResObj dang_env_set(DEnv* de, string name, DObj* dobj, bool update_only);

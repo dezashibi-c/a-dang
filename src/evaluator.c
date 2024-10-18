@@ -49,7 +49,7 @@ static ResObj eval_block_statements(DNode* dn, DEnv* de)
         DNode* stmt = dn_child(dn, _idx);
         dc_try_fail(perform_evaluation_process(stmt, de));
 
-        if (dobj_is_return(dc_res_val())) break;
+        if (dobj_is_return(dc_res_val())) DC_BREAK;
     });
 
     dc_res_ret();
@@ -65,7 +65,7 @@ static ResObj eval_program_statements(DNode* dn, DEnv* de)
         DNode* stmt = dn_child(dn, _idx);
         dc_try_fail(perform_evaluation_process(stmt, de));
 
-        if (dn_child(dn, _idx)->type == DN_RETURN_STATEMENT) break;
+        if (stmt->type == DN_RETURN_STATEMENT) DC_BREAK;
     });
 
     dc_res_ret();
@@ -261,26 +261,16 @@ static ResObj eval_let_statement(DNode* dn, DEnv* de)
 {
     DC_RES2(ResObj);
 
-    string var_name = dn_child_as(dn, 0, string);
-
-    ResObj check = dang_env_get(de, var_name);
-    if (dc_res_is_ok2(check))
-    {
-        dc_dbg_log("symbol '%s' is already defined", var_name);
-
-        dc_res_ret_ea(-1, "symbol '%s' is already defined", var_name);
-    }
-
-    DNode* value_node = (dn_child_count(dn) > 1) ? dn_child(dn, 1) : NULL;
+    string var_name = dn_child_data_as(dn, 0, string);
 
     DObj* value = NULL;
-    ResObj val_obj_res;
-
-    if (value_node)
+    if (dn_child_count(dn) > 1)
     {
+        DNode* value_node = dn_child(dn, 1);
+
         dc_try_or_fail_with3(ResObj, v_res, perform_evaluation_process(value_node, de), {});
 
-        dc_try_or_fail_with2(val_obj_res, dang_obj_copy(dc_res_val2(v_res)), {});
+        dc_try_or_fail_with3(ResObj, val_obj_res, dang_obj_copy(dc_res_val2(v_res)), {});
         value = dc_res_val2(val_obj_res);
 
         // It doesn't matter if it was a returned value from some other function, etc.
@@ -303,9 +293,9 @@ static DCResVoid eval_children_nodes(DNode* call_node, DObj* parent_result, usiz
     // the rest is function argument
     for (usize i = child_start_index; i < dn_child_count(call_node); ++i)
     {
-        dc_try_or_fail_with3(ResObj, evaluated, perform_evaluation_process(dn_child(call_node, i), de), {});
+        dc_try_or_fail_with3(ResObj, arg_res, perform_evaluation_process(dn_child(call_node, i), de), {});
 
-        dc_try_or_fail_with3(ResObj, arg_res, dang_obj_copy(dc_res_val2(evaluated)), {});
+        // todo:: do I need this? // dc_try_or_fail_with3(ResObj, arg_res, dang_obj_copy(dc_res_val2(evaluated)), {});
 
         dc_try_or_fail_with3(DCResVoid, res, dc_da_push(&parent_result->children, dc_dva(DObjPtr, dc_res_val2(arg_res))), {
             dc_dbg_log("failed to push object to parent object");
@@ -316,9 +306,9 @@ static DCResVoid eval_children_nodes(DNode* call_node, DObj* parent_result, usiz
     dc_res_ret();
 }
 
-static DEnvResult extend_function_env(DObj* call_obj, DNode* fn_node)
+static ResEnv extend_function_env(DObj* call_obj, DNode* fn_node)
 {
-    DC_TRY_DEF2(DEnvResult, dang_env_new_enclosed(call_obj->env));
+    DC_TRY_DEF2(ResEnv, dang_env_new_enclosed(call_obj->env));
 
     if (call_obj->children.count != dn_child_count(fn_node) - 1)
         dc_res_ret_ea(-1, "function needs at least " dc_fmt(usize) " arguments, got=" dc_fmt(usize),
@@ -328,14 +318,15 @@ static DEnvResult extend_function_env(DObj* call_obj, DNode* fn_node)
     // with given evaluated objects assigning to them
     dc_da_for(fn_node->children, {
         // we shouldn't get the last child as it is the function body
-        if (_idx >= (dn_child_count(fn_node) - 1)) break;
+        if (_idx >= (dn_child_count(fn_node) - 1)) DC_BREAK;
 
-        string arg_name = dn_child_as(fn_node, _idx, string);
+        string arg_name = dn_child_data_as(fn_node, _idx, string);
 
-        DObj* value = NULL;
+        // todo:: Do I need this? // DObj* value = NULL;
+        DObj* value = dobj_child(call_obj, _idx);
 
         // if the number of passed arguments are not sufficient the arguments will be defined as NULL
-        if (_idx < call_obj->children.count) value = dobj_child(call_obj, _idx);
+        // todo:: Do I need this? // if (_idx < call_obj->children.count) value = dobj_child(call_obj, _idx);
 
         dc_try_fail_temp(ResObj, dang_env_set(dc_res_val(), arg_name, value, false));
     });
@@ -353,7 +344,8 @@ static ResObj apply_function(DObj* call_obj, DNode* fn_node)
 {
     DC_RES2(ResObj);
 
-    dc_try_or_fail_with3(DEnvResult, fn_env_res, extend_function_env(call_obj, fn_node), {});
+    dc_try_or_fail_with3(ResEnv, fn_env_res, extend_function_env(call_obj, fn_node),
+                         dc_try_fail_temp(DCResVoid, dang_obj_free(call_obj)));
 
     DNode* body = dn_child(fn_node, dn_child_count(fn_node) - 1);
 
@@ -361,7 +353,7 @@ static ResObj apply_function(DObj* call_obj, DNode* fn_node)
 
     // if we've returned of a function that's ok
     // but we don't need to pass it on to the upper level
-    dc_res_val()->is_returned = false;
+    if (dc_res_is_ok()) dc_res_val()->is_returned = false;
 
     dc_res_ret();
 }
@@ -453,6 +445,10 @@ static DC_HT_KEY_VALUE_FREE_FN_DECL(env_store_free)
     dc_res_ret();
 }
 
+// ***************************************************************************************
+// * MAIN EVALUATION PROCESS
+// ***************************************************************************************
+
 static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
 {
     DC_RES2(ResObj);
@@ -488,7 +484,7 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
         }
 
         case DN_BOOLEAN_LITERAL:
-            return get_boolean_object(!!dn_child_as(dn, 0, u8));
+            return get_boolean_object(!!dn_data_as(dn, u8));
 
         case DN_INTEGER_LITERAL:
             dc_try_fail(dang_obj_new(DOBJ_INTEGER, dn_data(dn), NULL, false, false));
@@ -530,7 +526,7 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
             return eval_let_statement(dn, de);
 
         case DN_FUNCTION_LITERAL:
-            dc_try_fail(dang_obj_new(DOBJ_FUNCTION, dc_dv(DNodePtr, dn), NULL, false, false));
+            dc_try_fail(dang_obj_new(DOBJ_FUNCTION, dc_dv(DNodePtr, dn), de, false, false));
             dc_res_ret();
 
         case DN_ARRAY_LITERAL:
@@ -683,15 +679,15 @@ DC_DV_FREE_FN_DECL(dobj_child_free)
     dc_res_ret();
 }
 
-DEnvResult dang_env_new()
+ResEnv dang_env_new()
 {
-    DC_RES2(DEnvResult);
+    DC_RES2(ResEnv);
 
     dc_try_fail_temp(DCResVoid, dang_obj_init(&dobj_null, DOBJ_NULL, dc_dv_nullptr(), NULL, false, false));
     dc_try_fail_temp(DCResVoid, dang_obj_init(&dobj_null_return, DOBJ_NULL, dc_dv_nullptr(), NULL, true, false));
 
     dc_try_fail_temp(DCResVoid, dang_obj_init(&dobj_true, DOBJ_BOOLEAN, dc_dv_true(), NULL, false, false));
-    dc_try_fail_temp(DCResVoid, dang_obj_init(&dobj_false, DOBJ_BOOLEAN, dc_dv_true(), NULL, false, false));
+    dc_try_fail_temp(DCResVoid, dang_obj_init(&dobj_false, DOBJ_BOOLEAN, dc_dv_false(), NULL, false, false));
 
     DEnv* de = (DEnv*)malloc(sizeof(DEnv));
     if (de == NULL)
@@ -718,9 +714,9 @@ DEnvResult dang_env_new()
     dc_res_ret_ok(de);
 }
 
-DEnvResult dang_env_new_enclosed(DEnv* outer)
+ResEnv dang_env_new_enclosed(DEnv* outer)
 {
-    DC_TRY_DEF2(DEnvResult, dang_env_new());
+    DC_TRY_DEF2(ResEnv, dang_env_new());
 
     dc_res_val()->outer = outer;
 
@@ -764,8 +760,17 @@ ResObj dang_env_set(DEnv* de, string name, DObj* dobj, bool update_only)
 
     DCDynVal value = dobj ? dc_dva(DObjPtr, dobj) : dc_dv(DObjPtr, &dobj_null);
 
-    dc_try_fail_temp(DCResVoid, dc_ht_set(&de->store, dc_dv(string, name), value,
-                                          update_only ? DC_HT_SET_UPDATE_OR_FAIL : DC_HT_SET_CREATE_OR_FAIL));
+    DCResVoid res =
+        dc_ht_set(&de->store, dc_dv(string, name), value, update_only ? DC_HT_SET_UPDATE_OR_FAIL : DC_HT_SET_CREATE_OR_FAIL);
+
+    if (dc_res_is_err2(res))
+    {
+        if (dc_res_err_code2(res) == dc_err_code(HT_SET))
+            dc_res_ret_ea(dc_err_code(HT_SET), "'%s' %s", name, (update_only ? "is not defined." : "is already defined."));
+
+        dc_res_err_cpy(res);
+        dc_res_ret();
+    }
 
     dc_res_ret_ok(dobj);
 }
