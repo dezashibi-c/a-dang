@@ -60,14 +60,14 @@ static void repl()
     char line[1024];
 
     ResEnv de_res = dang_env_new();
-    if (dc_res_is_err2(de_res))
+    if (dc_is_err2(de_res))
     {
-        dc_res_err_log2(de_res, "cannot initialize environment");
+        dc_err_log2(de_res, "cannot initialize environment");
 
         return;
     }
 
-    DEnv* de = dc_res_val2(de_res);
+    DEnv* de = dc_unwrap2(de_res);
 
     while (true)
     {
@@ -87,45 +87,45 @@ static void repl()
         DParser p;
         DCResVoid res = dang_parser_init(&p, &s);
 
-        if (dc_res_is_err2(res))
+        if (dc_is_err2(res))
         {
-            dc_res_err_log2(res, DC_FG_LRED "DParser initialization error");
+            dc_err_log2(res, DC_FG_LRED "DParser initialization error");
             printf("%s", DC_COLOR_RESET);
 
             continue;
         }
 
         ResNode program_res = dang_parser_parse_program(&p);
-        if (dc_res_is_err2(program_res))
-            dc_log("parser could not finish the job properly: (code %d) %s", dc_res_err_code2(program_res),
-                   dc_res_err_msg2(program_res));
+        if (dc_is_err2(program_res))
+            dc_log("parser could not finish the job properly: (code %d) %s", dc_err_code2(program_res),
+                   dc_err_msg2(program_res));
         else
         {
             if (dang_parser_has_error(&p)) dang_parser_log_errors(&p);
 
-            DNode* program = dc_res_val2(program_res);
+            DNode* program = dc_unwrap2(program_res);
 
             string result = NULL;
             DCResVoid inspection_res = dang_node_inspect(program, &result);
-            if (dc_res_is_err2(inspection_res))
+            if (dc_is_err2(inspection_res))
             {
-                dc_res_err_log2(inspection_res, "Inspection error");
+                dc_err_log2(inspection_res, "Inspection error");
             }
             else
             {
                 printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", result);
 
-                ResObj evaluated = dang_eval(dc_res_val2(program_res), de);
-                if (dc_res_is_err2(evaluated))
+                ResObj evaluated = dang_eval(dc_unwrap2(program_res), de);
+                if (dc_is_err2(evaluated))
                 {
-                    dc_res_err_log2(evaluated, DC_FG_LRED "Evaluation error");
+                    dc_err_log2(evaluated, DC_FG_LRED "Evaluation error");
                     printf("%s", DC_COLOR_RESET);
                 }
                 else
                 {
                     printf("%s", "Result: " DC_FG_LGREEN);
 
-                    print_obj(dc_res_val2(evaluated));
+                    print_obj(dc_unwrap2(evaluated));
 
                     printf("\n%s", DC_COLOR_RESET);
                 }

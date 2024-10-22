@@ -96,16 +96,16 @@ ResTok token_create(DTokType type, string str, usize start, usize len)
     {
         dc_dbg_log("Only TOK_EOF can be created with NULL string");
 
-        dc_res_ret_e(1, "Only TOK_EOF can be created with NULL string");
+        dc_ret_e(1, "Only TOK_EOF can be created with NULL string");
     }
 
     DTok token = (DTok){0};
 
     DCResSv sv_res = dc_sv_create(str, start, len);
-    dc_res_fail_if_err2(sv_res);
+    dc_fail_if_err2(sv_res);
 
-    token.text = dc_res_val2(sv_res);
+    token.text = dc_unwrap2(sv_res);
     token.type = type;
 
-    dc_res_ret_ok(token);
+    dc_ret_ok(token);
 }

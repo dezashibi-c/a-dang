@@ -61,7 +61,7 @@ static ResTok extract_identifier(DScanner* s)
 
     dc_try_fail(token_create(TOK_IDENT, s->input, start, len));
 
-    DTok* t = &dc_res_val();
+    DTok* t = &dc_unwrap();
 
     switch (s->input[start])
     {
@@ -79,7 +79,7 @@ static ResTok extract_identifier(DScanner* s)
             break;
     }
 
-    dc_res_ret();
+    dc_ret();
 }
 
 static ResTok extract_number(DScanner* s)
@@ -105,7 +105,7 @@ DCResVoid dang_scanner_init(DScanner* s, const string input)
     {
         dc_dbg_log("Cannot initialize scanner with null input");
 
-        dc_res_ret_e(dc_err_code(NV), "cannot initialize scanner with null input");
+        dc_ret_e(dc_e_code(NV), "cannot initialize scanner with null input");
     }
 
     s->pos = 0;
@@ -114,7 +114,7 @@ DCResVoid dang_scanner_init(DScanner* s, const string input)
 
     read_char(s);
 
-    dc_res_ret();
+    dc_ret();
 }
 
 ResTok dang_scanner_next_token(DScanner* s)
@@ -306,12 +306,12 @@ ResTok dang_scanner_next_token(DScanner* s)
             if (is_letter(s->c))
             {
                 dc_try_fail(extract_identifier(s));
-                dc_res_ret();
+                dc_ret();
             }
             else if (is_digit(s->c))
             {
                 dc_try_fail(extract_number(s));
-                dc_res_ret();
+                dc_ret();
             }
             else
             {
@@ -321,13 +321,13 @@ ResTok dang_scanner_next_token(DScanner* s)
         break;
     }
 
-    if (dc_res_val().type == TOK_ILLEGAL)
+    if (dc_unwrap().type == TOK_ILLEGAL)
     {
-        dc_dbg_log("DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_res_val().text));
-        dc_res_ret_ea(-1, "DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_res_val().text));
+        dc_dbg_log("DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_unwrap().text));
+        dc_ret_ea(-1, "DScanner error - illegal character at '" DCPRIsv "'", dc_sv_fmt(dc_unwrap().text));
     }
 
     read_char(s);
 
-    dc_res_ret();
+    dc_ret();
 }

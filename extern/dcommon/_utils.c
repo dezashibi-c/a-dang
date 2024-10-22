@@ -45,7 +45,7 @@ DCResUsize dc_sprintf(string* str, string fmt, ...)
     {
         dc_dbg_log("got NULL str");
 
-        dc_res_ret_e(1, "got NULL str");
+        dc_ret_e(1, "got NULL str");
     }
 
     va_list argp;
@@ -60,7 +60,7 @@ DCResUsize dc_sprintf(string* str, string fmt, ...)
         *str = NULL;
         va_end(argp);
 
-        dc_res_ret_e(5, "An encoding error occurred. Setting the input pointer to NULL.");
+        dc_ret_e(5, "An encoding error occurred. Setting the input pointer to NULL.");
     }
     va_end(argp);
 
@@ -69,14 +69,14 @@ DCResUsize dc_sprintf(string* str, string fmt, ...)
     {
         dc_dbg_log("Couldn't allocate %i chars.", len + 1);
 
-        dc_res_ret_e(1, "Memory allocation failed");
+        dc_ret_e(1, "Memory allocation failed");
     }
 
     va_start(argp, fmt);
     vsnprintf(*str, len + 1, fmt, argp);
     va_end(argp);
 
-    dc_res_ret_ok((usize)len);
+    dc_ret_ok((usize)len);
 }
 
 DCResUsize dc_sappend(string* str, const string fmt, ...)
@@ -87,7 +87,7 @@ DCResUsize dc_sappend(string* str, const string fmt, ...)
     {
         dc_dbg_log("got NULL str");
 
-        dc_res_ret_e(1, "got NULL str");
+        dc_ret_e(1, "got NULL str");
     }
 
     va_list argp;
@@ -103,7 +103,7 @@ DCResUsize dc_sappend(string* str, const string fmt, ...)
         *str = NULL;
         va_end(argp);
 
-        dc_res_ret_e(5, "An encoding error occurred. Setting the input pointer to NULL.");
+        dc_ret_e(5, "An encoding error occurred. Setting the input pointer to NULL.");
     }
     va_end(argp);
 
@@ -116,7 +116,7 @@ DCResUsize dc_sappend(string* str, const string fmt, ...)
     {
         dc_dbg_log("Couldn't allocate %i chars.", len + 1);
 
-        dc_res_ret_e(1, "Memory allocation failed");
+        dc_ret_e(1, "Memory allocation failed");
     }
 
     // Update the string pointer
@@ -127,7 +127,7 @@ DCResUsize dc_sappend(string* str, const string fmt, ...)
     vsnprintf(*str + current_len, len + 1, fmt, argp);
     va_end(argp);
 
-    dc_res_ret_ok(current_len + len);
+    dc_ret_ok(current_len + len);
 }
 
 DCResString dc_strdup(const string in)
@@ -138,21 +138,21 @@ DCResString dc_strdup(const string in)
     {
         dc_dbg_log("got NULL input str");
 
-        dc_res_ret_e(1, "got NULL input str");
+        dc_ret_e(1, "got NULL input str");
     }
 
     string out;
 
     dc_try_fail_temp(DCResUsize, dc_sprintf(&out, "%s", in));
 
-    dc_res_ret_ok(out);
+    dc_ret_ok(out);
 }
 
 DCResString dc_tostr_dv(DCDynVal* dv)
 {
     DC_RES_string();
 
-    if (!dv) dc_res_ret_e(1, "got NULL dynamic value");
+    if (!dv) dc_ret_e(1, "got NULL dynamic value");
 
 #define stringify(TYPE)                                                                                                        \
     case dc_dvt(TYPE):                                                                                                         \
@@ -190,7 +190,7 @@ DCResString dc_tostr_dv(DCDynVal* dv)
             break;
     };
 
-    dc_res_ret_ok(result);
+    dc_ret_ok(result);
 
 #undef stringify
 }
@@ -201,11 +201,11 @@ DCResVoid dc_dv_print(DCDynVal* dv)
 
     dc_try_or_fail_with3(DCResString, res, dc_tostr_dv(dv), {});
 
-    printf("%s", dc_res_val2(res));
+    printf("%s", dc_unwrap2(res));
 
-    if (dc_res_val2(res)) free(dc_res_val2(res));
+    if (dc_unwrap2(res)) free(dc_unwrap2(res));
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResVoid dc_dv_println(DCDynVal* dv)
@@ -214,7 +214,7 @@ DCResVoid dc_dv_println(DCDynVal* dv)
 
     printf("%s", "\n");
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResVoid dc_normalize_path_to_posix(string path)
@@ -225,7 +225,7 @@ DCResVoid dc_normalize_path_to_posix(string path)
     {
         dc_dbg_log("got NULL path");
 
-        dc_res_ret_e(1, "got NULL path");
+        dc_ret_e(1, "got NULL path");
     }
 
 #if defined(DC_WINDOWS)
@@ -238,7 +238,7 @@ DCResVoid dc_normalize_path_to_posix(string path)
     }
 #endif
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResString dc_replace_file_in_path(string path, const string file_name)
@@ -249,7 +249,7 @@ DCResString dc_replace_file_in_path(string path, const string file_name)
     {
         dc_dbg_log("got NULL path or file_name");
 
-        dc_res_ret_e(1, "got NULL path or file_name");
+        dc_ret_e(1, "got NULL path or file_name");
     }
 
     dc_try_fail_temp(DCResVoid, dc_normalize_path_to_posix(path));
@@ -264,14 +264,14 @@ DCResString dc_replace_file_in_path(string path, const string file_name)
     {
         dc_dbg_log("Memory allocation failed");
 
-        dc_res_ret_e(1, "Memory allocation failed");
+        dc_ret_e(1, "Memory allocation failed");
     }
 
     if (dir_length > 0) strncpy(new_path, path, dir_length);
 
     strcpy(new_path + dir_length, file_name);
 
-    dc_res_ret_ok(new_path);
+    dc_ret_ok(new_path);
 }
 
 string dc_get_home_dir_path()
@@ -449,12 +449,12 @@ void dc_cleanup_pool_init2(usize count, usize batch_capacity)
     {
         res = dc_da_init2(&dc_cleanup_pool.pool[i], batch_capacity, 3, NULL);
 
-        dc_dbg_action_on(dc_res_is_err2(res), exit(dc_res_err_code2(res)), "%s", dc_res_err_msg2(res));
+        dc_dbg_action_on(dc_is_err2(res), exit(dc_err_code2(res)), "%s", dc_err_msg2(res));
     }
 
     __DC_CLEANUP_REGISTER_SIGNALS;
 
-    dc_res_free(&res);
+    dc_result_free(&res);
 }
 
 DCResVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
@@ -464,7 +464,7 @@ DCResVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
     dc_dbg_log_if(batch->cap == 0 || batch->count == 0, "batch is not initialized or has no "
                                                         "elements registered, exiting now...");
 
-    if (batch->cap == 0 || batch->count == 0) dc_res_ret();
+    if (batch->cap == 0 || batch->count == 0) dc_ret();
 
     dc_dbg_log("cleaning up '%" PRIuMAX "' elements", batch->count);
 
@@ -488,7 +488,7 @@ DCResVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
                "count: '%" PRIuMAX "'",
                batch->cap, batch->count);
 
-    dc_res_ret();
+    dc_ret();
 }
 
 void dc_cleanup_pool_run(i32 selection)
@@ -510,12 +510,12 @@ void dc_cleanup_pool_run(i32 selection)
                 dc_dbg_log("cleaning up the batch index [%" PRIuMAX "]", _idx);
                 dc_try(dc_cleanup_batch_run(&dc_cleanup_pool.pool[_idx]));
 
-                if (dc_res_is_err())
+                if (dc_is_err())
                 {
-                    dc_dbg_log("An error occurred while cleanup batch index [%" PRIuMAX "]: (code %d) %s", _idx,
-                               dc_res_err_code(), dc_res_err_msg());
+                    dc_dbg_log("An error occurred while cleanup batch index [%" PRIuMAX "]: (code %d) %s", _idx, dc_err_code(),
+                               dc_err_msg());
 
-                    exit(dc_res_err_code());
+                    exit(dc_err_code());
                 }
             });
 
@@ -544,13 +544,13 @@ void dc_cleanup_pool_run(i32 selection)
             dc_dbg_log("cleaning up the batch index [%" PRId32 "]", selection);
             dc_try(dc_cleanup_batch_run(&dc_cleanup_pool.pool[selection]));
 
-            if (dc_res_is_err())
+            if (dc_is_err())
             {
                 dc_dbg_log("An error occurred while cleanup batch index [%d]: "
                            "(code %d) %s",
-                           selection, dc_res_err_code(), dc_res_err_msg());
+                           selection, dc_err_code(), dc_err_msg());
 
-                exit(dc_res_err_code());
+                exit(dc_err_code());
             }
 
             break;
@@ -586,13 +586,13 @@ void dc_cleanup_push2(DCCleanupBatch* batch, voidptr element, DCCleanupFn cleanu
 
     dc_try(dc_da_push(batch, dc_dva(voidptr, item)));
 
-    if (dc_res_is_err())
+    if (dc_is_err())
     {
         dc_dbg_log("An error occurred while pushing cleanup job key_value to the "
                    "cleanup batch index: (code %d) %s",
-                   dc_res_err_code(), dc_res_err_msg());
+                   dc_err_code(), dc_err_msg());
 
-        exit(dc_res_err_code());
+        exit(dc_err_code());
     }
 }
 
@@ -600,43 +600,43 @@ DCResVoid dc_free(voidptr variable)
 {
     DC_RES_void();
 
-    if (!variable) dc_res_ret_e(1, "try to free NULL");
+    if (!variable) dc_ret_e(1, "try to free NULL");
 
     free(variable);
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResVoid dc_free_file(voidptr variable)
 {
     DC_RES_void();
 
-    if (!variable) dc_res_ret_e(1, "try to free NULL");
+    if (!variable) dc_ret_e(1, "try to free NULL");
 
     fclose((fileptr)variable);
 
-    dc_res_ret();
+    dc_ret();
 }
 
 // ***************************************************************************************
 // * RESULT
 // ***************************************************************************************
 
-DCResVoid dc_res_free(voidptr res_ptr)
+DCResVoid dc_result_free(voidptr res_ptr)
 {
     DC_RES_void();
 
-    if (!res_ptr) dc_res_ret_e(1, "got NULL result");
+    if (!res_ptr) dc_ret_e(1, "got NULL result");
 
     DCResVoid* result = (DCResVoid*)res_ptr;
 
 
-    if (dc_res_is_err2(*result) && result->data.e.allocated) free(result->data.e.message);
+    if (dc_is_err2(*result) && result->data.e.allocated) free(result->data.e.message);
 
     result->data.e.message = "";
     result->status = DC_RES_OK;
 
-    dc_res_ret();
+    dc_ret();
 }
 
 // ***************************************************************************************
@@ -653,10 +653,10 @@ DCResFileptr dc_file_open(const string file, const string mode)
     {
         dc_dbg_log("Cannot open file '%s': (code %d) %s", file, errno, strerror(errno));
 
-        dc_res_ret_ea(errno, "%s", strerror(errno));
+        dc_ret_ea(errno, "%s", strerror(errno));
     }
 
-    dc_res_ret_ok(fp);
+    dc_ret_ok(fp);
 }
 
 // ***************************************************************************************
@@ -706,14 +706,14 @@ void dc_error_logs_init(string filename, bool append)
     dc_try(dc_file_open(_filename, mode));
     free(_filename);
 
-    if (dc_res_is_err())
+    if (dc_is_err())
     {
-        dc_dbg_log("cannot initialize 'dc_error_logs': %s", dc_res_err_msg());
+        dc_dbg_log("cannot initialize 'dc_error_logs': %s", dc_err_msg());
 
-        exit(dc_res_err_code());
+        exit(dc_err_code());
     }
 
-    dc_error_logs = dc_res_val();
+    dc_error_logs = dc_unwrap();
 }
 
 void dc_error_logs_close()

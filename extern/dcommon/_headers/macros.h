@@ -360,14 +360,14 @@
  *
  * @param ERR is the error short names, pre-defined options are: `NV`, `MEM`, `TYPE`, `INDEX`, `INTERNAL`, `NF`, `HT_SET`.
  */
-#define dc_err_code(ERR) DC_ERR_##ERR
+#define dc_e_code(ERR) DC_ERR_##ERR
 
 /**
  * `[MACRO]` Expands to proper enum for error message literal string
  *
  * @param ERR is the error short names, pre-defined options are: `NV`, `MEM`, `TYPE`, `INDEX`, `INTERNAL`, `NF`, `HT_SET`.
  */
-#define dc_err_msg(ERR) DC_ERR_##ERR##_MSG
+#define dc_e_msg(ERR) DC_ERR_##ERR##_MSG
 
 /**
  * `[MACRO]` Defines the main result variable (__dc_res) as DCRes and initiates it as
@@ -528,9 +528,9 @@
  * initiates the error value with given error code (NUM) and literal string
  *
  * NOTE: MSG must be literal string not an allocated string variable (see
- * dc_res_ea)
+ * dc_ea)
  */
-#define dc_res_e(NUM, MSG)                                                                                                     \
+#define dc_e(NUM, MSG)                                                                                                         \
     do                                                                                                                         \
     {                                                                                                                          \
         __dc_res.status = DC_RES_ERR;                                                                                          \
@@ -544,7 +544,7 @@
  *
  * NOTE: Allocates memory
  */
-#define dc_res_ea(NUM, ...)                                                                                                    \
+#define dc_ea(NUM, ...)                                                                                                        \
     do                                                                                                                         \
     {                                                                                                                          \
         string __err;                                                                                                          \
@@ -561,7 +561,7 @@
  *
  * NOTE: Does Nothing on successful results
  */
-#define dc_res_err_cpy2(RES1, RES2)                                                                                            \
+#define dc_err_cpy2(RES1, RES2)                                                                                                \
     do                                                                                                                         \
     {                                                                                                                          \
         if ((RES2).status == DC_RES_ERR)                                                                                       \
@@ -579,13 +579,13 @@
  *
  * NOTE: Does Nothing on successful results
  */
-#define dc_res_err_cpy(RES) dc_res_err_cpy2(__dc_res, RES)
+#define dc_err_cpy(RES) dc_err_cpy2(__dc_res, RES)
 
 /**
  * `[MACRO]` Sets the main result variable (__dc_res) status to DC_RES_OK and also
  * initiates the value with the given VALUE
  */
-#define dc_res_ok(VALUE)                                                                                                       \
+#define dc_ok(VALUE)                                                                                                           \
     do                                                                                                                         \
     {                                                                                                                          \
         __dc_res.status = DC_RES_OK;                                                                                           \
@@ -596,72 +596,57 @@
  * `[MACRO]` In case the result is of type DCRes this is a shortcut to create a literal
  * dynamic value and setting it to the success value on the fly
  *
- * NOTE: The value must not be allocated (see dc_res_ok_dva)
+ * NOTE: The value must not be allocated (see dc_ok_dva)
  */
-#define dc_res_ok_dv(TYPE, VALUE) dc_res_ok(dc_dv(TYPE, (VALUE)))
+#define dc_ok_dv(TYPE, VALUE) dc_ok(dc_dv(TYPE, (VALUE)))
 
 /**
  * `[MACRO]` In case the result is of type DCRes this is a shortcut to create a literal
  * dynamic value and setting it to the success value on the fly
  *
- * NOTE: The value must be allocated (see dc_res_ok_dv)
+ * NOTE: The value must be allocated (see dc_ok_dv)
  */
-#define dc_res_ok_dva(TYPE, VALUE) dc_res_ok(dc_dva(TYPE, (VALUE)))
+#define dc_ok_dva(TYPE, VALUE) dc_ok(dc_dva(TYPE, (VALUE)))
 
 /**
  * `[MACRO]` Returns the main result variable (__dc_res)
  */
-#define dc_res_ret() return __dc_res
+#define dc_ret() return __dc_res
 
 /**
  * `[MACRO]` Sets the main result variable (__dc_res) to error and returns it right away.
  *
  * NOTE: MSG must be literal string not an allocated string variable
- * (see dc_res_ret_ea)
+ * (see dc_ret_ea)
  */
-#define dc_res_ret_e(NUM, MSG)                                                                                                 \
+#define dc_ret_e(NUM, MSG)                                                                                                     \
     do                                                                                                                         \
     {                                                                                                                          \
-        dc_res_e(NUM, MSG);                                                                                                    \
-        dc_res_ret();                                                                                                          \
+        dc_e(NUM, MSG);                                                                                                        \
+        dc_ret();                                                                                                              \
     } while (0)
 
 /**
  * `[MACRO]` Sets the main result variable (__dc_res) to error and returns it right away.
  *
- * NOTE: Allocates memory (see dc_res_ret_e)
+ * NOTE: Allocates memory (see dc_ret_e)
  */
-#define dc_res_ret_ea(NUM, ...)                                                                                                \
+#define dc_ret_ea(NUM, ...)                                                                                                    \
     do                                                                                                                         \
     {                                                                                                                          \
-        dc_res_ea(NUM, __VA_ARGS__);                                                                                           \
-        dc_res_ret();                                                                                                          \
+        dc_ea(NUM, __VA_ARGS__);                                                                                               \
+        dc_ret();                                                                                                              \
     } while (0)
 
 /**
  * `[MACRO]` Sets the main result variable (__dc_res) to success and returns it right
  * away.
  */
-#define dc_res_ret_ok(VALUE)                                                                                                   \
+#define dc_ret_ok(VALUE)                                                                                                       \
     do                                                                                                                         \
     {                                                                                                                          \
-        dc_res_ok((VALUE));                                                                                                    \
-        dc_res_ret();                                                                                                          \
-    } while (0)
-
-/**
- * `[MACRO]` Sets the main result variable (__dc_res) to success and returns it right
- * away.
- *
- * NOTE: The main result variable must be of type DCRes
- *
- * NOTE: The VALUE must not be allocated (see dc_res_ret_ok_dva)
- */
-#define dc_res_ret_ok_dv(TYPE, VALUE)                                                                                          \
-    do                                                                                                                         \
-    {                                                                                                                          \
-        dc_res_ok_dv(TYPE, (VALUE));                                                                                           \
-        dc_res_ret();                                                                                                          \
+        dc_ok((VALUE));                                                                                                        \
+        dc_ret();                                                                                                              \
     } while (0)
 
 /**
@@ -670,20 +655,35 @@
  *
  * NOTE: The main result variable must be of type DCRes
  *
- * NOTE: The VALUE must be allocated (see dc_res_ret_ok_dv)
+ * NOTE: The VALUE must not be allocated (see dc_ret_ok_dva)
  */
-#define dc_res_ret_ok_dva(TYPE, VALUE)                                                                                         \
+#define dc_ret_ok_dv(TYPE, VALUE)                                                                                              \
     do                                                                                                                         \
     {                                                                                                                          \
-        dc_res_ok_dva(TYPE, (VALUE));                                                                                          \
-        dc_res_ret();                                                                                                          \
+        dc_ok_dv(TYPE, (VALUE));                                                                                               \
+        dc_ret();                                                                                                              \
+    } while (0)
+
+/**
+ * `[MACRO]` Sets the main result variable (__dc_res) to success and returns it right
+ * away.
+ *
+ * NOTE: The main result variable must be of type DCRes
+ *
+ * NOTE: The VALUE must be allocated (see dc_ret_ok_dv)
+ */
+#define dc_ret_ok_dva(TYPE, VALUE)                                                                                             \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_ok_dva(TYPE, (VALUE));                                                                                              \
+        dc_ret();                                                                                                              \
     } while (0)
 
 /**
  * `[MACRO]` Expands to an if statements that checks if main result variable (__dc_res)
  * status is error and if so returns it
  */
-#define dc_res_fail_if_err()                                                                                                   \
+#define dc_fail_if_err()                                                                                                       \
     if (__dc_res.status == DC_RES_ERR) return __dc_res
 
 /**
@@ -692,7 +692,7 @@
  */
 #define dc_try_or_fail_with3(RES_TYPE, RES, CALL, FAILURE_ACTIONS)                                                             \
     RES_TYPE RES = CALL;                                                                                                       \
-    dc_res_ret_if_err2(RES, FAILURE_ACTIONS)
+    dc_ret_if_err2(RES, FAILURE_ACTIONS)
 
 /**
  * `[MACRO]` Expands to assigning an existing result variable with the CALL
@@ -700,7 +700,7 @@
  */
 #define dc_try_or_fail_with2(RES, CALL, FAILURE_ACTIONS)                                                                       \
     RES = CALL;                                                                                                                \
-    dc_res_ret_if_err2(RES, FAILURE_ACTIONS)
+    dc_ret_if_err2(RES, FAILURE_ACTIONS)
 
 /**
  * `[MACRO]` Expands to assigning main result variable (__dc_res) to the CALL
@@ -712,10 +712,10 @@
  * `[MACRO]` Checks if the main result variable (__dc_res) is error does
  * PRE_RETURN_ACTIONS and then return __dc_res
  */
-#define dc_res_ret_if_err(PRE_RETURN_ACTIONS)                                                                                  \
+#define dc_ret_if_err(PRE_RETURN_ACTIONS)                                                                                      \
     do                                                                                                                         \
     {                                                                                                                          \
-        if (dc_res_is_err())                                                                                                   \
+        if (dc_is_err())                                                                                                       \
         {                                                                                                                      \
             do                                                                                                                 \
             {                                                                                                                  \
@@ -738,20 +738,20 @@
     do                                                                                                                         \
     {                                                                                                                          \
         __dc_res = CALL;                                                                                                       \
-        dc_res_fail_if_err();                                                                                                  \
+        dc_fail_if_err();                                                                                                      \
     } while (0)
 
 /**
  * `[MACRO]` Checks provided result variable and if its status is error populates the main
  * result variable (__dc_res) error and returns it
  */
-#define dc_res_fail_if_err2(RES)                                                                                               \
+#define dc_fail_if_err2(RES)                                                                                                   \
     do                                                                                                                         \
     {                                                                                                                          \
         if ((RES).status == DC_RES_ERR)                                                                                        \
         {                                                                                                                      \
-            dc_res_err_cpy(RES);                                                                                               \
-            dc_res_ret();                                                                                                      \
+            dc_err_cpy(RES);                                                                                                   \
+            dc_ret();                                                                                                          \
         }                                                                                                                      \
     } while (0)
 
@@ -759,16 +759,16 @@
  * `[MACRO]` Checks if the given result variable is error copies the error data and does
  * PRE_RETURN_ACTIONS and then return __dc_res
  */
-#define dc_res_ret_if_err2(RES, PRE_RETURN_ACTIONS)                                                                            \
+#define dc_ret_if_err2(RES, PRE_RETURN_ACTIONS)                                                                                \
     do                                                                                                                         \
     {                                                                                                                          \
-        if (dc_res_is_err2(RES))                                                                                               \
+        if (dc_is_err2(RES))                                                                                                   \
         {                                                                                                                      \
             do                                                                                                                 \
             {                                                                                                                  \
                 PRE_RETURN_ACTIONS;                                                                                            \
             } while (0);                                                                                                       \
-            dc_res_err_cpy(RES);                                                                                               \
+            dc_err_cpy(RES);                                                                                                   \
             return __dc_res;                                                                                                   \
         }                                                                                                                      \
     } while (0)
@@ -786,7 +786,7 @@
     do                                                                                                                         \
     {                                                                                                                          \
         RES_TYPE __temp_res = CALL;                                                                                            \
-        dc_res_fail_if_err2(__temp_res);                                                                                       \
+        dc_fail_if_err2(__temp_res);                                                                                           \
     } while (0)
 
 /**
@@ -822,93 +822,93 @@
  * - The main result variable (__dc_res) is of type DCRes
  * - The result status is ok
  */
-#define dc_res_as(TYPE) dc_dv_as(__dc_res.data.v, TYPE)
+#define dc_as(TYPE) dc_dv_as(__dc_res.data.v, TYPE)
 
 /**
  * `[MACRO]` Returns true if main result variable (__dc_res) status is ok
  */
-#define dc_res_is_ok() (__dc_res.status == DC_RES_OK)
+#define dc_is_ok() (__dc_res.status == DC_RES_OK)
 
 /**
  * `[MACRO]` Returns true if the given result variable status is ok
  */
-#define dc_res_is_ok2(RES) ((RES).status == DC_RES_OK)
+#define dc_is_ok2(RES) ((RES).status == DC_RES_OK)
 
 /**
  * `[MACRO]` Returns true if main result variable (__dc_res) status is error
  */
-#define dc_res_is_err() (__dc_res.status == DC_RES_ERR)
+#define dc_is_err() (__dc_res.status == DC_RES_ERR)
 
 /**
  * `[MACRO]` Returns true if the given result variable status is error
  */
-#define dc_res_is_err2(RES) ((RES).status == DC_RES_ERR)
+#define dc_is_err2(RES) ((RES).status == DC_RES_ERR)
 
 /**
  * `[MACRO]` Retrieves the value of the main result variable (__dc_res)
  *
  * NOTE: You must have already checked to make sure the current status is ok
  */
-#define dc_res_val() (__dc_res.data.v)
+#define dc_unwrap() (__dc_res.data.v)
 
 /**
  * `[MACRO]` Retrieves the value of the given result variable
  *
  * NOTE: You must have already checked to make sure the current status is ok
  */
-#define dc_res_val2(RES) ((RES).data.v)
+#define dc_unwrap2(RES) ((RES).data.v)
 
 /**
  * `[MACRO]` Expands to current status of the main result variable (__dc_res)
  */
-#define dc_res_status() (__dc_res.status)
+#define dc_status() (__dc_res.status)
 
 /**
  * `[MACRO]` Expands to the status of the given result variable
  */
-#define dc_res_status2(RES) ((RES).status)
+#define dc_status2(RES) ((RES).status)
 
 /**
  * `[MACRO]` Retrieves the error data of the main result variable (__dc_res)
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-#define dc_res_err() (__dc_res.data.e)
+#define dc_err() (__dc_res.data.e)
 
 /**
  * `[MACRO]` Retrieves the error data of the given result variable
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-#define dc_res_err2(RES) ((RES).data.e)
+#define dc_err2(RES) ((RES).data.e)
 
 /**
  * `[MACRO]` Retrieves the error code of the main result variable (__dc_res)
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-#define dc_res_err_code() (__dc_res.data.e.code)
+#define dc_err_code() (__dc_res.data.e.code)
 
 /**
  * `[MACRO]` Retrieves the error code of the given result variable
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-#define dc_res_err_code2(RES) ((RES).data.e.code)
+#define dc_err_code2(RES) ((RES).data.e.code)
 
 /**
  * `[MACRO]` Retrieves the error message of the main result variable (__dc_res)
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-#define dc_res_err_msg() (__dc_res.data.e.message)
+#define dc_err_msg() (__dc_res.data.e.message)
 
 /**
  * `[MACRO]` Retrieves the error message of the given result variable
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-#define dc_res_err_msg2(RES) ((RES).data.e.message)
+#define dc_err_msg2(RES) ((RES).data.e.message)
 
 /**
  * `[MACRO]` Debug logs the given result's error result with provided string literal
@@ -916,7 +916,7 @@
  *
  * NOTE: The result must be error
  */
-#define dc_res_err_dbg_log2(RES, PRE_MSG) dc_dbg_log(PRE_MSG ": (code %d) %s", dc_res_err_code2(RES), dc_res_err_msg2(RES))
+#define dc_err_dbg_log2(RES, PRE_MSG) dc_dbg_log(PRE_MSG ": (code %d) %s", dc_err_code2(RES), dc_err_msg2(RES))
 
 /**
  * `[MACRO]` Debug logs main result variable (__dc_res) with provided string literal
@@ -924,7 +924,7 @@
  *
  * NOTE: The result must be error
  */
-#define dc_res_err_dbg_log(PRE_MSG) dc_res_err_dbg_log2(__dc_res, PRE_MSG)
+#define dc_err_dbg_log(PRE_MSG) dc_err_dbg_log2(__dc_res, PRE_MSG)
 
 /**
  * `[MACRO]` Logs the given result's error result with provided string literal
@@ -932,7 +932,7 @@
  *
  * NOTE: The result must be error
  */
-#define dc_res_err_log2(RES, PRE_MSG) dc_log(PRE_MSG ": (code %d) %s", dc_res_err_code2(RES), dc_res_err_msg2(RES))
+#define dc_err_log2(RES, PRE_MSG) dc_log(PRE_MSG ": (code %d) %s", dc_err_code2(RES), dc_err_msg2(RES))
 
 /**
  * `[MACRO]` Logs main result variable (__dc_res) with provided string literal
@@ -940,7 +940,7 @@
  *
  * NOTE: The result must be error
  */
-#define dc_res_err_log(PRE_MSG) dc_res_err_log2(__dc_res, PRE_MSG)
+#define dc_err_log(PRE_MSG) dc_err_log2(__dc_res, PRE_MSG)
 
 
 // ***************************************************************************************
@@ -1265,7 +1265,7 @@
  * `[MACRO]` Checks if the given index is correct according to the dynamic array number of
  * elements
  */
-#define dc_da_check_boundary(DARR, INDEX) ((DARR).count <= (INDEX))
+#define dc_da_is_index_valid(DARR, INDEX) ((INDEX) < (DARR).count)
 
 /**
  * `[MACRO]` Retrieves dynamic value element at certain index as is
@@ -1489,14 +1489,14 @@
     {                                                                                                                          \
         dc_dbg_log("arr is empty or not provided/initialized or out_var is "                                                   \
                    "not provided");                                                                                            \
-        dc_res_ret_e(1, "arr is empty or not provided/initialized or out_var is "                                              \
-                        "not provided");                                                                                       \
+        dc_ret_e(1, "arr is empty or not provided/initialized or out_var is "                                                  \
+                    "not provided");                                                                                           \
     }                                                                                                                          \
     *out_arr = (TYPE*)malloc((arr->count + 1) * sizeof(TYPE));                                                                 \
     if (!(*out_arr))                                                                                                           \
     {                                                                                                                          \
         dc_dbg_log("memory allocation failed");                                                                                \
-        dc_res_ret_e(2, "memory allocation failed");                                                                           \
+        dc_ret_e(2, "memory allocation failed");                                                                               \
     }                                                                                                                          \
     usize dest_index = 0;                                                                                                      \
     for (usize i = 0; i < arr->count; ++i)                                                                                     \
@@ -1509,7 +1509,7 @@
                 free(*out_arr);                                                                                                \
                 *out_arr = NULL;                                                                                               \
                 dc_dbg_log("failed as it got type other than '" #TYPE "'");                                                    \
-                dc_res_ret_e(3, "failed as it got type other than '" #TYPE "'");                                               \
+                dc_ret_e(3, "failed as it got type other than '" #TYPE "'");                                                   \
             }                                                                                                                  \
             continue;                                                                                                          \
         }                                                                                                                      \
@@ -1517,7 +1517,7 @@
         dest_index++;                                                                                                          \
     }                                                                                                                          \
     (*out_arr)[dest_index] = dc_stopper(TYPE);                                                                                 \
-    dc_res_ret_ok(dest_index)
+    dc_ret_ok(dest_index)
 
 // ***************************************************************************************
 // * HASH TABLE MACROS
@@ -1567,7 +1567,7 @@
     do                                                                                                                         \
     {                                                                                                                          \
         __dc_res = (HT).hash_fn((KEY));                                                                                        \
-        dc_res_fail_if_err2(__dc_res);                                                                                         \
+        dc_fail_if_err2(__dc_res);                                                                                             \
         VAR_NAME = (__dc_res.data.v) % (HT).cap;                                                                               \
     } while (0)
 
@@ -1583,7 +1583,7 @@
     do                                                                                                                         \
     {                                                                                                                          \
         DCResU32 __hash_res = (HT).hash_fn((KEY));                                                                             \
-        dc_res_fail_if_err2(__hash_res);                                                                                       \
+        dc_fail_if_err2(__hash_res);                                                                                           \
         VAR_NAME = (__hash_res.data.v) % (HT).cap;                                                                             \
     } while (0)
 
@@ -1928,13 +1928,13 @@
  * `[MACRO]` Pushes given result variable address with default standard result variable
  * cleanup in the default batch (index 0)
  */
-#define dc_cleanup_push_res(ELEMENT) dc_cleanup_default_pool_push(ELEMENT, dc_res_free)
+#define dc_cleanup_push_res(ELEMENT) dc_cleanup_default_pool_push(ELEMENT, dc_result_free)
 
 /**
  * `[MACRO]` Pushes given result variable address with default standard result variable
  * cleanup in the given batch index
  */
-#define dc_cleanup_push_res2(BATCH_INDEX, ELEMENT) dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, dc_res_free)
+#define dc_cleanup_push_res2(BATCH_INDEX, ELEMENT) dc_cleanup_pool_push(BATCH_INDEX, ELEMENT, dc_result_free)
 
 /**
  * `[MACRO]` Pushes given allocated memory address with default standard allocated memory
@@ -2005,13 +2005,13 @@
 #define dc_return_if_err(RES, PRE_RETURN_ACTIONS)                                                                              \
     do                                                                                                                         \
     {                                                                                                                          \
-        if (dc_res_is_err2(RES))                                                                                               \
+        if (dc_is_err2(RES))                                                                                                   \
         {                                                                                                                      \
             do                                                                                                                 \
             {                                                                                                                  \
                 PRE_RETURN_ACTIONS;                                                                                            \
             } while (0);                                                                                                       \
-            dc_res_err_cpy(RES);                                                                                               \
+            dc_err_cpy(RES);                                                                                                   \
             dc_return();                                                                                                       \
         }                                                                                                                      \
     } while (0)
@@ -2025,7 +2025,7 @@
 #define dc_return_if_err2(RES, RET_VAL, PRE_RETURN_ACTIONS)                                                                    \
     do                                                                                                                         \
     {                                                                                                                          \
-        if (dc_res_is_err2(RES))                                                                                               \
+        if (dc_is_err2(RES))                                                                                                   \
         {                                                                                                                      \
             do                                                                                                                 \
             {                                                                                                                  \

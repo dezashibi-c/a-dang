@@ -956,7 +956,7 @@ DCResVoid dc_free(voidptr variable);
  *
  * NOTE: Checkout aliases.h if you want to create your own compatible type
  */
-DCResVoid dc_res_free(voidptr res_ptr);
+DCResVoid dc_result_free(voidptr res_ptr);
 
 // ***************************************************************************************
 // * Files

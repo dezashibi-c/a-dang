@@ -29,11 +29,11 @@ static bool perform_test_batch(string tests[], usize tests_count)
         DParser p;
         DCResVoid res = dang_parser_init(&p, &s);
 
-        if (dc_res_is_err2(res))
+        if (dc_is_err2(res))
         {
             dc_log("parser initialization error on input '%s'", input);
 
-            dc_res_err_log2(res, "error");
+            dc_err_log2(res, "error");
 
             success = false;
 
@@ -42,7 +42,7 @@ static bool perform_test_batch(string tests[], usize tests_count)
 
         ResNode program_res = dang_parser_parse_program(&p);
 
-        DNode* program = dc_res_val2(program_res);
+        DNode* program = dc_unwrap2(program_res);
 
         if (!dang_parser_has_no_error(&p))
         {
@@ -58,10 +58,10 @@ static bool perform_test_batch(string tests[], usize tests_count)
 
         string result = NULL;
         DCResVoid inspection_res = dang_node_inspect(program, &result);
-        if (dc_res_is_err2(inspection_res))
+        if (dc_is_err2(inspection_res))
         {
             dc_log("inspection failed on input: '%s'", input);
-            dc_res_err_log2(inspection_res, "Inspection error");
+            dc_err_log2(inspection_res, "Inspection error");
             success = false;
         }
         else

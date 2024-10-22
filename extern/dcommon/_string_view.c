@@ -33,7 +33,7 @@ DCResSv dc_sv_create(string base, usize start, usize length)
     {
         dc_dbg_log("got NULL base string");
 
-        dc_res_ret_e(1, "got NULL base string");
+        dc_ret_e(1, "got NULL base string");
     }
 
     if (start + length > strlen(base))
@@ -42,7 +42,7 @@ DCResSv dc_sv_create(string base, usize start, usize length)
                        usize) " characters out of a string with length=" dc_fmt(usize),
                    start, length, strlen(base));
 
-        dc_res_ret_e(dc_err_code(INDEX), "starting at the given index cannot provide desired sub string with the given length");
+        dc_ret_e(dc_e_code(INDEX), "starting at the given index cannot provide desired sub string with the given length");
     }
 
     DCStringView view;
@@ -50,7 +50,7 @@ DCResSv dc_sv_create(string base, usize start, usize length)
     view.str = base + start;
     view.len = length;
 
-    dc_res_ret_ok(view);
+    dc_ret_ok(view);
 }
 
 DCResString dc_sv_as_cstr(DCStringView* sv)
@@ -61,31 +61,31 @@ DCResString dc_sv_as_cstr(DCStringView* sv)
     {
         dc_dbg_log("got NULL DCStringView");
 
-        dc_res_ret_e(1, "got NULL DCStringView");
+        dc_ret_e(1, "got NULL DCStringView");
     }
 
-    if (sv->cstr != NULL) dc_res_ret_ok(sv->cstr);
+    if (sv->cstr != NULL) dc_ret_ok(sv->cstr);
 
     sv->cstr = (string)malloc(sv->len + 1);
     if (sv->cstr == NULL)
     {
         dc_dbg_log("Memory allocation failed");
 
-        dc_res_ret_e(2, "Memory allocation failed");
+        dc_ret_e(2, "Memory allocation failed");
     }
 
     strncpy(sv->cstr, sv->str, sv->len);
 
     sv->cstr[sv->len] = '\0';
 
-    dc_res_ret_ok(sv->cstr);
+    dc_ret_ok(sv->cstr);
 }
 
 DCResVoid dc_sv_free(DCStringView* sv)
 {
     DC_RES_void();
 
-    if (!sv) dc_res_ret_e(dc_err_code(NV), dc_err_msg(NV));
+    if (!sv) dc_ret_e(dc_e_code(NV), dc_e_msg(NV));
 
     if (sv->cstr) free(sv->cstr);
 
@@ -93,5 +93,5 @@ DCResVoid dc_sv_free(DCStringView* sv)
     sv->str = NULL;
     sv->len = 0;
 
-    dc_res_ret();
+    dc_ret();
 }

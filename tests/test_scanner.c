@@ -42,19 +42,19 @@ static bool perform_dang_scanner_test(const string input, TestExpectedResult tes
     size i = 0;
     dc_foreach(tests, TestExpectedResult, {
         token = dang_scanner_next_token(&s);
-        if (dc_res_is_err2(token))
+        if (dc_is_err2(token))
         {
-            dc_res_err_log2(token, "illegal token");
+            dc_err_log2(token, "illegal token");
             return false;
         }
 
-        if (!perform_token_test(_it, &dc_res_val2(token), i)) return false;
+        if (!perform_token_test(_it, &dc_unwrap2(token), i)) return false;
 
         ++i;
     });
 
     token = dang_scanner_next_token(&s);
-    if (!perform_token_test(&tests[i], &dc_res_val2(token), i)) return false;
+    if (!perform_token_test(&tests[i], &dc_unwrap2(token), i)) return false;
     ++i;
 
     dc_action_on(i != tok_count, return false, "Expected " dc_fmt(size) " tokens but got=" dc_fmt(size), tok_count, i);

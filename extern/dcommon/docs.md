@@ -573,9 +573,9 @@ DC_RES_fileptr()
  * initiates the error value with given error code (NUM) and literal string
  *
  * NOTE: MSG must be literal string not an allocated string variable (see
- * dc_res_ea)
+ * dc_ea)
  */
-dc_res_e(NUM, MSG)                                                    
+dc_e(NUM, MSG)                                                    
 
 /**
  * Sets the main result variable (__dc_res) status to DC_RES_ERR and
@@ -584,7 +584,7 @@ dc_res_e(NUM, MSG)
  *
  * NOTE: Allocates memory
  */
-dc_res_ea(NUM, ...)                                                   
+dc_ea(NUM, ...)                                                   
 
 /**
  * Copies error data from RES2 to RES1
@@ -594,7 +594,7 @@ dc_res_ea(NUM, ...)
  *
  * NOTE: Does Nothing on successful results
  */
-dc_res_err_cpy2(RES1, RES2)                                           
+dc_err_cpy2(RES1, RES2)                                           
 
 /**
  * Copies error data from RES to the main result variable (__dc_res)
@@ -604,66 +604,56 @@ dc_res_err_cpy2(RES1, RES2)
  *
  * NOTE: Does Nothing on successful results
  */
-dc_res_err_cpy(RES)
+dc_err_cpy(RES)
 
 
 /**
  * Sets the main result variable (__dc_res) status to DC_RES_OK and also
  * initiates the value with the given VALUE
  */
-dc_res_ok(VALUE)                                                      
+dc_ok(VALUE)                                                      
 
 /**
  * In case the result is of type DCRes this is a shortcut to create a literal
  * dynamic value and setting it to the success value on the fly
  *
- * NOTE: The value must not be allocated (see dc_res_ok_dva)
+ * NOTE: The value must not be allocated (see dc_ok_dva)
  */
-dc_res_ok_dv(TYPE, VALUE) 
+dc_ok_dv(TYPE, VALUE) 
 
 /**
  * In case the result is of type DCRes this is a shortcut to create a literal
  * dynamic value and setting it to the success value on the fly
  *
- * NOTE: The value must be allocated (see dc_res_ok_dv)
+ * NOTE: The value must be allocated (see dc_ok_dv)
  */
-dc_res_ok_dva(TYPE, VALUE)
+dc_ok_dva(TYPE, VALUE)
 
 /**
  * Returns the main result variable (__dc_res)
  */
-dc_res_ret()
+dc_ret()
 
 /**
  * Sets the main result variable (__dc_res) to error and returns it right away.
  *
  * NOTE: MSG must be literal string not an allocated string variable
- * (see dc_res_ret_ea)
+ * (see dc_ret_ea)
  */
-dc_res_ret_e(NUM, MSG)                                                
+dc_ret_e(NUM, MSG)                                                
 
 /**
  * Sets the main result variable (__dc_res) to error and returns it right away.
  *
- * NOTE: Allocates memory (see dc_res_ret_e)
+ * NOTE: Allocates memory (see dc_ret_e)
  */
-dc_res_ret_ea(NUM, ...)                                               
+dc_ret_ea(NUM, ...)                                               
 
 /**
  * Sets the main result variable (__dc_res) to success and returns it right
  * away.
  */
-dc_res_ret_ok(VALUE)                                                  
-
-/**
- * Sets the main result variable (__dc_res) to success and returns it right
- * away.
- *
- * NOTE: The main result variable must be of type DCRes
- *
- * NOTE: The VALUE must not be allocated (see dc_res_ret_ok_dva)
- */
-dc_res_ret_ok_dv(TYPE, VALUE)                                         
+dc_ret_ok(VALUE)                                                  
 
 /**
  * Sets the main result variable (__dc_res) to success and returns it right
@@ -671,15 +661,25 @@ dc_res_ret_ok_dv(TYPE, VALUE)
  *
  * NOTE: The main result variable must be of type DCRes
  *
- * NOTE: The VALUE must be allocated (see dc_res_ret_ok_dv)
+ * NOTE: The VALUE must not be allocated (see dc_ret_ok_dva)
  */
-dc_res_ret_ok_dva(TYPE, VALUE)                                        
+dc_ret_ok_dv(TYPE, VALUE)                                         
+
+/**
+ * Sets the main result variable (__dc_res) to success and returns it right
+ * away.
+ *
+ * NOTE: The main result variable must be of type DCRes
+ *
+ * NOTE: The VALUE must be allocated (see dc_ret_ok_dv)
+ */
+dc_ret_ok_dva(TYPE, VALUE)                                        
 
 /**
  * Renders an if statements that checks if main result variable (__dc_res)
  * status is error and if so returns it
  */
-dc_res_fail_if_err()                                                       
+dc_fail_if_err()                                                       
 
 /**
  * Expands to a new result variable declaration initialized with the CALL
@@ -703,7 +703,7 @@ dc_res_fail_if_err()
  * Checks if the main result variable (__dc_res) is error does
  * PRE_RETURN_ACTIONS and then return __dc_res
  */
-dc_res_ret_if_err(PRE_RETURN_ACTIONS)
+dc_ret_if_err(PRE_RETURN_ACTIONS)
 
 /**
  * Assigns the main result variable (__dc_res) to the provided function call
@@ -720,13 +720,13 @@ dc_try_fail(CALL)
  * Checks provided result variable and if its status is error populates the main
  * result variable (__dc_res) error and returns it
  */
-dc_res_fail_if_err2(RES)                                             
+dc_fail_if_err2(RES)                                             
 
 /**
  * Checks if the given result variable is error copies the error data and does
  * PRE_RETURN_ACTIONS and then return __dc_res
  */
-dc_res_ret_if_err2(RES, PRE_RETURN_ACTIONS)
+dc_ret_if_err2(RES, PRE_RETURN_ACTIONS)
 
 /**
  * In case you want to call a function that returns a result type and you don't
@@ -768,93 +768,93 @@ DC_TRY_DEF2(DC_RESULT_TYPE, CALL)
  * - The main result variable (__dc_res) is of type DCRes
  * - The result status is ok
  */
-dc_res_as(TYPE)
+dc_as(TYPE)
 
 /**
  * Returns true if main result variable (__dc_res) status is ok
  */
-dc_res_is_ok()
+dc_is_ok()
 
 /**
  * Returns true if the given result variable status is ok
  */
-dc_res_is_ok2(RES) 
+dc_is_ok2(RES) 
 
 /**
  * Returns true if main result variable (__dc_res) status is error
  */
-dc_res_is_err()
+dc_is_err()
 
 /**
  * Returns true if the given result variable status is error
  */
-dc_res_is_err2(RES) 
+dc_is_err2(RES) 
 
 /**
  * Retrieves the value of the main result variable (__dc_res)
  *
  * NOTE: You must have already checked to make sure the current status is ok
  */
-dc_res_val()
+dc_unwrap()
 
 /**
  * Retrieves the value of the given result variable
  *
  * NOTE: You must have already checked to make sure the current status is ok
  */
-dc_res_val2(RES)
+dc_unwrap2(RES)
 
 /**
  * Expands to current status of the main result variable (__dc_res)
  */
-dc_res_status()
+dc_status()
 
 /**
  * Expands to the status of the given result variable
  */
-dc_res_status2(RES) 
+dc_status2(RES) 
 
 /**
  * Retrieves the error data of the main result variable (__dc_res)
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-dc_res_err()
+dc_err()
 
 /**
  * Retrieves the error data of the given result variable
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-dc_res_err2(RES)
+dc_err2(RES)
 
 /**
  * Retrieves the error code of the main result variable (__dc_res)
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-dc_res_err_code() 
+dc_err_code() 
 
 /**
  * Retrieves the error code of the given result variable
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-dc_res_err_code2(RES) 
+dc_err_code2(RES) 
 
 /**
  * Retrieves the error message of the main result variable (__dc_res)
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-dc_res_err_msg()
+dc_err_msg()
 
 /**
  * Retrieves the error message of the given result variable
  *
  * NOTE: You must have already checked to make sure the current status is error
  */
-dc_res_err_msg2(RES)
+dc_err_msg2(RES)
 
 /**
  * Debug logs the given result's error result with provided string literal
@@ -862,7 +862,7 @@ dc_res_err_msg2(RES)
  *
  * NOTE: The result must be error
  */
-dc_res_err_dbg_log2(RES, PRE_MSG)                                      
+dc_err_dbg_log2(RES, PRE_MSG)                                      
 
 /**
  * Debug logs main result variable (__dc_res) with provided string literal
@@ -870,7 +870,7 @@ dc_res_err_dbg_log2(RES, PRE_MSG)
  *
  * NOTE: The result must be error
  */
-dc_res_err_dbg_log(PRE_MSG) 
+dc_err_dbg_log(PRE_MSG) 
 
 /**
  * Logs the given result's error result with provided string literal
@@ -878,7 +878,7 @@ dc_res_err_dbg_log(PRE_MSG)
  *
  * NOTE: The result must be error
  */
-dc_res_err_log2(RES, PRE_MSG)                                          
+dc_err_log2(RES, PRE_MSG)                                          
 
 /**
  * Logs main result variable (__dc_res) with provided string literal
@@ -886,7 +886,7 @@ dc_res_err_log2(RES, PRE_MSG)
  *
  * NOTE: The result must be error
  */
-dc_res_err_log(PRE_MSG) 
+dc_err_log(PRE_MSG) 
 
 /**
  * Frees the error message of result variables if they have any allocated error
@@ -899,7 +899,7 @@ dc_res_err_log(PRE_MSG)
  *
  * NOTE: Checkout aliases.h if you want to create your own compatible type
  */
-DCResVoid dc_res_free(voidptr res_ptr);
+DCResVoid dc_result_free(voidptr res_ptr);
 
 ```
 
@@ -1548,7 +1548,7 @@ dc_dv_is_allocated(NAME)
  * Checks if the given index is correct according to the dynamic array number of
  * elements
  */
-dc_da_check_boundary(DARR, INDEX)
+dc_da_is_index_valid(DARR, INDEX)
 
 /**
  * Retrieves dynamic value element at certain index as is
@@ -2430,7 +2430,7 @@ DCResVoid dc_free(voidptr variable);
  *
  * NOTE: Checkout aliases.h if you want to create your own compatible type
  */
-DCResVoid dc_res_free(voidptr res_ptr);
+DCResVoid dc_result_free(voidptr res_ptr);
 
 /**
  * Constant for DC_EXIT_SECTION and dc_cleanup_pool_run

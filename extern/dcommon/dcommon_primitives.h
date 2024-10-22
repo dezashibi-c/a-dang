@@ -76,7 +76,7 @@ typedef enum
  * - '5' Internal errors
  * - '6' Not Found
  *
- * NOTE: You can use macros `dc_err` and `dc_err_msg`
+ * NOTE: You can use macros `dc_err` and `dc_e_msg`
  *
  * 2. If message is allocated the `allocated` field must be set to true.
  */

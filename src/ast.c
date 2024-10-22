@@ -60,14 +60,14 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
     {
         dc_dbg_log("%s", "cannot inspect null node");
 
-        dc_res_ret_e(dc_err_code(NV), "cannot inspect null node");
+        dc_ret_e(dc_e_code(NV), "cannot inspect null node");
     }
 
     if (!dn_type_is_valid(dn->type))
     {
         dc_dbg_log("cannot inspect invalid node type: %s", tostr_DNType(dn->type));
 
-        dc_res_ret_e(dc_err_code(TYPE), "cannot inspect invalid node type");
+        dc_ret_e(dc_e_code(TYPE), "cannot inspect invalid node type");
     }
 
     dc_dbg_log("inspecting node type: %s", tostr_DNType(dn->type));
@@ -113,7 +113,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
         case DN_PREFIX_EXPRESSION:
         {
             dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});
-            dc_sappend(result, "(%s", dc_res_val2(data_str_res));
+            dc_sappend(result, "(%s", dc_unwrap2(data_str_res));
             dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
             dc_sappend(result, "%s", ")");
             break;
@@ -124,7 +124,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
             dc_sappend(result, "%s", "(");
             dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
             dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});
-            dc_sappend(result, " %s ", dc_res_val2(data_str_res));
+            dc_sappend(result, " %s ", dc_unwrap2(data_str_res));
             dc_try_fail(dang_node_inspect(dn_child(dn, 1), result));
             dc_sappend(result, "%s", ")");
             break;
@@ -218,7 +218,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
         {
             dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});
 
-            dc_sappend(result, "\"%s\"", dc_res_val2(data_str_res));
+            dc_sappend(result, "\"%s\"", dc_unwrap2(data_str_res));
             break;
         }
 
@@ -226,7 +226,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
         {
             dc_try_or_fail_with3(DCResBool, data_bool_res, dc_dv_as_bool(&dn->data), {});
 
-            dc_sappend(result, "%s", dc_tostr_bool(dc_res_val2(data_bool_res)));
+            dc_sappend(result, "%s", dc_tostr_bool(dc_unwrap2(data_bool_res)));
             break;
         }
 
@@ -234,7 +234,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
         {
             dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});
 
-            dc_sappend(result, "%s", dc_res_val2(data_str_res));
+            dc_sappend(result, "%s", dc_unwrap2(data_str_res));
             break;
         }
 
@@ -248,7 +248,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
             // DN_INTEGER_LITERAL,
     };
 
-    dc_res_ret();
+    dc_ret();
 }
 
 ResNode dn_new(DNType type, DCDynVal data, bool has_children)
@@ -260,7 +260,7 @@ ResNode dn_new(DNType type, DCDynVal data, bool has_children)
     {
         dc_dbg_log("DNode Memory allocation failed");
 
-        dc_res_ret_e(2, "DNode Memory allocation failed");
+        dc_ret_e(2, "DNode Memory allocation failed");
     }
 
     node->type = type;
@@ -270,7 +270,7 @@ ResNode dn_new(DNType type, DCDynVal data, bool has_children)
 
     if (has_children) dc_try_fail_temp(DCResVoid, dc_da_init(&node->children, dn_child_free));
 
-    dc_res_ret_ok(node);
+    dc_ret_ok(node);
 }
 
 DCResVoid dn_program_free(DNode* program)
@@ -283,7 +283,7 @@ DCResVoid dn_program_free(DNode* program)
         free(program);
     }
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResVoid dn_free(DNode* dn)
@@ -294,7 +294,7 @@ DCResVoid dn_free(DNode* dn)
 
     if (dn->children.cap != 0) dc_try(dc_da_free(&dn->children));
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DC_CLEANUP_FN_DECL(dn_cleanup)
@@ -308,5 +308,5 @@ DC_DV_FREE_FN_DECL(dn_child_free)
 
     if (dc_dv_is(*_value, DNodePtr) && dc_dv_as(*_value, DNodePtr) != NULL) dc_try(dn_free(dc_dv_as(*_value, DNodePtr)));
 
-    dc_res_ret();
+    dc_ret();
 }

@@ -38,14 +38,14 @@ static ResObj test_eval(string input, DEnv* de)
     ResNode program_res = dang_parser_parse_program(&p);
     dang_parser_free(&p);
 
-    DNode* program = dc_res_val2(program_res);
+    DNode* program = dc_unwrap2(program_res);
 
     if (!dang_parser_has_no_error(&p))
     {
         dn_program_free(program);
         dang_parser_free(&p);
 
-        dc_res_ret_ea(-1, "parser has error on input '%s'", input);
+        dc_ret_ea(-1, "parser has error on input '%s'", input);
     }
 
     dc_try_or_fail_with(dang_eval(program, de), {
@@ -53,7 +53,7 @@ static ResObj test_eval(string input, DEnv* de)
         dang_parser_free(&p);
     });
 
-    dc_res_ret();
+    dc_ret();
 }
 
 static bool test_evaluated_literal(DObj* obj, DObj* expected)
@@ -65,26 +65,26 @@ static bool test_evaluated_literal(DObj* obj, DObj* expected)
     }
 
     DCResBool res = dc_dv_eq(&obj->dv, &expected->dv);
-    if (dc_res_is_err2(res))
+    if (dc_is_err2(res))
     {
-        dc_res_err_log2(res, "cannot compare dynamic values");
+        dc_err_log2(res, "cannot compare dynamic values");
         return false;
     }
 
-    if (!dc_res_val2(res))
+    if (!dc_unwrap2(res))
     {
         DCResString obj_str, expected_str;
 
         obj_str = dc_tostr_dv(&obj->dv);
         expected_str = dc_tostr_dv(&expected->dv);
 
-        dc_log("expected '%s' but got '%s'", dc_res_val2(expected_str), dc_res_val2(obj_str));
+        dc_log("expected '%s' but got '%s'", dc_unwrap2(expected_str), dc_unwrap2(obj_str));
 
-        if (dc_res_val2(obj_str)) free(dc_res_val2(obj_str));
-        if (dc_res_val2(expected_str)) free(dc_res_val2(expected_str));
+        if (dc_unwrap2(obj_str)) free(dc_unwrap2(obj_str));
+        if (dc_unwrap2(expected_str)) free(dc_unwrap2(expected_str));
     }
 
-    return dc_res_val2(res);
+    return dc_unwrap2(res);
 }
 
 static bool test_evaluated_array_literal(DObj* obj, DObj* expected)
@@ -101,29 +101,29 @@ static bool perform_evaluation_tests(TestCase tests[])
     dc_foreach(tests, TestCase, {
         ResEnv de_res = dang_env_new();
 
-        if (dc_res_is_err2(de_res))
+        if (dc_is_err2(de_res))
         {
             dc_log("test '" dc_fmt(usize) "' failed", _idx);
-            dc_res_err_log2(de_res, "initializing environment error");
+            dc_err_log2(de_res, "initializing environment error");
             return false;
         }
 
-        DEnv* de = dc_res_val2(de_res);
+        DEnv* de = dc_unwrap2(de_res);
         ResObj res = test_eval(_it->input, de);
-        if (dc_res_is_err2(res))
+        if (dc_is_err2(res))
         {
             dc_log("test '" dc_fmt(usize) "' failed", _idx);
-            dc_res_err_log2(res, "evaluation failed");
+            dc_err_log2(res, "evaluation failed");
             dang_env_free(de);
 
             return false;
         }
 
         if (_it->expected.type == DOBJ_ARRAY)
-            dc_action_on(!test_evaluated_array_literal(dc_res_val2(res), &_it->expected), return false,
+            dc_action_on(!test_evaluated_array_literal(dc_unwrap2(res), &_it->expected), return false,
                          "array test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
         else
-            dc_action_on(!test_evaluated_literal(dc_res_val2(res), &_it->expected), return false,
+            dc_action_on(!test_evaluated_literal(dc_unwrap2(res), &_it->expected), return false,
                          "literal test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
 
         dang_env_free(de);
@@ -525,15 +525,15 @@ CLOVE_TEST(error_handling)
     dc_foreach(error_tests, string, {
         ResEnv de_res = dang_env_new();
 
-        if (dc_res_is_err2(de_res))
+        if (dc_is_err2(de_res))
         {
-            dc_res_err_log2(de_res, "initializing environment error");
+            dc_err_log2(de_res, "initializing environment error");
             CLOVE_FAIL();
         }
 
-        DEnv* de = dc_res_val2(de_res);
+        DEnv* de = dc_unwrap2(de_res);
         ResObj res = test_eval(*_it, de);
-        if (dc_res_is_ok2(res))
+        if (dc_is_ok2(res))
         {
             dc_log("test #" dc_fmt(usize) " error, expected input '%s' to have error result but evaluated to ok result", _idx,
                    *_it);

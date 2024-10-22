@@ -31,7 +31,7 @@ DCResVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn, DCKeyCom
     {
         dc_dbg_log("got NULL DCHashTable");
 
-        dc_res_ret_e(1, "got NULL DCHashTable");
+        dc_ret_e(1, "got NULL DCHashTable");
     }
 
     ht->container = (DCDynArr*)calloc(capacity, sizeof(DCDynArr));
@@ -40,7 +40,7 @@ DCResVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn, DCKeyCom
     {
         dc_dbg_log("Memory allocation failed");
 
-        dc_res_ret_e(2, "Memory allocation failed");
+        dc_ret_e(2, "Memory allocation failed");
     }
 
     ht->cap = capacity;
@@ -50,7 +50,7 @@ DCResVoid dc_ht_init(DCHashTable* ht, usize capacity, DCHashFn hash_fn, DCKeyCom
     ht->key_cmp_fn = key_cmp_fn;
     ht->key_value_free_fn = key_value_free_fn;
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResHt dc_ht_new(usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn, DCHtKeyValuePairFreeFn key_value_free_fn)
@@ -63,12 +63,12 @@ DCResHt dc_ht_new(usize capacity, DCHashFn hash_fn, DCKeyCompFn key_cmp_fn, DCHt
     {
         dc_dbg_log("Memory allocation failed");
 
-        dc_res_ret_e(2, "Memory allocation failed");
+        dc_ret_e(2, "Memory allocation failed");
     }
 
     dc_try_fail_temp(DCResVoid, dc_ht_init(ht, capacity, hash_fn, key_cmp_fn, key_value_free_fn));
 
-    dc_res_ret_ok(ht);
+    dc_ret_ok(ht);
 }
 
 DCResVoid dc_ht_free(DCHashTable* ht)
@@ -79,10 +79,10 @@ DCResVoid dc_ht_free(DCHashTable* ht)
     {
         dc_dbg_log("got NULL DCHashTable");
 
-        dc_res_ret_e(1, "got NULL DCHashTable");
+        dc_ret_e(1, "got NULL DCHashTable");
     }
 
-    if (ht && ht->cap == 0) dc_res_ret();
+    if (ht && ht->cap == 0) dc_ret();
 
     for (usize i = 0; i < ht->cap; ++i)
     {
@@ -108,7 +108,7 @@ DCResVoid dc_ht_free(DCHashTable* ht)
     ht->key_cmp_fn = NULL;
     ht->key_value_free_fn = NULL;
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResVoid __dc_ht_free(voidptr ht)
@@ -119,12 +119,12 @@ DCResVoid __dc_ht_free(voidptr ht)
     {
         dc_dbg_log("got NULL DCHashTable");
 
-        dc_res_ret_e(1, "got NULL DCHashTable");
+        dc_ret_e(1, "got NULL DCHashTable");
     }
 
     dc_try_fail(dc_ht_free((DCHashTable*)ht));
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResUsize dc_ht_find_by_key(DCHashTable* ht, DCDynVal key, DCDynVal** out_result)
@@ -135,7 +135,7 @@ DCResUsize dc_ht_find_by_key(DCHashTable* ht, DCDynVal key, DCDynVal** out_resul
     {
         dc_dbg_log("got NULL DCHashTable");
 
-        dc_res_ret_e(1, "got NULL DCHashTable");
+        dc_ret_e(1, "got NULL DCHashTable");
     }
 
     dc_try_fail_temp_ht_get_hash(_index, *ht, &key);
@@ -147,23 +147,23 @@ DCResUsize dc_ht_find_by_key(DCHashTable* ht, DCDynVal key, DCDynVal** out_resul
         {
             dc_dbg_log("wrong type, voidptr needed");
 
-            dc_res_ret_e(3, "wrong type, voidptr needed");
+            dc_ret_e(3, "wrong type, voidptr needed");
         }
 
         DCDynVal element_key = ((DCKeyValuePair*)_it->value.voidptr_val)->key;
 
         DCResBool cmp_res = ht->key_cmp_fn(&element_key, &key);
-        dc_res_fail_if_err2(cmp_res);
+        dc_fail_if_err2(cmp_res);
 
-        if (dc_res_val2(cmp_res))
+        if (dc_unwrap2(cmp_res))
         {
             *out_result = &((DCKeyValuePair*)_it->value.voidptr_val)->value;
-            dc_res_ret_ok(_idx);
+            dc_ret_ok(_idx);
         }
     });
 
     *out_result = NULL;
-    dc_res_ret_ok(0);
+    dc_ret_ok(0);
 }
 
 DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSetStatus set_status)
@@ -174,7 +174,7 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
     {
         dc_dbg_log("got NULL DCHashTable");
 
-        dc_res_ret_e(1, "got NULL DCHashTable");
+        dc_ret_e(1, "got NULL DCHashTable");
     }
 
     dc_try_fail_temp_ht_get_hash(_index, *ht, &key);
@@ -184,7 +184,7 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
     {
         dc_dbg_log("Memory allocation failed");
 
-        dc_res_ret_e(2, "Memory allocation failed");
+        dc_ret_e(2, "Memory allocation failed");
     }
 
     new_key_value->key = key;
@@ -208,7 +208,7 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
 
             ht->key_count++;
 
-            dc_res_ret();
+            dc_ret();
         }
 
         // Otherwise it's one of the following:
@@ -220,17 +220,17 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
 
         // And if it's DC_HT_SET_UPDATE_OR_FAIL we need to return an error
         if (set_status == DC_HT_SET_UPDATE_OR_FAIL)
-            dc_res_ret_e(dc_err_code(HT_SET), "can only update existing hash table key_value, provided key not found");
+            dc_ret_e(dc_e_code(HT_SET), "can only update existing hash table key_value, provided key not found");
 
         // Otherwise just return ok
-        dc_res_ret();
+        dc_ret();
     }
 
     DCDynVal* existed = NULL;
     DCResUsize find_res = dc_ht_find_by_key(ht, key, &existed);
-    dc_res_fail_if_err2(find_res);
+    dc_fail_if_err2(find_res);
 
-    usize existed_index = dc_res_val2(find_res);
+    usize existed_index = dc_unwrap2(find_res);
 
     // key does exists in the row
     if (existed != NULL)
@@ -250,7 +250,7 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
 
             current_row->elements[existed_index] = dc_dva(voidptr, new_key_value);
 
-            dc_res_ret();
+            dc_ret();
         }
 
         // Otherwise it's one of the following:
@@ -262,10 +262,10 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
 
         // And if it's DC_HT_SET_CREATE_OR_FAIL we need to return an error
         if (set_status == DC_HT_SET_CREATE_OR_FAIL)
-            dc_res_ret_e(dc_err_code(HT_SET), "can only create hash table key_value, provided key already exists");
+            dc_ret_e(dc_e_code(HT_SET), "can only create hash table key_value, provided key already exists");
 
         // Otherwise just return ok
-        dc_res_ret();
+        dc_ret();
     }
 
     // And at last key does not exists in the row
@@ -279,7 +279,7 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
         dc_try_fail(dc_da_push(current_row, dc_dva(voidptr, new_key_value)));
         ht->key_count++;
 
-        dc_res_ret();
+        dc_ret();
     }
 
     /// Otherwise it's one of the following:
@@ -291,10 +291,10 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
 
     // And if it's DC_HT_SET_UPDATE_OR_FAIL we need to return an error
     if (set_status == DC_HT_SET_UPDATE_OR_FAIL)
-        dc_res_ret_e(dc_err_code(HT_SET), "can only update existing hash table key_value, provided key not found");
+        dc_ret_e(dc_e_code(HT_SET), "can only update existing hash table key_value, provided key not found");
 
     // Otherwise just return ok
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResVoid __dc_ht_set_multiple(DCHashTable* ht, usize count, DCKeyValuePair entries[], DCHashTableSetStatus set_status)
@@ -305,7 +305,7 @@ DCResVoid __dc_ht_set_multiple(DCHashTable* ht, usize count, DCKeyValuePair entr
     {
         dc_dbg_log("got NULL DCHashTable");
 
-        dc_res_ret_e(1, "got NULL DCHashTable");
+        dc_ret_e(1, "got NULL DCHashTable");
     }
 
     for (usize i = 0; i < count; ++i)
@@ -313,7 +313,7 @@ DCResVoid __dc_ht_set_multiple(DCHashTable* ht, usize count, DCKeyValuePair entr
         dc_try_fail(dc_ht_set(ht, entries[i].key, entries[i].value, set_status));
     }
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResVoid dc_ht_merge(DCHashTable* ht, DCHashTable* from, DCHashTableSetStatus set_status)
@@ -324,7 +324,7 @@ DCResVoid dc_ht_merge(DCHashTable* ht, DCHashTable* from, DCHashTableSetStatus s
     {
         dc_dbg_log("got NULL DCHashTable");
 
-        dc_res_ret_e(1, "got NULL DCHashTable");
+        dc_ret_e(1, "got NULL DCHashTable");
     }
 
     for (usize i = 0; i < from->cap; ++i)
@@ -339,7 +339,7 @@ DCResVoid dc_ht_merge(DCHashTable* ht, DCHashTable* from, DCHashTableSetStatus s
         }
     }
 
-    dc_res_ret();
+    dc_ret();
 }
 
 DCResBool dc_ht_delete(DCHashTable* ht, DCDynVal key)
@@ -350,15 +350,15 @@ DCResBool dc_ht_delete(DCHashTable* ht, DCDynVal key)
 
     DC_HT_GET_AND_DEF_CONTAINER_ROW(current_row, *ht, _index);
 
-    if (current_row->count == 0) dc_res_ret_ok(false);
+    if (current_row->count == 0) dc_ret_ok(false);
 
     DCDynVal* existed = NULL;
     DCResUsize possible_bucket = dc_ht_find_by_key(ht, key, &existed);
-    dc_res_fail_if_err2(possible_bucket);
+    dc_fail_if_err2(possible_bucket);
 
-    usize existed_index = dc_res_val2(possible_bucket);
+    usize existed_index = dc_unwrap2(possible_bucket);
 
-    if (existed == NULL) dc_res_ret_ok(false);
+    if (existed == NULL) dc_ret_ok(false);
 
     DCKeyValuePair* old_key_value = (DCKeyValuePair*)dc_dv_as(current_row->elements[existed_index], voidptr);
 
@@ -367,7 +367,7 @@ DCResBool dc_ht_delete(DCHashTable* ht, DCDynVal key)
     dc_try_fail_temp(DCResVoid, dc_da_delete(current_row, existed_index));
     ht->key_count--;
 
-    dc_res_ret_ok(true);
+    dc_ret_ok(true);
 }
 
 DCResUsize dc_ht_keys(DCHashTable* ht, DCDynVal** out_arr)
@@ -378,17 +378,17 @@ DCResUsize dc_ht_keys(DCHashTable* ht, DCDynVal** out_arr)
     {
         dc_dbg_log("got NULL or Empty DCHashTable");
 
-        dc_res_ret_e(1, "got NULL or Empty DCHashTable");
+        dc_ret_e(1, "got NULL or Empty DCHashTable");
     }
 
-    if (!out_arr) dc_res_ret_e(1, "got NULL pout_arr");
+    if (!out_arr) dc_ret_e(1, "got NULL pout_arr");
 
     *out_arr = (DCDynVal*)malloc((ht->key_count + 1) * sizeof(DCDynVal));
     if (!(*out_arr))
     {
         dc_dbg_log("Memory allocation failed");
 
-        dc_res_ret_e(2, "Memory allocation failed");
+        dc_ret_e(2, "Memory allocation failed");
     }
 
     usize key_count = 0;
@@ -405,7 +405,7 @@ DCResUsize dc_ht_keys(DCHashTable* ht, DCDynVal** out_arr)
                 *out_arr = NULL;
                 dc_dbg_log("Bad type, DCHashTable elements must be of type voidptr");
 
-                dc_res_ret_e(3, "Bad type, DCHashTable elements must be of type voidptr");
+                dc_ret_e(3, "Bad type, DCHashTable elements must be of type voidptr");
             }
 
             DCDynVal element_key = ((DCKeyValuePair*)_it->value.voidptr_val)->key;
@@ -416,5 +416,5 @@ DCResUsize dc_ht_keys(DCHashTable* ht, DCDynVal** out_arr)
     }
 
     (*out_arr)[ht->key_count] = dc_dv_nullptr();
-    dc_res_ret_ok(ht->key_count);
+    dc_ret_ok(ht->key_count);
 }
