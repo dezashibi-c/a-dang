@@ -1536,7 +1536,7 @@
 /**
  * `[MACRO]` Expands to standard hash table key value free function declaration
  */
-#define DC_HT_KEY_VALUE_FREE_FN_DECL(NAME) DCResVoid NAME(DCKeyValuePair* _key_value)
+#define DC_HT_PAIR_FREE_FN_DECL(NAME) DCResVoid NAME(DCPair* _pair)
 
 /**
  * `[MACRO]` Gets the results of hash table's hash function for the given key
@@ -1596,23 +1596,23 @@
 #define DC_HT_GET_AND_DEF_CONTAINER_ROW(VAR_NAME, HT, HASH) DCDynArr* VAR_NAME = &((HT).container[HASH])
 
 /**
- * `[MACRO]` Creates a literal hash table key_value
+ * `[MACRO]` Creates a literal hash table pair
  *
  * @param KEY_TYPE is the type of the key dynamic value
  * @param KEY is the actual value for key
  * @param VAL_TYPE is the type of the value dynamic value
  * @param VAL is the actual value for the value
  */
-#define dc_ht_key_value(KEY_TYPE, KEY, VAL_TYPE, VAL)                                                                          \
-    (DCKeyValuePair)                                                                                                           \
+#define dc_ht_pair(KEY_TYPE, KEY, VAL_TYPE, VAL)                                                                               \
+    (DCPair)                                                                                                                   \
     {                                                                                                                          \
-        .key = dc_dv(KEY_TYPE, (KEY)), .value = dc_dv(VAL_TYPE, (VAL))                                                         \
+        .first = dc_dv(KEY_TYPE, (KEY)), .second = dc_dv(VAL_TYPE, (VAL))                                                      \
     }
 
 /**
  * `[MACRO]` Sets multiple key value pairs in a hash table without providing the count
  *
- * @param STATUS indicates the action that must be taken when setting the key_value see `DCHashTableSetStatus`, in case of
+ * @param STATUS indicates the action that must be taken when setting the pair see `DCHashTableSetStatus`, in case of
  * failure error code 7 will be returned
  *
  * NOTE: It does not check whether the result of the success is OK or error
@@ -1620,7 +1620,7 @@
 #define dc_ht_set_multiple(HT, STATUS, ...)                                                                                    \
     do                                                                                                                         \
     {                                                                                                                          \
-        DCKeyValuePair __initial_values[] = {__VA_ARGS__};                                                                     \
+        DCPair __initial_values[] = {__VA_ARGS__};                                                                             \
         __dc_ht_set_multiple(HT, dc_count(__initial_values), __initial_values, STATUS);                                        \
     } while (0)
 
@@ -1629,7 +1629,7 @@
  * count and saves the result in the given RES (must be defined beforehand of
  * type DCResVoid)
  *
- * @param STATUS indicates the action that must be taken when setting the key_value see `DCHashTableSetStatus`, in case of
+ * @param STATUS indicates the action that must be taken when setting the pair see `DCHashTableSetStatus`, in case of
  * failure error code 7 will be returned
  *
  * NOTE: It does not check whether the result of the success is OK or error
@@ -1637,7 +1637,7 @@
 #define dc_try_ht_set_multiple(RES, HT, STATUS, ...)                                                                           \
     do                                                                                                                         \
     {                                                                                                                          \
-        DCKeyValuePair __initial_values[] = {__VA_ARGS__};                                                                     \
+        DCPair __initial_values[] = {__VA_ARGS__};                                                                             \
         RES = __dc_ht_set_multiple(HT, dc_count(__initial_values), __initial_values, STATUS);                                  \
     } while (0)
 
@@ -1646,13 +1646,13 @@
  * count and saves the result in the given main result variable (__dc_res) and
  * returns if the result is a failure
  *
- * @param STATUS indicates the action that must be taken when setting the key_value see `DCHashTableSetStatus`, in case of
+ * @param STATUS indicates the action that must be taken when setting the pair see `DCHashTableSetStatus`, in case of
  * failure error code 7 will be returned
  */
 #define dc_try_fail_ht_set_multiple(HT, STATUS, ...)                                                                           \
     do                                                                                                                         \
     {                                                                                                                          \
-        DCKeyValuePair __initial_values[] = {__VA_ARGS__};                                                                     \
+        DCPair __initial_values[] = {__VA_ARGS__};                                                                             \
         dc_try_fail(__dc_ht_set_multiple(HT, dc_count(__initial_values), __initial_values, STATUS));                           \
     } while (0)
 
@@ -1661,13 +1661,13 @@
  * count and saves the result in a temporary variable of type DCResVoid and
  * returns if the result is a failure
  *
- * @param STATUS indicates the action that must be taken when setting the key_value see `DCHashTableSetStatus`, in case of
+ * @param STATUS indicates the action that must be taken when setting the pair see `DCHashTableSetStatus`, in case of
  * failure error code 7 will be returned
  */
 #define dc_try_fail_temp_ht_set_multiple(HT, STATUS, ...)                                                                      \
     do                                                                                                                         \
     {                                                                                                                          \
-        DCKeyValuePair __initial_values[] = {__VA_ARGS__};                                                                     \
+        DCPair __initial_values[] = {__VA_ARGS__};                                                                             \
         dc_try_fail_temp(__dc_ht_set_multiple(HT, dc_count(__initial_values), __initial_values, STATUS));                      \
     } while (0)
 
@@ -1813,7 +1813,7 @@
 #define DC_CLEANUP_FN_DECL(NAME) DCResVoid NAME(voidptr _value)
 
 /**
- * `[MACRO]` Runs the cleanup process of a cleanup job key_value
+ * `[MACRO]` Runs the cleanup process of a cleanup job pair
  */
 #define dc_cleanup_job_run(ENTRY) (ENTRY).cleanup_fn(((ENTRY).element))
 

@@ -1125,7 +1125,7 @@ DCResBool dc_dv_eq(DCDynVal* dv1, DCDynVal* dv2);
  *
  * NOTE: error code 6 means not found, other error types might happen as well
  */
-DCResUsize dc_da_findp(DCDynArr* darr, DCDynVal* el);
+DCResUsize dc_da_find2(DCDynArr* darr, DCDynVal* el);
 
 /**
  * Searches for given element (a literal dynamic value) in an array
@@ -1763,7 +1763,7 @@ dc_sv_sv_eq(SV1, SV2)
 
 ```c
 /**
- * Each key_value of a hash table can have a dynamic value
+ * Each pair of a hash table can have a dynamic value
  *
  * NOTE: The key is voidptr and must be fixed or properly handled throughout
  * hash function process
@@ -1772,7 +1772,7 @@ typedef struct
 {
     voidptr key;
     DCDynVal value;
-} DCKeyValuePair;
+} DCPair;
 
 /**
  * Function pointer type as an acceptable hash function for an Hash Table
@@ -1928,9 +1928,9 @@ dc_try_fail_temp_ht_get_hash(VAR_NAME, HT, KEY)
 DC_HT_GET_AND_DEF_CONTAINER_ROW(VAR_NAME, HT, HASH)                           
 
 /**
- * Creates a literal hash table key/value pair (key_value)
+ * Creates a literal hash table key/value pair (pair)
  */
-dc_ht_key_value(KEY, VAL)                                                 
+dc_ht_pair(KEY, VAL)                                                 
 
 /**
  * Sets multiple key value pairs in a hash table without providing the count
@@ -2454,7 +2454,7 @@ DC_NO_CLEANUP -2
 DC_CLEANUP_FN_DECL(NAME)
 
 /**
- * Runs the cleanup process of a cleanup job key_value
+ * Runs the cleanup process of a cleanup job pair
  */
 dc_cleanup_job_run(ENTRY)
 

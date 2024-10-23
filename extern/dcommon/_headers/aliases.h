@@ -164,7 +164,7 @@ DCDynValOpFnType(DCResBool, DCDvEqFn);
  *
  * Dynamic arrays or Darr for short can be grown, truncated, popped, etc.
  */
-typedef struct
+struct DCDynArr
 {
     DCDynVal* elements;
     usize cap;
@@ -172,7 +172,7 @@ typedef struct
     usize multiplier;
 
     DCDynValFreeFn element_free_fn;
-} DCDynArr;
+};
 
 // ***************************************************************************************
 // * HASH TABLE TYPE DECLARATIONS
@@ -180,7 +180,7 @@ typedef struct
 
 /**
  * Enum to indicate the action that hash table must take toward
- * When trying to set a key value key_value
+ * When trying to set a key value pair
  */
 typedef enum
 {
@@ -193,15 +193,15 @@ typedef enum
 } DCHashTableSetStatus;
 
 /**
- * Each key_value of a hash table can have a dynamic value
+ * Each pair has two dynamic value elements
  *
- * NOTE: The key is dynamic value and the correctness of the passed values and types
+ * NOTE: When used in hash table the correctness of the passed values and types
  *       must be checked in hash and key comparaison functions
  */
-struct DCKeyValuePair
+struct DCPair
 {
-    DCDynVal key;
-    DCDynVal value;
+    DCDynVal first;
+    DCDynVal second;
 };
 
 /**
@@ -217,7 +217,7 @@ typedef DCResBool (*DCKeyCompFn)(DCDynVal*, DCDynVal*);
 /**
  * Key value pair free function declaration
  */
-typedef DCResVoid (*DCHtKeyValuePairFreeFn)(DCKeyValuePair*);
+typedef DCResVoid (*DCHtPairFreeFn)(DCPair*);
 
 /**
  * A Hash Table with track of capacity and number of registered keys
@@ -225,7 +225,7 @@ typedef DCResVoid (*DCHtKeyValuePairFreeFn)(DCKeyValuePair*);
  * Container is a fixed (one time allocated) array of dynamic arrays which will
  * help in case any collision happen with different keys
  */
-typedef struct
+struct DCHashTable
 {
     DCDynArr* container;
     usize cap;
@@ -233,8 +233,8 @@ typedef struct
 
     DCHashFn hash_fn;
     DCKeyCompFn key_cmp_fn;
-    DCHtKeyValuePairFreeFn key_value_free_fn;
-} DCHashTable;
+    DCHtPairFreeFn pair_free_fn;
+};
 
 // ***************************************************************************************
 // * MEMORY CLEANUP TYPE DECLARATIONS

@@ -539,13 +539,13 @@ static DC_HT_KEY_CMP_FN_DECL(string_key_cmp)
     return dc_dv_eq(_key1, _key2);
 }
 
-static DC_HT_KEY_VALUE_FREE_FN_DECL(env_store_free)
+static DC_HT_PAIR_FREE_FN_DECL(env_store_free)
 {
     DC_RES_void();
 
-    if (dc_dv_is_allocated(_key_value->value))
+    if (dc_dv_is_allocated(_pair->second))
     {
-        DObj* dobj = dc_dv_as(_key_value->value, DObjPtr);
+        DObj* dobj = dc_dv_as(_pair->second, DObjPtr);
 
         dc_try_fail(dang_obj_free(dobj));
 
