@@ -230,6 +230,21 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
             break;
         }
 
+        case DN_HASH_LITERAL:
+            dc_sappend(result, "%s", "{");
+
+            dc_da_for(dn->children, {
+                dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
+
+                if (_idx % 2 == 0)
+                    dc_sappend(result, "%s", ": ");
+                else if (_idx < dn_child_count(dn) - 1)
+                    dc_sappend(result, "%s", ", ");
+            });
+
+            dc_sappend(result, "%s", "}");
+            break;
+
         default:
         {
             dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});
@@ -239,13 +254,8 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
         }
 
 
-            // DN_IDENTIFIER,
             // DN_WHILE_EXPRESSION,
-
-            // DN_HASH_LITERAL,
             // DN_MACRO_LITERAL,
-            // DN_BOOLEAN_LITERAL,
-            // DN_INTEGER_LITERAL,
     };
 
     dc_ret();

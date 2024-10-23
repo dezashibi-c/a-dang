@@ -283,6 +283,15 @@ CLOVE_TEST(expressions)
 
         "if a > 10 { if a > 10 { a } }",
         "if (a > 10) { if (a > 10) { a; }; }\n",
+
+        "{}",
+        "{}\n",
+
+        "{'one': 1, 'two': 2, 'three': 3}",
+        "{\"one\": 1, \"two\": 2, \"three\": 3}\n",
+
+        "{'one': 0 + 1, 'two': 10 - 8, 'three': 15 / 5}",
+        "{\"one\": (0 + 1), \"two\": (10 - 8), \"three\": (15 / 5)}\n",
     };
 
     if (!perform_test_batch(tests, dc_count(tests)))

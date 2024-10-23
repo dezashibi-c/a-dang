@@ -338,6 +338,59 @@ static ResNode parse_call_expression(DParser* p)
 }
 
 /**
+ * Hash Literal '{' (expression ':' expression ','?)*  '}'
+ */
+static ResNode parse_hash_literal(DParser* p)
+{
+    DC_RES2(ResNode);
+
+    // Bypass opening '{'
+    dc_try_fail_temp(DCResVoid, next_token(p));
+
+    DCResVoid res;
+
+    dc_try_or_fail_with(dn_new(DN_HASH_LITERAL, dc_dv_nullptr(), true), {});
+
+    dang_parser_location_preserve(p);
+
+    while (current_token_is_not(p, TOK_RBRACE) && current_token_is_not(p, TOK_EOF))
+    {
+        ResNode key = parse_expression(p, PREC_LOWEST);
+        dang_parser_location_revert(p);
+
+        dc_ret_if_err2(key, dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+
+        dc_try_or_fail_with2(res, dn_child_push(dc_unwrap(), dc_unwrap2(key)), {
+            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(key)));
+        });
+
+        dang_parser_dbg_log_tokens(p);
+
+        dc_try_or_fail_with2(res, move_if_peek_token_is(p, TOK_COLON), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+        dc_try_or_fail_with2(res, next_token(p), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+
+        ResNode value = parse_expression(p, PREC_LOWEST);
+        dang_parser_location_revert(p);
+
+        dc_ret_if_err2(value, dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+
+        dc_try_or_fail_with2(res, dn_child_push(dc_unwrap(), dc_unwrap2(value)), {
+            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(value)));
+        });
+
+        dang_parser_dbg_log_tokens(p);
+
+        dc_try_or_fail_with2(res, next_token(p), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+        if (current_token_is(p, TOK_COMMA))
+            dc_try_or_fail_with2(res, next_token(p), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+    }
+
+    dc_ret();
+}
+
+/**
  * Array Literal '[' (expression ','?)*  ']'
  */
 static ResNode parse_array_literal(DParser* p)
@@ -980,6 +1033,7 @@ DCResVoid dang_parser_init(DParser* p, DScanner* s)
     p->parse_prefix_fns[TOK_TRUE] = parse_boolean_literal;
     p->parse_prefix_fns[TOK_FALSE] = parse_boolean_literal;
     p->parse_prefix_fns[TOK_LPAREN] = parse_grouped_expression;
+    p->parse_prefix_fns[TOK_LBRACE] = parse_hash_literal;
     p->parse_prefix_fns[TOK_LBRACKET] = parse_array_literal;
     p->parse_prefix_fns[TOK_IF] = parse_if_expression;
     p->parse_prefix_fns[TOK_FUNCTION] = parse_function_literal;
