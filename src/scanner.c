@@ -141,6 +141,10 @@ ResTok dang_scanner_next_token(DScanner* s)
             dc_try_fail(token_create(TOK_SEMICOLON, s->input, s->pos, 1));
             break;
 
+        case ':':
+            dc_try_fail(token_create(TOK_COLON, s->input, s->pos, 1));
+            break;
+
         case '(':
             dc_try_fail(token_create(TOK_LPAREN, s->input, s->pos, 1));
             break;

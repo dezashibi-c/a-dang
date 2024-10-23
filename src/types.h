@@ -29,27 +29,11 @@ DCResType(DObjPtr, ResObj);
 
 typedef ResObj (*DBuiltinFunction)(DObj* call_obj);
 
-
 #define DC_DV_EXTRA_TYPES dc_dvt(DNodePtr), dc_dvt(DObjPtr), dc_dvt(DBuiltinFunction),
 #define DC_DV_EXTRA_FIELDS                                                                                                     \
     dc_dvf_decl(DNodePtr);                                                                                                     \
     dc_dvf_decl(DObjPtr);                                                                                                      \
     dc_dvf_decl(DBuiltinFunction);
-
-#define DC_STOPPER_DNode ((DNode){.type = DN__MAX})
-#define DC_IS_STOPPER_DNode(EL) ((EL).type == DN__MAX)
-
-#define DC_STOPPER_DNodePtr NULL
-#define DC_IS_STOPPER_DNodePtr(EL) ((EL))
-
-#define DC_STOPPER_DObj ((DObj){.type = DOBJ__MAX})
-#define DC_IS_STOPPER_DObj(EL) ((EL).type == DOBJ__MAX)
-
-#define DC_STOPPER_DObjPtr NULL
-#define DC_IS_STOPPER_DObjPtr(EL) ((EL))
-
-#define DC_STOPPER_DBuiltinFunction NULL
-#define DC_IS_STOPPER_DBuiltinFunction(EL) ((EL))
 
 #include "dcommon/dcommon.h"
 

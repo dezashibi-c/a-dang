@@ -33,6 +33,7 @@ string tostr_DTokType(DTokType dtt)
         dc_str_case(TOK_SLASH);
         dc_str_case(TOK_DOLLAR);
         dc_str_case(TOK_DOLLAR_LBRACE);
+        dc_str_case(TOK_COLON);
         dc_str_case(TOK_LT);
         dc_str_case(TOK_GT);
         dc_str_case(TOK_EQ);
