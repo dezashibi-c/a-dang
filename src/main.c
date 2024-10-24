@@ -20,41 +20,6 @@
 
 #define DANG_REPL_EXIT ":q"
 
-static void print_obj(DObj* obj)
-{
-    if (dobj_is_bool(*obj))
-        printf("%s", dc_tostr_bool(dobj_as_bool(*obj)));
-
-    else if (dobj_is_array(*obj))
-    {
-        printf("%s", "[ ");
-
-        dc_da_for(obj->children, {
-            print_obj(dobj_child(obj, _idx));
-
-            if (_idx < obj->children.count - 1) printf("%s", ", ");
-        });
-
-        printf("%s", " ]");
-    }
-
-    else if (dobj_is_hash(*obj))
-        printf("%s", "(hash table)");
-
-    else if (dobj_is_null(*obj))
-        printf("%s", dc_colorize_fg(LRED, "(null)"));
-
-    else if (dobj_is_string(*obj))
-    {
-        printf("%s", "\"");
-        if (strlen(dc_dv_as(obj->dv, string)) > 0) dc_dv_print(&obj->dv);
-        printf("%s", "\"");
-    }
-
-    else
-        dc_dv_print(&obj->dv);
-}
-
 static void repl()
 {
     puts("" dc_colorize_fg(LGREEN, "dang") " REPL");
@@ -128,7 +93,7 @@ static void repl()
                 {
                     printf("%s", "Result: " DC_FG_LGREEN);
 
-                    print_obj(dc_unwrap2(evaluated));
+                    print_obj(dc_unwrap2(evaluated), true);
 
                     printf("\n%s", DC_COLOR_RESET);
                 }

@@ -534,6 +534,20 @@ static DECL_DBUILTIN_FUNCTION(push)
     dc_ret_ok(arr);
 }
 
+static DECL_DBUILTIN_FUNCTION(print)
+{
+    DC_RES2(ResObj);
+
+    dc_da_for(call_obj->children, {
+        print_obj(dc_dv_as(*_it, DObjPtr), false);
+        printf("%s", " ");
+    });
+
+    puts("");
+
+    dc_ret_ok(&dobj_null);
+}
+
 static ResObj find_builtin(string name)
 {
     DC_RES2(ResObj);
@@ -554,6 +568,9 @@ static ResObj find_builtin(string name)
 
     else if (strcmp(name, "push") == 0)
         fn = push;
+
+    else if (strcmp(name, "print") == 0)
+        fn = print;
 
     else
     {
@@ -938,6 +955,51 @@ DCResVoid dang_obj_free(DObj* dobj)
     }
 
     dc_ret();
+}
+
+void print_obj(DObj* obj, bool inspect)
+{
+    if (dobj_is_bool(*obj))
+        printf("%s", dc_tostr_bool(dobj_as_bool(*obj)));
+
+    else if (dobj_is_array(*obj))
+    {
+        if (inspect) printf("%s", "[ ");
+
+        dc_da_for(obj->children, {
+            print_obj(dobj_child(obj, _idx), inspect);
+
+            if (_idx < obj->children.count - 1)
+            {
+                if (inspect)
+                    printf("%s", ", ");
+                else
+                    printf("%s", " ");
+            }
+        });
+
+        if (inspect) printf("%s", " ]");
+    }
+
+    else if (dobj_is_hash(*obj))
+    {
+        if (inspect) printf("%s", "(hash table)");
+    }
+
+    else if (dobj_is_null(*obj))
+    {
+        if (inspect) printf("%s", dc_colorize_fg(LRED, "(null)"));
+    }
+
+    else if (dobj_is_string(*obj))
+    {
+        if (inspect) printf("%s", "\"");
+        if (strlen(dc_dv_as(obj->dv, string)) > 0) dc_dv_print(&obj->dv);
+        if (inspect) printf("%s", "\"");
+    }
+
+    else
+        dc_dv_print(&obj->dv);
 }
 
 DC_DV_FREE_FN_DECL(dobj_child_free)

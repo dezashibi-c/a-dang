@@ -26,6 +26,7 @@ DCResVoid dang_obj_init(DObj* dobj, DObjType dobjt, DCDynVal dv, DEnv* de, bool 
 ResObj dang_obj_new(DObjType dobjt, DCDynVal dv, DEnv* de, bool is_returned, bool has_children);
 ResObj dang_obj_copy(DObj* dobj);
 DCResVoid dang_obj_free(DObj* dobj);
+void print_obj(DObj* obj, bool inspect);
 DC_DV_FREE_FN_DECL(dobj_child_free);
 
 ResEnv dang_env_new();
