@@ -31,6 +31,7 @@ typedef enum
     DOBJ_BUILTIN,
     DOBJ_STRING,
     DOBJ_ARRAY,
+    DOBJ_HASH,
     DOBJ_NULL,
 
     DOBJ__MAX,
@@ -52,8 +53,12 @@ struct DObj
     DCDynVal dv;
     bool is_returned;
 
+    bool not_allocated;
+
     DEnv* env;
     DCDynArr children;
+
+    DCHashTable ht;
 };
 
 extern DObj dobj_null;
@@ -111,6 +116,7 @@ extern DObj dobj_false;
 #define dobj_is_string(DOBJ) ((DOBJ).type == DOBJ_STRING)
 #define dobj_is_bool(DOBJ) ((DOBJ).type == DOBJ_BOOLEAN)
 #define dobj_is_array(DOBJ) ((DOBJ).type == DOBJ_ARRAY)
+#define dobj_is_hash(DOBJ) ((DOBJ).type == DOBJ_HASH)
 #define dobj_is_return(DOBJ) ((DOBJ)->is_returned)
 #define dobj_is_null(DOBJ) ((DOBJ).type == DOBJ_NULL)
 

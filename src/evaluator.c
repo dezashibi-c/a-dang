@@ -25,6 +25,8 @@ DObj dobj_true = {0};
 DObj dobj_false = {0};
 
 static ResObj perform_evaluation_process(DNode* dn, DEnv* de);
+static DC_HT_HASH_FN_DECL(hash_obj_hash_fn);
+static DC_HT_KEY_CMP_FN_DECL(hash_obj_hash_key_cmp_fn);
 
 // ***************************************************************************************
 // * PRIVATE FUNCTIONS
@@ -235,7 +237,7 @@ static ResObj eval_infix_expression(DNode* dn, DObj* left, DObj* right)
               dc_tostr_dvt(&right->dv));
 }
 
-static ResObj eval_index_expression(DObj* left, DObj* index)
+static ResObj eval_array_index_expression(DObj* left, DObj* index)
 {
     DC_RES2(ResObj);
 
@@ -250,6 +252,19 @@ static ResObj eval_index_expression(DObj* left, DObj* index)
     }
 
     dc_ret_ok(dobj_child(left, idx));
+}
+
+static ResObj eval_hash_index_expression(DObj* left, DObj* index)
+{
+    DC_RES2(ResObj);
+
+    DCDynVal* found = NULL;
+
+    dc_try_fail_temp(DCResUsize, dc_ht_find_by_key(&left->ht, dc_dv(DObjPtr, index), &found));
+
+    if (!found) dc_ret_ok(&dobj_null);
+
+    dc_ret_ok(dc_dv_as(*found, DObjPtr));
 }
 
 static ResObj eval_if_expression(DNode* dn, DEnv* de)
@@ -297,6 +312,45 @@ static ResObj eval_let_statement(DNode* dn, DEnv* de)
     dc_try_fail_temp(ResObj, dang_env_set(de, var_name, value, false));
 
     dc_ret_ok(&dobj_null);
+}
+
+static ResObj eval_hash_literal(DNode* dn, DEnv* de)
+{
+    DC_RES2(ResObj);
+
+    if (dn_child_count(dn) % 2 != 0) dc_ret_e(-1, "wrong hash literal node");
+
+    dc_try(dang_obj_new(DOBJ_HASH, dc_dv_nullptr(), NULL, false, false));
+
+    // todo:: complete this (free fn), maybe dobj free also needs a change
+    dc_try_or_fail_with3(DCResVoid, res, dc_ht_init(&dc_unwrap()->ht, 17, hash_obj_hash_fn, hash_obj_hash_key_cmp_fn, NULL),
+                         dc_try_fail_temp(DCResVoid, dang_obj_free(dc_unwrap())));
+
+    dc_da_for(dn->children, {
+        if (_idx % 2 != 0) continue; // odd numbers are values
+
+        DNode* key_node = dn_child(dn, _idx);
+        // this child is the key
+        dc_try_or_fail_with3(ResObj, key_obj, perform_evaluation_process(key_node, de),
+                             dc_try_fail_temp(DCResVoid, dang_obj_free(dc_unwrap())));
+
+        // next child is the value
+        DNode* value_node = dn_child(dn, _idx + 1);
+        dc_try_or_fail_with3(ResObj, value_obj, perform_evaluation_process(value_node, de), {
+            dc_try_fail_temp(DCResVoid, dang_obj_free(dc_unwrap()));
+            dc_try_fail_temp(DCResVoid, dang_obj_free(dc_unwrap2(key_obj)));
+        });
+
+        dc_try_or_fail_with2(res,
+                             dc_ht_set(&dc_unwrap()->ht, dc_dv(DObjPtr, dc_unwrap2(key_obj)),
+                                       dc_dv(DObjPtr, dc_unwrap2(value_obj)), DC_HT_SET_CREATE_OR_UPDATE),
+                             {
+                                 dc_try_fail_temp(DCResVoid, dang_obj_free(dc_unwrap()));
+                                 dc_try_fail_temp(DCResVoid, dang_obj_free(dc_unwrap2(value_obj)));
+                             });
+    });
+
+    dc_ret();
 }
 
 static DCResVoid eval_children_nodes(DNode* call_node, DObj* parent_result, usize child_start_index, DEnv* de)
@@ -517,21 +571,73 @@ static ResObj find_builtin(string name)
 // * PRIVATE HELPER FUNCTIONS
 // ***************************************************************************************
 
-static DC_HT_HASH_FN_DECL(string_hash)
+static u32 string_hash(string key)
+{
+    u32 hash = 5381;
+    i32 c;
+    while ((c = *key++))
+    {
+        hash = ((hash << 5) + hash) + c;
+    }
+
+    return hash;
+}
+
+static u32 bool_hash(bool key)
+{
+    return !!key;
+}
+
+static u32 integer_hash(i64 key)
+{
+    return key < 0 ? (-1 * key) : key;
+}
+
+static DC_HT_HASH_FN_DECL(hash_obj_hash_fn)
+{
+    DC_RES_u32();
+
+    if (_key->type != dc_dvt(DObjPtr)) dc_ret_e(dc_e_code(TYPE), dc_e_msg(TYPE));
+
+    DObjPtr o = dc_dv_as(*_key, DObjPtr);
+
+    switch (o->type)
+    {
+        case DOBJ_STRING:
+            dc_ret_ok(string_hash(dc_dv_as(o->dv, string)));
+
+        case DOBJ_INTEGER:
+            dc_ret_ok(integer_hash(dc_dv_as(o->dv, i64)));
+
+        case DOBJ_BOOLEAN:
+            dc_ret_ok(bool_hash(dc_dv_as(o->dv, u8)));
+
+        default:
+            break;
+    };
+
+    dc_ret_e(-1, "only integer, boolean and strings can be used as hash table key");
+}
+
+static DC_HT_KEY_CMP_FN_DECL(hash_obj_hash_key_cmp_fn)
+{
+    DC_RES_bool();
+
+    if (_key1->type != dc_dvt(DObjPtr) || _key2->type != dc_dvt(DObjPtr)) dc_ret_e(dc_e_code(TYPE), dc_e_msg(TYPE));
+
+    DObjPtr o1 = dc_dv_as(*_key1, DObjPtr);
+    DObjPtr o2 = dc_dv_as(*_key2, DObjPtr);
+
+    return dc_dv_eq(&o1->dv, &o2->dv);
+}
+
+static DC_HT_HASH_FN_DECL(env_hash_fn)
 {
     DC_RES_u32();
 
     if (_key->type != dc_dvt(string)) dc_ret_e(dc_e_code(TYPE), dc_e_msg(TYPE));
 
-    string str = dc_dv_as(*_key, string);
-    u32 hash = 5381;
-    i32 c;
-    while ((c = *str++))
-    {
-        hash = ((hash << 5) + hash) + c;
-    }
-
-    dc_ret_ok(hash);
+    dc_ret_ok(string_hash(dc_dv_as(*_key, string)));
 }
 
 static DC_HT_KEY_CMP_FN_DECL(string_key_cmp)
@@ -649,6 +755,9 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
             dc_ret();
         }
 
+        case DN_HASH_LITERAL:
+            return eval_hash_literal(dn, de);
+
         case DN_INDEX_EXPRESSION:
         {
             dc_try_or_fail_with3(ResObj, left_res, perform_evaluation_process(dn_child(dn, 0), de), {});
@@ -658,7 +767,16 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
                                  dc_try_fail_temp(DCResVoid, dang_obj_free(left)));
             DObjPtr index = dc_unwrap2(index_res);
 
-            if (left->type != DOBJ_ARRAY || index->type != DOBJ_INTEGER)
+            if (left->type != DOBJ_ARRAY && left->type != DOBJ_HASH)
+            {
+                dc_try_fail_temp(DCResVoid, dang_obj_free(left));
+                dc_try_fail_temp(DCResVoid, dang_obj_free(index));
+
+                dc_dbg_log("indexing of '%s' is not supporting on '%s'", tostr_DObjType(index), tostr_DObjType(left));
+                dc_ret_e(-1, "indexing is not supporting on this type");
+            }
+
+            else if (left->type == DOBJ_ARRAY && index->type != DOBJ_INTEGER)
             {
                 dc_try_fail_temp(DCResVoid, dang_obj_free(left));
                 dc_try_fail_temp(DCResVoid, dang_obj_free(index));
@@ -675,7 +793,9 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
                 dc_ret_ok(&dobj_null);
             }
 
-            return eval_index_expression(left, index);
+            if (left->type == DOBJ_ARRAY) return eval_array_index_expression(left, index);
+
+            return eval_hash_index_expression(left, index);
         }
 
         case DN_CALL_EXPRESSION:
@@ -751,6 +871,8 @@ DCResVoid dang_obj_init(DObj* dobj, DObjType dobjt, DCDynVal dv, DEnv* de, bool 
 
     dobj->children = (DCDynArr){0};
 
+    dobj->ht = (DCHashTable){0};
+
     if (has_children) dc_try_fail(dc_da_init2(&dobj->children, 10, 3, dobj_child_free));
 
     dc_ret();
@@ -791,12 +913,20 @@ ResObj dang_obj_copy(DObj* dobj)
 
     if (has_children) dc_da_for(dobj->children, dc_da_push(&dc_unwrap()->children, dc_dv(DObjPtr, dobj_child(dobj, _idx))));
 
+    if (dobj->type == DOBJ_HASH)
+    {
+        dc_ht_init(&dc_unwrap()->ht, 17, hash_obj_hash_fn, hash_obj_hash_key_cmp_fn, NULL);
+        dc_ht_merge(&dc_unwrap()->ht, &dobj->ht, DC_HT_SET_CREATE_OR_UPDATE);
+    }
+
     dc_ret();
 }
 
 DCResVoid dang_obj_free(DObj* dobj)
 {
     DC_TRY_DEF2(DCResVoid, dc_dv_free(&dobj->dv, NULL));
+
+    if (dobj->not_allocated) dc_ret();
 
     if (dobj->children.cap != 0) dc_try(dc_da_free(&dobj->children));
 
@@ -824,10 +954,15 @@ ResEnv dang_env_new()
     DC_RES2(ResEnv);
 
     dc_try_fail_temp(DCResVoid, dang_obj_init(&dobj_null, DOBJ_NULL, dc_dv_nullptr(), NULL, false, false));
+    dobj_null.not_allocated = true;
     dc_try_fail_temp(DCResVoid, dang_obj_init(&dobj_null_return, DOBJ_NULL, dc_dv_nullptr(), NULL, true, false));
+    dobj_null_return.not_allocated = true;
 
     dc_try_fail_temp(DCResVoid, dang_obj_init(&dobj_true, DOBJ_BOOLEAN, dc_dv_true(), NULL, false, false));
+    dobj_true.not_allocated = true;
+
     dc_try_fail_temp(DCResVoid, dang_obj_init(&dobj_false, DOBJ_BOOLEAN, dc_dv_false(), NULL, false, false));
+    dobj_false.not_allocated = true;
 
     DEnv* de = (DEnv*)malloc(sizeof(DEnv));
     if (de == NULL)
@@ -837,7 +972,7 @@ ResEnv dang_env_new()
         dc_ret_e(2, "Memory allocation failed");
     }
 
-    dc_try_or_fail_with3(DCResVoid, res, dc_ht_init(&de->store, 17, string_hash, string_key_cmp, env_store_free), {
+    dc_try_or_fail_with3(DCResVoid, res, dc_ht_init(&de->store, 17, env_hash_fn, string_key_cmp, env_store_free), {
         dc_dbg_log("cannot initialize dang environment hash table");
 
         free(de);
@@ -925,6 +1060,7 @@ string tostr_DObjType(DObjType dobjt)
         dc_str_case(DOBJ_FUNCTION);
         dc_str_case(DOBJ_BUILTIN);
         dc_str_case(DOBJ_ARRAY);
+        dc_str_case(DOBJ_HASH);
         dc_str_case(DOBJ_NULL);
 
         default:

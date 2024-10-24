@@ -68,6 +68,13 @@ static ResNode parse_statement(DParser* p);
         dc_ret_if_err2(res, { PRE_EXIT_ACTIONS; });                                                                            \
     }
 
+#define try_bypassing_all_nls_or_fail_with(P, PRE_EXIT_ACTIONS)                                                                \
+    while (current_token_is(P, TOK_NEWLINE))                                                                                   \
+    {                                                                                                                          \
+        DCResVoid res = next_token(p);                                                                                         \
+        dc_ret_if_err2(res, { PRE_EXIT_ACTIONS; });                                                                            \
+    }
+
 #define dang_parser_log_tokens(P)                                                                                              \
     dc_log("cur tok: %s, next tok: %s", tostr_DTokType((P)->current_token.type),                                               \
            (P)->peek_token.type != TOK_TYPE_MAX ? tostr_DTokType((P)->peek_token.type) : "NULL")
@@ -347,6 +354,14 @@ static ResNode parse_hash_literal(DParser* p)
     // Bypass opening '{'
     dc_try_fail_temp(DCResVoid, next_token(p));
 
+    /* Bypassing all the meaningless newlines */
+    try_bypassing_all_nls_or_fail_with(p, {
+        dc_err_dbg_log2(res, "could move to the next token");
+
+        // dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+    });
+
+
     DCResVoid res;
 
     dc_try_or_fail_with(dn_new(DN_HASH_LITERAL, dc_dv_nullptr(), true), {});
@@ -385,6 +400,13 @@ static ResNode parse_hash_literal(DParser* p)
         dc_try_or_fail_with2(res, next_token(p), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
         if (current_token_is(p, TOK_COMMA))
             dc_try_or_fail_with2(res, next_token(p), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+
+        /* Bypassing all the meaningless newlines */
+        try_bypassing_all_nls_or_fail_with(p, {
+            dc_err_dbg_log2(res, "could move to the next token");
+
+            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+        });
     }
 
     dc_ret();

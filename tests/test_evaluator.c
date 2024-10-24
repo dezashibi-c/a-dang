@@ -42,16 +42,12 @@ static ResObj test_eval(string input, DEnv* de)
 
     if (!dang_parser_has_no_error(&p))
     {
-        dn_program_free(program);
         dang_parser_free(&p);
 
         dc_ret_ea(-1, "parser has error on input '%s'", input);
     }
 
-    dc_try_or_fail_with(dang_eval(program, de), {
-        dn_program_free(program);
-        dang_parser_free(&p);
-    });
+    dc_try_or_fail_with(dang_eval(program, de), { dang_parser_free(&p); });
 
     dc_ret();
 }
@@ -120,11 +116,11 @@ static bool perform_evaluation_tests(TestCase tests[])
         }
 
         if (_it->expected.type == DOBJ_ARRAY)
-            dc_action_on(!test_evaluated_array_literal(dc_unwrap2(res), &_it->expected), return false,
-                         "array test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
+            dc_action_on(!test_evaluated_array_literal(dc_unwrap2(res), &_it->expected), dang_env_free(de);
+                         return false, "array test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
         else
-            dc_action_on(!test_evaluated_literal(dc_unwrap2(res), &_it->expected), return false,
-                         "literal test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
+            dc_action_on(!test_evaluated_literal(dc_unwrap2(res), &_it->expected), dang_env_free(de);
+                         return false, "literal test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
 
         dang_env_free(de);
     });
@@ -191,7 +187,7 @@ CLOVE_TEST(string_literal)
 
         {.input = "5 + ' ' + 'programmers!'", .expected = dobj_string("5 programmers!")},
 
-        {.input = "'hello' == 'hello'", .expected = dobj_true},
+        {.input = "'hello' == 'hello'", .expected = dobj_bool(true)},
 
         {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
@@ -208,55 +204,55 @@ CLOVE_TEST(string_literal)
 CLOVE_TEST(boolean_expressions)
 {
     TestCase tests[] = {
-        {.input = "true", .expected = dobj_true},
+        {.input = "true", .expected = dobj_bool(true)},
 
-        {.input = "false", .expected = dobj_false},
+        {.input = "false", .expected = dobj_bool(false)},
 
-        {.input = "!false", .expected = dobj_true},
+        {.input = "!false", .expected = dobj_bool(true)},
 
-        {.input = "!true", .expected = dobj_false},
+        {.input = "!true", .expected = dobj_bool(false)},
 
-        {.input = "!5", .expected = dobj_false},
+        {.input = "!5", .expected = dobj_bool(false)},
 
-        {.input = "!!true", .expected = dobj_true},
+        {.input = "!!true", .expected = dobj_bool(true)},
 
-        {.input = "!!false", .expected = dobj_false},
+        {.input = "!!false", .expected = dobj_bool(false)},
 
-        {.input = "!!5", .expected = dobj_true},
+        {.input = "!!5", .expected = dobj_bool(true)},
 
-        {.input = "1 < 2", .expected = dobj_true},
+        {.input = "1 < 2", .expected = dobj_bool(true)},
 
-        {.input = "1 > 2", .expected = dobj_false},
+        {.input = "1 > 2", .expected = dobj_bool(false)},
 
-        {.input = "1 > 1", .expected = dobj_false},
+        {.input = "1 > 1", .expected = dobj_bool(false)},
 
-        {.input = "1 < 1", .expected = dobj_false},
+        {.input = "1 < 1", .expected = dobj_bool(false)},
 
-        {.input = "1 == 1", .expected = dobj_true},
+        {.input = "1 == 1", .expected = dobj_bool(true)},
 
-        {.input = "1 != 1", .expected = dobj_false},
+        {.input = "1 != 1", .expected = dobj_bool(false)},
 
-        {.input = "1 == 2", .expected = dobj_false},
+        {.input = "1 == 2", .expected = dobj_bool(false)},
 
-        {.input = "1 != 2", .expected = dobj_true},
+        {.input = "1 != 2", .expected = dobj_bool(true)},
 
-        {.input = "true == true", .expected = dobj_true},
+        {.input = "true == true", .expected = dobj_bool(true)},
 
-        {.input = "false == false", .expected = dobj_true},
+        {.input = "false == false", .expected = dobj_bool(true)},
 
-        {.input = "true == false", .expected = dobj_false},
+        {.input = "true == false", .expected = dobj_bool(false)},
 
-        {.input = "true != false", .expected = dobj_true},
+        {.input = "true != false", .expected = dobj_bool(true)},
 
-        {.input = "false != true", .expected = dobj_true},
+        {.input = "false != true", .expected = dobj_bool(true)},
 
-        {.input = "(1 < 2) == true", .expected = dobj_true},
+        {.input = "(1 < 2) == true", .expected = dobj_bool(true)},
 
-        {.input = "(1 < 2) == false", .expected = dobj_false},
+        {.input = "(1 < 2) == false", .expected = dobj_bool(false)},
 
-        {.input = "(1 > 2) == true", .expected = dobj_false},
+        {.input = "(1 > 2) == true", .expected = dobj_bool(false)},
 
-        {.input = "(1 > 2) == false", .expected = dobj_true},
+        {.input = "(1 > 2) == false", .expected = dobj_bool(true)},
 
         {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
     };
@@ -292,12 +288,89 @@ CLOVE_TEST(array_literal)
     };
 
     if (perform_evaluation_tests(tests))
+    {
+        dang_obj_free(&expected_result);
+        CLOVE_PASS();
+    }
+    else
+    {
+        dc_log("test has failed");
+        CLOVE_FAIL();
+    }
+}
+
+CLOVE_TEST(hash_index_expression)
+{
+#define FIXED_INPUT                                                                                                            \
+    "let two = 'two'\n"                                                                                                        \
+    "{\n"                                                                                                                      \
+    " 'one': 10 - 9,\n"                                                                                                        \
+    " 'thr' + 'ee': 6 / 2,\n"                                                                                                  \
+    " 4: 4,\n"                                                                                                                 \
+    " true: 5,\n"                                                                                                              \
+    " false: 6\n"                                                                                                              \
+    "}"
+
+#define FIXED_INPUT2                                                                                                           \
+    "let two = 'two'\n"                                                                                                        \
+    "let a {\n"                                                                                                                \
+    " 'one': 10 - 9,\n"                                                                                                        \
+    " 'thr' + 'ee': 6 / 2,\n"                                                                                                  \
+    " 4: 4,\n"                                                                                                                 \
+    " true: 5,\n"                                                                                                              \
+    " false: 6\n"                                                                                                              \
+    "};"
+
+    TestCase tests[] = {
+        {.input = FIXED_INPUT "['one']", .expected = dobj_int(1)},
+
+        {.input = FIXED_INPUT "['three']", .expected = dobj_int(3)},
+
+        {.input = FIXED_INPUT "[4]", .expected = dobj_int(4)},
+
+        {.input = FIXED_INPUT "[true]", .expected = dobj_int(5)},
+
+        {.input = FIXED_INPUT "[false]", .expected = dobj_int(6)},
+
+
+        {.input = FIXED_INPUT2 "a['one']", .expected = dobj_int(1)},
+
+        {.input = FIXED_INPUT2 "a['three']", .expected = dobj_int(3)},
+
+        {.input = FIXED_INPUT2 "a[4]", .expected = dobj_int(4)},
+
+        {.input = FIXED_INPUT2 "a[true]", .expected = dobj_int(5)},
+
+        {.input = FIXED_INPUT2 "a[false]", .expected = dobj_int(6)},
+
+        {.input = "{'foo': 5}['foo']", .expected = dobj_int(5)},
+
+        {.input = "{'foo': 5}['bar']", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
+
+        {.input = "let key 'foo'; {'foo': 5}[key]", .expected = dobj_int(5)},
+
+        {.input = "{}['foo']", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
+
+        {.input = "{5: 5}[5]", .expected = dobj_int(5)},
+
+        {.input = "{true: 5}[true]", .expected = dobj_int(5)},
+
+        {.input = "{false: 5}[false]", .expected = dobj_int(5)},
+
+
+        {.input = "", .expected = dobj(DOBJ_NULL, voidptr, NULL)},
+    };
+
+    if (perform_evaluation_tests(tests))
         CLOVE_PASS();
     else
     {
         dc_log("test has failed");
         CLOVE_FAIL();
     }
+
+#undef FIXED_INPUT
+#undef FIXED_INPUT2
 }
 
 CLOVE_TEST(array_index_expressions)
@@ -517,6 +590,10 @@ CLOVE_TEST(error_handling)
         "len;",
 
         "len 'one' 'two'",
+
+        "{fn(x) { x }: 'Monkey'}", // function cannot be used as key
+
+        "{'name': 'Monkey'}[fn(x) { x }]", // function cannot be used as key
 
         NULL,
     };

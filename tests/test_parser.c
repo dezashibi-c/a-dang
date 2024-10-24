@@ -292,6 +292,24 @@ CLOVE_TEST(expressions)
 
         "{'one': 0 + 1, 'two': 10 - 8, 'three': 15 / 5}",
         "{\"one\": (0 + 1), \"two\": (10 - 8), \"three\": (15 / 5)}\n",
+
+        "{\n"
+        " 'one': 10 - 9\n"
+        " 'thr' + 'ee': 6 / 2\n"
+        " 4: 4,\n"
+        " true: 5,\n"
+        " false: 6\n"
+        "}",
+        "{\"one\": (10 - 9), (\"thr\" + \"ee\"): (6 / 2), 4: 4, true: 5, false: 6}\n",
+
+        "let a {\n"
+        " 'one': 10 - 9\n"
+        " 'thr' + 'ee': 6 / 2\n"
+        " 4: 4,\n"
+        " true: 5,\n"
+        " false: 6\n"
+        "}",
+        "let a {\"one\": (10 - 9), (\"thr\" + \"ee\"): (6 / 2), 4: 4, true: 5, false: 6}\n",
     };
 
     if (!perform_test_batch(tests, dc_count(tests)))

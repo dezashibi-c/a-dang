@@ -470,9 +470,9 @@ DCResVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
 
     // run cleanup of each item
     dc_da_for(*batch, {
-        DCCleanupJob* pair = dc_da_get_as(*batch, _idx, voidptr);
+        DCCleanupJob* pair = dc_dv_as(*_it, voidptr);
 
-        dc_dbg_log("cleaning index: '%" PRIuMAX "', cleanup perform: %p", _idx, (*pair).element);
+        dc_dbg_log("cleaning index: '" dc_fmt(usize) "', cleanup perform: %p", _idx, (*pair).element);
 
         dc_try_fail(dc_cleanup_job_run(*pair));
     });

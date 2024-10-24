@@ -38,6 +38,9 @@ static void print_obj(DObj* obj)
         printf("%s", " ]");
     }
 
+    else if (dobj_is_hash(*obj))
+        printf("%s", "(hash table)");
+
     else if (dobj_is_null(*obj))
         printf("%s", dc_colorize_fg(LRED, "(null)"));
 
