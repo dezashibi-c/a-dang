@@ -731,7 +731,7 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
         {
             ResObj symbol = dang_env_get(de, dn_data_as(dn, string));
 
-            if (dc_is_ok2(symbol)) dc_ret_ok(dc_unwrap2(symbol));
+            if (dc_is_ok2(symbol)) return symbol;
 
             return find_builtin(dn_data_as(dn, string));
         }
@@ -752,7 +752,7 @@ static ResObj perform_evaluation_process(DNode* dn, DEnv* de)
 
             dobj_mark_as_return(dc_unwrap2(value));
 
-            dc_ret_ok(dc_unwrap2(value));
+            return value;
         }
 
         case DN_LET_STATEMENT:
