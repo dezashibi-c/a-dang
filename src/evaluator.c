@@ -662,7 +662,7 @@ static DC_HT_KEY_CMP_FN_DECL(string_key_cmp)
     return dc_dv_eq(_key1, _key2);
 }
 
-static DC_HT_PAIR_FREE_FN_DECL(env_store_free)
+static DC_HT_PAIR_FREE_FN_DECL(env_memory_free)
 {
     DC_RES_void();
 
@@ -871,7 +871,7 @@ ResObj dang_eval(DNode* dn, DEnv* de)
     if (!dn) dc_ret_e(dc_e_code(NV), "cannot evaluate NULL node");
     if (!de) dc_ret_e(dc_e_code(NV), "cannot run evaluation on NULL environment");
 
-    dc_try_fail_temp(DCResVoid, dc_da_push(&de->nodes, dc_dv(DNodePtr, dn)));
+    dc_try_fail_temp(DCResVoid, dc_da_push(&de->cleanups, dc_dva(DNodePtr, dn)));
 
     return perform_evaluation_process(dn, de);
 }
@@ -947,7 +947,8 @@ DCResVoid dang_obj_free(DObj* dobj)
 
     if (dobj->children.cap != 0) dc_try(dc_da_free(&dobj->children));
 
-    // free the end only if 1. it is not NULL and 2. it is an enclosed env
+    // free its env only if 1. it is not NULL and 2. it is an enclosed env
+    // in other words don't free the main env yet
     if (dobj->env && dobj->env->outer)
     {
         dc_try(dang_env_free(dobj->env));
@@ -1006,8 +1007,25 @@ DC_DV_FREE_FN_DECL(dobj_child_free)
 {
     DC_RES_void();
 
-    if (dc_dv_is(*_value, DObjPtr) && dc_dv_as(*_value, DObjPtr) != NULL) dc_try(dang_obj_free(dc_dv_as(*_value, DObjPtr)));
+    if (dc_dv_is_allocated(*_value) && dc_dv_is(*_value, DObjPtr) && dc_dv_as(*_value, DObjPtr) != NULL)
+        dc_try(dang_obj_free(dc_dv_as(*_value, DObjPtr)));
 
+    dc_ret();
+}
+
+DC_DV_FREE_FN_DECL(env_cleanup_fn)
+{
+    DC_RES_void();
+
+    if (dc_dv_is_not(*_value, DObjPtr) || dc_dv_is_not(*_value, DNodePtr) || dc_dv_is_not_allocated(*_value)) dc_ret();
+
+    if (dc_dv_is(*_value, DObjPtr) && dc_dv_as(*_value, DObjPtr) != NULL)
+    {
+        dc_try(dang_obj_free(dc_dv_as(*_value, DObjPtr)));
+        dc_ret();
+    }
+
+    dc_try(dn_free(dc_dv_as(*_value, DNodePtr)));
     dc_ret();
 }
 
@@ -1034,13 +1052,13 @@ ResEnv dang_env_new()
         dc_ret_e(2, "Memory allocation failed");
     }
 
-    dc_try_or_fail_with3(DCResVoid, res, dc_ht_init(&de->store, 17, env_hash_fn, string_key_cmp, env_store_free), {
+    dc_try_or_fail_with3(DCResVoid, res, dc_ht_init(&de->memory, 17, env_hash_fn, string_key_cmp, env_memory_free), {
         dc_dbg_log("cannot initialize dang environment hash table");
 
         free(de);
     });
 
-    dc_try_or_fail_with2(res, dc_da_init2(&de->nodes, 10, 3, dn_child_free), {
+    dc_try_or_fail_with2(res, dc_da_init2(&de->cleanups, 10, 3, env_cleanup_fn), {
         dc_dbg_log("cannot initialize dang environment hash table");
 
         free(de);
@@ -1064,9 +1082,9 @@ DCResVoid dang_env_free(DEnv* de)
 {
     DC_RES_void();
 
-    dc_try_fail(dc_ht_free(&de->store));
+    dc_try_fail(dc_ht_free(&de->memory));
 
-    dc_try_fail(dc_da_free(&de->nodes));
+    dc_try_fail(dc_da_free(&de->cleanups));
 
     free(de);
 
@@ -1080,7 +1098,7 @@ ResObj dang_env_get(DEnv* de, string name)
 
     DCDynVal* found = NULL;
 
-    dc_try_fail_temp(DCResUsize, dc_ht_find_by_key(&de->store, dc_dv(string, name), &found));
+    dc_try_fail_temp(DCResUsize, dc_ht_find_by_key(&de->memory, dc_dv(string, name), &found));
 
     if (found) dc_ret_ok(dc_dv_as(*found, DObjPtr));
 
@@ -1098,7 +1116,7 @@ ResObj dang_env_set(DEnv* de, string name, DObj* dobj, bool update_only)
     DCDynVal value = dobj ? dc_dva(DObjPtr, dobj) : dc_dv(DObjPtr, &dobj_null);
 
     DCResVoid res =
-        dc_ht_set(&de->store, dc_dv(string, name), value, update_only ? DC_HT_SET_UPDATE_OR_FAIL : DC_HT_SET_CREATE_OR_FAIL);
+        dc_ht_set(&de->memory, dc_dv(string, name), value, update_only ? DC_HT_SET_UPDATE_OR_FAIL : DC_HT_SET_CREATE_OR_FAIL);
 
     if (dc_is_err2(res))
     {

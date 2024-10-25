@@ -27,22 +27,23 @@ typedef enum
 {
     DOBJ_INTEGER,
     DOBJ_BOOLEAN,
+    DOBJ_STRING,
+    DOBJ_NULL,
+
     DOBJ_FUNCTION,
     DOBJ_BUILTIN,
-    DOBJ_STRING,
     DOBJ_ARRAY,
     DOBJ_HASH,
-    DOBJ_NULL,
 
     DOBJ__MAX,
 } DObjType;
 
 typedef struct DEnv
 {
-    DCHashTable store;
+    DCHashTable memory;
     struct DEnv* outer;
 
-    DCDynArr nodes;
+    DCDynArr cleanups;
 } DEnv;
 
 DCResType(DEnv*, ResEnv);

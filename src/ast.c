@@ -316,7 +316,8 @@ DC_DV_FREE_FN_DECL(dn_child_free)
 {
     DC_RES_void();
 
-    if (dc_dv_is(*_value, DNodePtr) && dc_dv_as(*_value, DNodePtr) != NULL) dc_try(dn_free(dc_dv_as(*_value, DNodePtr)));
+    if (dc_dv_is_allocated(*_value) && dc_dv_is(*_value, DNodePtr) && dc_dv_as(*_value, DNodePtr) != NULL)
+        dc_try(dn_free(dc_dv_as(*_value, DNodePtr)));
 
     dc_ret();
 }

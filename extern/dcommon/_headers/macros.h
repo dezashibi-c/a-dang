@@ -1262,6 +1262,11 @@
 #define dc_dv_is_allocated(NAME) ((NAME).allocated)
 
 /**
+ * `[MACRO]` Checks if the dynamic value is marked as allocated
+ */
+#define dc_dv_is_not_allocated(NAME) (!(NAME).allocated)
+
+/**
  * `[MACRO]` Checks if the given index is correct according to the dynamic array number of
  * elements
  */
