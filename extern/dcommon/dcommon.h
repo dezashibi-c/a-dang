@@ -1025,8 +1025,10 @@ FILE* dc_error_logs = NULL;
  */
 DCCleanupPool dc_cleanup_pool = {0};
 
-#include "_dynarr.c"
-#include "_dynht.c"
+#include "_dv.c"
+
+#include "_da.c"
+#include "_ht.c"
 #include "_lit_val.c"
 #include "_string_view.c"
 #include "_utils.c"

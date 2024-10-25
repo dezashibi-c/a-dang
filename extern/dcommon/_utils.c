@@ -148,75 +148,6 @@ DCResString dc_strdup(const string in)
     dc_ret_ok(out);
 }
 
-DCResString dc_tostr_dv(DCDynVal* dv)
-{
-    DC_RES_string();
-
-    if (!dv) dc_ret_e(1, "got NULL dynamic value");
-
-#define stringify(TYPE)                                                                                                        \
-    case dc_dvt(TYPE):                                                                                                         \
-        dc_sprintf(&result, dc_dv_fmt(dv), dc_dv_as(*dv, TYPE));                                                               \
-        break
-
-    string result = NULL;
-
-    switch (dv->type)
-    {
-        stringify(u8);
-        stringify(u16);
-        stringify(u32);
-        stringify(u64);
-        stringify(i8);
-        stringify(i16);
-        stringify(i32);
-        stringify(i64);
-        stringify(f32);
-        stringify(f64);
-        stringify(uptr);
-        stringify(char);
-        stringify(string);
-        stringify(voidptr);
-        stringify(fileptr);
-        stringify(size);
-        stringify(usize);
-
-        case dc_dvt(DCStringView):
-            dc_sprintf(&result, DCPRIsv, dc_sv_fmt(dc_dv_as(*dv, DCStringView)));
-            break;
-
-        default:
-            dc_sprintf(&result, "%s", "(unknown dynamic value)");
-            break;
-    };
-
-    dc_ret_ok(result);
-
-#undef stringify
-}
-
-DCResVoid dc_dv_print(DCDynVal* dv)
-{
-    DC_RES_void();
-
-    dc_try_or_fail_with3(DCResString, res, dc_tostr_dv(dv), {});
-
-    printf("%s", dc_unwrap2(res));
-
-    if (dc_unwrap2(res)) free(dc_unwrap2(res));
-
-    dc_ret();
-}
-
-DCResVoid dc_dv_println(DCDynVal* dv)
-{
-    DC_TRY_DEF2(DCResVoid, dc_dv_print(dv));
-
-    printf("%s", "\n");
-
-    dc_ret();
-}
-
 DCResVoid dc_normalize_path_to_posix(string path)
 {
     DC_RES_void();
@@ -466,7 +397,7 @@ DCResVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
 
     if (batch->cap == 0 || batch->count == 0) dc_ret();
 
-    dc_dbg_log("cleaning up '%" PRIuMAX "' elements", batch->count);
+    dc_dbg_log("cleaning up '" dc_fmt(usize) "' elements", batch->count);
 
     // run cleanup of each item
     dc_da_for(*batch, {
@@ -478,14 +409,14 @@ DCResVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
     });
 
     // clean up the dc_cleanup itself
-    dc_dbg_log("freeing cleanup batch, current capacity: '%" PRIuMAX "', current "
-               "count: '%" PRIuMAX "'",
+    dc_dbg_log("freeing cleanup batch, current capacity: '" dc_fmt(usize) "', current "
+                                                                          "count: '" dc_fmt(usize) "'",
                batch->cap, batch->count);
 
     dc_try_fail(dc_da_free(batch));
 
-    dc_dbg_log("cleanup batch has been freed, current capacity: '%" PRIuMAX "', current "
-               "count: '%" PRIuMAX "'",
+    dc_dbg_log("cleanup batch has been freed, current capacity: '" dc_fmt(usize) "', current "
+                                                                                 "count: '" dc_fmt(usize) "'",
                batch->cap, batch->count);
 
     dc_ret();
@@ -507,13 +438,13 @@ void dc_cleanup_pool_run(i32 selection)
             dc_dbg_log("performing pool cleanup");
 
             dc_for(dc_cleanup_pool.pool, DCCleanupBatch, dc_cleanup_pool.count, {
-                dc_dbg_log("cleaning up the batch index [%" PRIuMAX "]", _idx);
+                dc_dbg_log("cleaning up the batch index [" dc_fmt(usize) "]", _idx);
                 dc_try(dc_cleanup_batch_run(&dc_cleanup_pool.pool[_idx]));
 
                 if (dc_is_err())
                 {
-                    dc_dbg_log("An error occurred while cleanup batch index [%" PRIuMAX "]: (code %d) %s", _idx, dc_err_code(),
-                               dc_err_msg());
+                    dc_dbg_log("An error occurred while cleanup batch index [" dc_fmt(usize) "]: (code %d) %s", _idx,
+                               dc_err_code(), dc_err_msg());
 
                     exit(dc_err_code());
                 }
@@ -535,7 +466,7 @@ void dc_cleanup_pool_run(i32 selection)
         {
             if ((usize)selection >= dc_cleanup_pool.count)
             {
-                dc_dbg_log("Cleanup batch index out of bound: requested=%" PRId32 " got=%" PRIuMAX " elements", selection,
+                dc_dbg_log("Cleanup batch index out of bound: requested=%" PRId32 " got=" dc_fmt(usize) " elements", selection,
                            dc_cleanup_pool.count);
 
                 exit(5);

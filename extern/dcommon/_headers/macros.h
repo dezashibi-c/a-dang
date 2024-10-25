@@ -116,6 +116,10 @@
 
 #define DC_DCStringView_FMT DCPRIsv
 
+#define DC_DCDynArrPtr_FMT "%s"
+#define DC_DCHashTablePtr_FMT "%s"
+#define DC_DCPairPtr_FMT "%s"
+
 // ***************************************************************************************
 // * PRIMITIVE TYPES TO BOOLEAN CONVERTER MACROS
 // ***************************************************************************************
@@ -149,6 +153,132 @@
 #define dc_usize_as_bool(VAL) ((VAL) != 0)
 
 #define dc_DCStringView_as_bool(VAL) (((VAL).str) && (VAL).len != 0)
+
+#define dc_DCDynArrPtr_as_bool(VAL) ((VAL) != NULL && (VAL)->count != 0)
+#define dc_DCHashTablePtr_as_bool(VAL) ((VAL) != NULL && (VAL)->key_count != 0)
+#define dc_DCPairPtr_as_bool(VAL) ((VAL) != NULL)
+
+// ***************************************************************************************
+// * DYNAMIC VALUE MACROS
+// ***************************************************************************************
+
+/**
+ * `[MACRO]` Macro to define custom free function for dynamic values
+ */
+#define DC_DV_FREE_FN_DECL(NAME) DCResVoid NAME(DCDynVal* _value)
+
+/**
+ * `[MACRO]` Macro to define custom operation function for two dynamic values
+ */
+#define DC_DV_OP_FN_DECL(RET_TYPE, NAME) RET_TYPE NAME(DCDynVal* _dv1, DCDynVal* _dv2)
+
+/**
+ * `[MACRO]` Macro to define a new function pointer that must receives two pointers to
+ * two dynamic values and return given type
+ */
+#define DCDynValOpFnType(RET_TYPE, TYPE_NAME) typedef RET_TYPE (*TYPE_NAME)(DCDynVal*, DCDynVal*)
+
+/**
+ * `[MACRO]` Expands to proper enum value for given type that is used in dynamic values
+ */
+#define dc_dvt(TYPE) DC_DYN_VAL_TYPE_##TYPE
+
+/**
+ * `[MACRO]` Expands to proper field name of the dynamic value union field (value)
+ */
+#define dc_dvf(TYPE) TYPE##_val
+
+/**
+ * `[MACRO]` Expands to proper field name declaration for the dynamic value union field (value)
+ */
+#define dc_dvf_decl(TYPE) TYPE TYPE##_val
+
+/**
+ * `[MACRO]` Defines a dynamic value literal which holds given type and value and is
+ * marked as not allocated
+ *
+ * NOTE: The value must not be an allocated value
+ */
+#define dc_dv(TYPE, VALUE)                                                                                                     \
+    (DCDynVal)                                                                                                                 \
+    {                                                                                                                          \
+        .type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = false                                                  \
+    }
+
+/**
+ * `[MACRO]` Defines a dynamic value literal which holds given type and value and is
+ * marked as allocated
+ *
+ * NOTE: The value must be an allocated value
+ */
+#define dc_dva(TYPE, VALUE)                                                                                                    \
+    (DCDynVal)                                                                                                                 \
+    {                                                                                                                          \
+        .type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = true                                                   \
+    }
+
+/**
+ * `[MACRO]` Defines new variable of NAME with given type, value and allocation status
+ */
+#define DC_DV_DEF(NAME, TYPE, VALUE, ALLOC)                                                                                    \
+    DCDynVal NAME = {.type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = ALLOC}
+
+/**
+ * `[MACRO]` Expands to setting type and value of an existing dynamic value variable and
+ * reset the allocation status to false
+ *
+ * NOTE: The VALUE must not be allocated
+ */
+#define dc_dv_set(NAME, TYPE, VALUE)                                                                                           \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        (NAME).type = dc_dvt(TYPE);                                                                                            \
+        (NAME).allocated = false;                                                                                              \
+        (NAME).value.dc_dvf(TYPE) = VALUE;                                                                                     \
+    } while (0)
+
+/**
+ * `[MACRO]` Marks given dynamic value variable as allocated
+ */
+#define dc_dv_mark_alloc(NAME) (NAME).allocated = true
+
+/**
+ * `[MACRO]` Expands to setting type and value of an existing dynamic value variable and
+ * set the allocation status to true
+ *
+ * NOTE: The VALUE must be allocated
+ */
+#define dc_dv_seta(NAME, TYPE, VALUE)                                                                                          \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_dv_set(NAME, TYPE, VALUE);                                                                                          \
+        dc_dv_mark_alloc(NAME);                                                                                                \
+    } while (0)
+
+/**
+ * `[MACRO]` Expands to type checking for the given dynamic value variable
+ */
+#define dc_dv_is(NAME, TYPE) ((NAME).type == dc_dvt(TYPE))
+
+/**
+ * `[MACRO]` Expands to negative type checking for the given dynamic value variable
+ */
+#define dc_dv_is_not(NAME, TYPE) ((NAME).type != dc_dvt(TYPE))
+
+/**
+ * `[MACRO]` Retrieves the value of the given dynamic value for the given type
+ */
+#define dc_dv_as(NAME, TYPE) ((NAME).value.dc_dvf(TYPE))
+
+/**
+ * `[MACRO]` Checks if the dynamic value is marked as allocated
+ */
+#define dc_dv_is_allocated(NAME) ((NAME).allocated)
+
+/**
+ * `[MACRO]` Checks if the dynamic value is marked as allocated
+ */
+#define dc_dv_is_not_allocated(NAME) (!(NAME).allocated)
 
 /**
  * `[MACRO]` Creates an u8 based boolean dynamic value with 0 or 1
@@ -1147,124 +1277,6 @@
 #define DC_DA_CAP_MULTIPLIER 2
 
 #endif
-
-/**
- * `[MACRO]` Macro to define custom free function for dynamic values
- */
-#define DC_DV_FREE_FN_DECL(NAME) DCResVoid NAME(DCDynVal* _value)
-
-/**
- * `[MACRO]` Macro to define custom operation function for two dynamic values
- */
-#define DC_DV_OP_FN_DECL(RET_TYPE, NAME) RET_TYPE NAME(DCDynVal* _dv1, DCDynVal* _dv2)
-
-/**
- * `[MACRO]` Macro to define a new function pointer that must receives two pointers to
- * two dynamic values and return given type
- */
-#define DCDynValOpFnType(RET_TYPE, TYPE_NAME) typedef RET_TYPE (*TYPE_NAME)(DCDynVal*, DCDynVal*)
-
-/**
- * `[MACRO]` Expands to proper enum value for given type that is used in dynamic values
- */
-#define dc_dvt(TYPE) DC_DYN_VAL_TYPE_##TYPE
-
-/**
- * `[MACRO]` Expands to proper field name of the dynamic value union field (value)
- */
-#define dc_dvf(TYPE) TYPE##_val
-
-/**
- * `[MACRO]` Expands to proper field name declaration for the dynamic value union field (value)
- */
-#define dc_dvf_decl(TYPE) TYPE TYPE##_val
-
-/**
- * `[MACRO]` Defines a dynamic value literal which holds given type and value and is
- * marked as not allocated
- *
- * NOTE: The value must not be an allocated value
- */
-#define dc_dv(TYPE, VALUE)                                                                                                     \
-    (DCDynVal)                                                                                                                 \
-    {                                                                                                                          \
-        .type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = false                                                  \
-    }
-
-/**
- * `[MACRO]` Defines a dynamic value literal which holds given type and value and is
- * marked as allocated
- *
- * NOTE: The value must be an allocated value
- */
-#define dc_dva(TYPE, VALUE)                                                                                                    \
-    (DCDynVal)                                                                                                                 \
-    {                                                                                                                          \
-        .type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = true                                                   \
-    }
-
-/**
- * `[MACRO]` Defines new variable of NAME with given type, value and allocation status
- */
-#define DC_DV_DEF(NAME, TYPE, VALUE, ALLOC)                                                                                    \
-    DCDynVal NAME = {.type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = ALLOC}
-
-/**
- * `[MACRO]` Expands to setting type and value of an existing dynamic value variable and
- * reset the allocation status to false
- *
- * NOTE: The VALUE must not be allocated
- */
-#define dc_dv_set(NAME, TYPE, VALUE)                                                                                           \
-    do                                                                                                                         \
-    {                                                                                                                          \
-        (NAME).type = dc_dvt(TYPE);                                                                                            \
-        (NAME).allocated = false;                                                                                              \
-        (NAME).value.dc_dvf(TYPE) = VALUE;                                                                                     \
-    } while (0)
-
-/**
- * `[MACRO]` Marks given dynamic value variable as allocated
- */
-#define dc_dv_mark_alloc(NAME) (NAME).allocated = true
-
-/**
- * `[MACRO]` Expands to setting type and value of an existing dynamic value variable and
- * set the allocation status to true
- *
- * NOTE: The VALUE must be allocated
- */
-#define dc_dv_seta(NAME, TYPE, VALUE)                                                                                          \
-    do                                                                                                                         \
-    {                                                                                                                          \
-        dc_dv_set(NAME, TYPE, VALUE);                                                                                          \
-        dc_dv_mark_alloc(NAME);                                                                                                \
-    } while (0)
-
-/**
- * `[MACRO]` Expands to type checking for the given dynamic value variable
- */
-#define dc_dv_is(NAME, TYPE) ((NAME).type == dc_dvt(TYPE))
-
-/**
- * `[MACRO]` Expands to negative type checking for the given dynamic value variable
- */
-#define dc_dv_is_not(NAME, TYPE) ((NAME).type != dc_dvt(TYPE))
-
-/**
- * `[MACRO]` Retrieves the value of the given dynamic value for the given type
- */
-#define dc_dv_as(NAME, TYPE) ((NAME).value.dc_dvf(TYPE))
-
-/**
- * `[MACRO]` Checks if the dynamic value is marked as allocated
- */
-#define dc_dv_is_allocated(NAME) ((NAME).allocated)
-
-/**
- * `[MACRO]` Checks if the dynamic value is marked as allocated
- */
-#define dc_dv_is_not_allocated(NAME) (!(NAME).allocated)
 
 /**
  * `[MACRO]` Checks if the given index is correct according to the dynamic array number of

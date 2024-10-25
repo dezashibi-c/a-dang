@@ -1,6 +1,6 @@
 // ***************************************************************************************
 //    Project: dcommon -> https://github.com/dezashibi-c/dcommon
-//    File: _dynht.c
+//    File: _ht.c
 //    Date: 2024-09-15
 //    Author: Navid Dezashibi
 //    Contact: navid@dezashibi.com
@@ -17,7 +17,7 @@
 // ***************************************************************************************
 
 #ifndef __DC_BYPASS_PRIVATE_PROTECTION
-#error "You cannot link to this source (_dynht.c) directly, please consider including dcommon.h"
+#error "You cannot link to this source (_ht.c) directly, please consider including dcommon.h"
 #endif
 
 #include "dcommon.h"
@@ -88,9 +88,9 @@ DCResVoid dc_ht_free(DCHashTable* ht)
         DC_HT_GET_AND_DEF_CONTAINER_ROW(darr, *ht, i);
 
         dc_da_for(*darr, {
-            if (ht->pair_free_fn) dc_try_fail(ht->pair_free_fn((DCPair*)dc_dv_as(*_it, voidptr)));
+            if (ht->pair_free_fn) dc_try_fail(ht->pair_free_fn(dc_dv_as(*_it, DCPairPtr)));
 
-            if (dc_dv_is_allocated(*_it) && dc_dv_as(*_it, voidptr) != NULL) free(dc_dv_as(*_it, voidptr));
+            if (dc_dv_is_allocated(*_it) && dc_dv_as(*_it, DCPairPtr) != NULL) free(dc_dv_as(*_it, DCPairPtr));
         });
 
         free(darr->elements);
@@ -142,21 +142,21 @@ DCResUsize dc_ht_find_by_key(DCHashTable* ht, DCDynVal key, DCDynVal** out_resul
     DC_HT_GET_AND_DEF_CONTAINER_ROW(darr, *ht, _index);
 
     dc_da_for(*darr, {
-        if (_it->type != dc_dvt(voidptr))
+        if (_it->type != dc_dvt(DCPairPtr))
         {
-            dc_dbg_log("wrong type, voidptr needed");
+            dc_dbg_log("wrong type, DCPairPtr needed");
 
-            dc_ret_e(3, "wrong type, voidptr needed");
+            dc_ret_e(3, "wrong type, DCPairPtr needed");
         }
 
-        DCDynVal element_key = ((DCPair*)_it->value.voidptr_val)->first;
+        DCDynVal element_key = dc_dv_as(*_it, DCPairPtr)->first;
 
         DCResBool cmp_res = ht->key_cmp_fn(&element_key, &key);
         dc_fail_if_err2(cmp_res);
 
         if (dc_unwrap2(cmp_res))
         {
-            *out_result = &((DCPair*)_it->value.voidptr_val)->second;
+            *out_result = &(dc_dv_as(*_it, DCPairPtr))->second;
             dc_ret_ok(_idx);
         }
     });
@@ -203,7 +203,7 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
             set_status == DC_HT_SET_CREATE_OR_FAIL)
         {
             dc_try_fail(dc_da_init(current_row, NULL));
-            dc_try_fail(dc_da_push(current_row, dc_dva(voidptr, new_pair)));
+            dc_try_fail(dc_da_push(current_row, dc_dva(DCPairPtr, new_pair)));
 
             ht->key_count++;
 
@@ -241,13 +241,13 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
         if (set_status == DC_HT_SET_CREATE_OR_UPDATE || set_status == DC_HT_SET_UPDATE_OR_NOTHING ||
             set_status == DC_HT_SET_UPDATE_OR_FAIL)
         {
-            DCPair* old_pair = (DCPair*)dc_dv_as(current_row->elements[existed_index], voidptr);
+            DCPair* old_pair = dc_dv_as(current_row->elements[existed_index], DCPairPtr);
 
             if (ht->pair_free_fn) dc_try_fail(ht->pair_free_fn(old_pair));
 
             free(old_pair);
 
-            current_row->elements[existed_index] = dc_dva(voidptr, new_pair);
+            current_row->elements[existed_index] = dc_dva(DCPairPtr, new_pair);
 
             dc_ret();
         }
@@ -275,7 +275,7 @@ DCResVoid dc_ht_set(DCHashTable* ht, DCDynVal key, DCDynVal value, DCHashTableSe
     if (set_status == DC_HT_SET_CREATE_OR_UPDATE || set_status == DC_HT_SET_CREATE_OR_NOTHING ||
         set_status == DC_HT_SET_CREATE_OR_FAIL)
     {
-        dc_try_fail(dc_da_push(current_row, dc_dva(voidptr, new_pair)));
+        dc_try_fail(dc_da_push(current_row, dc_dva(DCPairPtr, new_pair)));
         ht->key_count++;
 
         dc_ret();
@@ -332,7 +332,7 @@ DCResVoid dc_ht_merge(DCHashTable* ht, DCHashTable* from, DCHashTableSetStatus s
 
         for (usize j = 0; j < from->container[i].count; ++j)
         {
-            DCPair* pair = dc_da_get_as(from->container[i], j, voidptr);
+            DCPair* pair = dc_da_get_as(from->container[i], j, DCPairPtr);
 
             dc_try_fail(dc_ht_set(ht, pair->first, pair->second, set_status));
         }
@@ -359,7 +359,7 @@ DCResBool dc_ht_delete(DCHashTable* ht, DCDynVal key)
 
     if (existed == NULL) dc_ret_ok(false);
 
-    DCPair* old_pair = (DCPair*)dc_dv_as(current_row->elements[existed_index], voidptr);
+    DCPair* old_pair = dc_dv_as(current_row->elements[existed_index], DCPairPtr);
 
     if (ht->pair_free_fn) dc_try_fail_temp(DCResVoid, ht->pair_free_fn(old_pair));
 
@@ -398,16 +398,16 @@ DCResUsize dc_ht_keys(DCHashTable* ht, DCDynVal** out_arr)
         if (darr->cap == 0) continue;
 
         dc_da_for(*darr, {
-            if (_it->type != DC_DYN_VAL_TYPE_voidptr)
+            if (_it->type != dc_dvt(DCPairPtr))
             {
                 free(*out_arr);
                 *out_arr = NULL;
-                dc_dbg_log("Bad type, DCHashTable elements must be of type voidptr");
+                dc_dbg_log("Bad type, DCHashTable elements must be of type DCPairPtr");
 
-                dc_ret_e(3, "Bad type, DCHashTable elements must be of type voidptr");
+                dc_ret_e(3, "Bad type, DCHashTable elements must be of type DCPairPtr");
             }
 
-            DCDynVal element_key = ((DCPair*)_it->value.voidptr_val)->first;
+            DCDynVal element_key = dc_dv_as(*_it, DCPairPtr)->first;
 
             (*out_arr)[key_count] = element_key;
             key_count++;

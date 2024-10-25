@@ -93,6 +93,10 @@ typedef enum
 
     dc_dvt(DCStringView),
 
+    dc_dvt(DCHashTablePtr),
+    dc_dvt(DCDynArrPtr),
+    dc_dvt(DCPairPtr),
+
 #ifdef DC_DV_EXTRA_TYPES
     DC_DV_EXTRA_TYPES
 #endif
@@ -132,6 +136,10 @@ typedef struct
         dc_dvf_decl(usize);
 
         dc_dvf_decl(DCStringView);
+
+        dc_dvf_decl(DCDynArrPtr);
+        dc_dvf_decl(DCHashTablePtr);
+        dc_dvf_decl(DCPairPtr);
 
 #ifdef DC_DV_EXTRA_FIELDS
         DC_DV_EXTRA_FIELDS
