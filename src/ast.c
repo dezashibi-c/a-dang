@@ -54,6 +54,15 @@ string tostr_DNType(DNType dnt)
 
 DCResVoid dang_node_inspect(DNode* dn, string* result)
 {
+#define append_data_str(FMT)                                                                                                   \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});                                           \
+        dc_sappend(result, FMT, dc_unwrap2(data_str_res));                                                                     \
+        if (dc_unwrap2(data_str_res)) free(dc_unwrap2(data_str_res));                                                          \
+    } while (0)
+
+
     DC_RES_void();
 
     if (!dn)
@@ -112,8 +121,8 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
 
         case DN_PREFIX_EXPRESSION:
         {
-            dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});
-            dc_sappend(result, "(%s", dc_unwrap2(data_str_res));
+            append_data_str("(%s");
+
             dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
             dc_sappend(result, "%s", ")");
             break;
@@ -123,8 +132,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
         {
             dc_sappend(result, "%s", "(");
             dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
-            dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});
-            dc_sappend(result, " %s ", dc_unwrap2(data_str_res));
+            append_data_str(" %s ");
             dc_try_fail(dang_node_inspect(dn_child(dn, 1), result));
             dc_sappend(result, "%s", ")");
             break;
@@ -215,16 +223,12 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
             break;
 
         case DN_STRING_LITERAL:
-        {
-            dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});
-
-            dc_sappend(result, "\"%s\"", dc_unwrap2(data_str_res));
+            append_data_str("\"%s\"");
             break;
-        }
 
         case DN_BOOLEAN_LITERAL:
         {
-            dc_try_or_fail_with3(DCResBool, data_bool_res, dc_dv_as_bool(&dn->data), {});
+            dc_try_or_fail_with3(DCResBool, data_bool_res, dc_dv_to_bool(&dn->data), {});
 
             dc_sappend(result, "%s", dc_tostr_bool(dc_unwrap2(data_bool_res)));
             break;
@@ -246,12 +250,8 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
             break;
 
         default:
-        {
-            dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});
-
-            dc_sappend(result, "%s", dc_unwrap2(data_str_res));
+            append_data_str("%s");
             break;
-        }
 
 
             // DN_WHILE_EXPRESSION,
@@ -259,9 +259,11 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
     };
 
     dc_ret();
+
+#undef append_data_str
 }
 
-ResNode dn_new(DNType type, DCDynVal data, bool has_children)
+ResNode dn_new(DNType type, DCDynVal data, b1 has_children)
 {
     DC_RES2(ResNode);
 
@@ -307,17 +309,17 @@ DCResVoid dn_free(DNode* dn)
     dc_ret();
 }
 
-DC_CLEANUP_FN_DECL(dn_cleanup)
-{
-    return dn_free((DNode*)_value);
-}
-
 DC_DV_FREE_FN_DECL(dn_child_free)
 {
     DC_RES_void();
 
     if (dc_dv_is_allocated(*_value) && dc_dv_is(*_value, DNodePtr) && dc_dv_as(*_value, DNodePtr) != NULL)
+    {
         dc_try(dn_free(dc_dv_as(*_value, DNodePtr)));
+        free(dc_dv_as(*_value, DNodePtr));
+
+        dc_dv_set(*_value, DNodePtr, NULL);
+    }
 
     dc_ret();
 }

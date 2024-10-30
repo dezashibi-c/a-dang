@@ -6,7 +6,7 @@
 #include "scanner.h"
 #include "types.h"
 
-static bool dang_parser_has_no_error(DParser* p)
+static b1 dang_parser_has_no_error(DParser* p)
 {
     dc_action_on(p->errors.count != 0, dang_parser_log_errors(p);
                  return false, "parser has " dc_fmt(usize) " errors", p->errors.count);
@@ -14,9 +14,9 @@ static bool dang_parser_has_no_error(DParser* p)
     return true;
 }
 
-static bool perform_test_batch(string tests[], usize tests_count)
+static b1 perform_test_batch(string tests[], usize tests_count)
 {
-    bool success = true;
+    b1 success = true;
 
     for (usize i = 0; i < tests_count / 2; ++i)
     {

@@ -265,7 +265,7 @@ DCResVoid dc_da_trunc(DCDynArr* darr)
     dc_ret();
 }
 
-DCResVoid dc_da_pop(DCDynArr* darr, usize count, DCDynVal** out_popped, bool truncate)
+DCResVoid dc_da_pop(DCDynArr* darr, usize count, DCDynVal** out_popped, b1 truncate)
 {
     DC_RES_void();
 
@@ -368,7 +368,7 @@ DCResVoid dc_da_append(DCDynArr* darr, DCDynArr* from)
     dc_ret();
 }
 
-DCResDv dc_da_get(DCDynArr* darr, usize index)
+DCResPtr dc_da_get(DCDynArr* darr, usize index)
 {
     DC_RES_dv();
 
@@ -657,92 +657,92 @@ DCResVoid dc_da_insert_from(DCDynArr* darr, usize start_index, DCDynArr* from)
     dc_ret();
 }
 
-DCResUsize dc_i8_da_to_flat_arr(DCDynArr* arr, i8** out_arr, bool must_fail)
+DCResUsize dc_i8_da_to_flat_arr(DCDynArr* arr, i8** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(i8);
 }
 
-DCResUsize dc_i16_da_to_flat_arr(DCDynArr* arr, i16** out_arr, bool must_fail)
+DCResUsize dc_i16_da_to_flat_arr(DCDynArr* arr, i16** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(i16);
 }
 
-DCResUsize dc_i32_da_to_flat_arr(DCDynArr* arr, i32** out_arr, bool must_fail)
+DCResUsize dc_i32_da_to_flat_arr(DCDynArr* arr, i32** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(i32);
 }
 
-DCResUsize dc_i64_da_to_flat_arr(DCDynArr* arr, i64** out_arr, bool must_fail)
+DCResUsize dc_i64_da_to_flat_arr(DCDynArr* arr, i64** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(i64);
 }
 
-DCResUsize dc_u8_da_to_flat_arr(DCDynArr* arr, u8** out_arr, bool must_fail)
+DCResUsize dc_u8_da_to_flat_arr(DCDynArr* arr, u8** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(u8);
 }
 
-DCResUsize dc_u16_da_to_flat_arr(DCDynArr* arr, u16** out_arr, bool must_fail)
+DCResUsize dc_u16_da_to_flat_arr(DCDynArr* arr, u16** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(u16);
 }
 
-DCResUsize dc_u32_da_to_flat_arr(DCDynArr* arr, u32** out_arr, bool must_fail)
+DCResUsize dc_u32_da_to_flat_arr(DCDynArr* arr, u32** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(u32);
 }
 
-DCResUsize dc_u64_da_to_flat_arr(DCDynArr* arr, u64** out_arr, bool must_fail)
+DCResUsize dc_u64_da_to_flat_arr(DCDynArr* arr, u64** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(u64);
 }
 
-DCResUsize dc_f32_da_to_flat_arr(DCDynArr* arr, f32** out_arr, bool must_fail)
+DCResUsize dc_f32_da_to_flat_arr(DCDynArr* arr, f32** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(f32);
 }
 
-DCResUsize dc_f64_da_to_flat_arr(DCDynArr* arr, f64** out_arr, bool must_fail)
+DCResUsize dc_f64_da_to_flat_arr(DCDynArr* arr, f64** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(f64);
 }
 
-DCResUsize dc_uptr_da_to_flat_arr(DCDynArr* arr, uptr** out_arr, bool must_fail)
+DCResUsize dc_uptr_da_to_flat_arr(DCDynArr* arr, uptr** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(uptr);
 }
 
-DCResUsize dc_char_da_to_flat_arr(DCDynArr* arr, char** out_arr, bool must_fail)
+DCResUsize dc_char_da_to_flat_arr(DCDynArr* arr, char** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(char);
 }
 
-DCResUsize dc_size_da_to_flat_arr(DCDynArr* arr, size** out_arr, bool must_fail)
+DCResUsize dc_size_da_to_flat_arr(DCDynArr* arr, size** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(size);
 }
 
-DCResUsize dc_usize_da_to_flat_arr(DCDynArr* arr, usize** out_arr, bool must_fail)
+DCResUsize dc_usize_da_to_flat_arr(DCDynArr* arr, usize** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(usize);
 }
 
-DCResUsize dc_string_da_to_flat_arr(DCDynArr* arr, string** out_arr, bool must_fail)
+DCResUsize dc_string_da_to_flat_arr(DCDynArr* arr, string** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(string);
 }
 
-DCResUsize dc_voidptr_da_to_flat_arr(DCDynArr* arr, voidptr** out_arr, bool must_fail)
+DCResUsize dc_voidptr_da_to_flat_arr(DCDynArr* arr, voidptr** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(voidptr);
 }
 
-DCResUsize dc_fileptr_da_to_flat_arr(DCDynArr* arr, fileptr** out_arr, bool must_fail)
+DCResUsize dc_fileptr_da_to_flat_arr(DCDynArr* arr, fileptr** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(fileptr);
 }
 
-DCResUsize dc_DCStringView_da_to_flat_arr(DCDynArr* arr, DCStringView** out_arr, bool must_fail)
+DCResUsize dc_DCStringView_da_to_flat_arr(DCDynArr* arr, DCStringView** out_arr, b1 must_fail)
 {
     __DC_DA_CONVERT_IMPL(DCStringView);
 }

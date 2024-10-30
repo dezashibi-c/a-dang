@@ -34,6 +34,8 @@ string dc_dv_fmt(DCDynVal* dv)
 
     switch (dv->type)
     {
+        dv_fmt_case(b1);
+
         dv_fmt_case(u8);
         dv_fmt_case(u16);
         dv_fmt_case(u32);
@@ -57,6 +59,7 @@ string dc_dv_fmt(DCDynVal* dv)
         dv_fmt_case(DCDynArrPtr);
         dv_fmt_case(DCHashTablePtr);
         dv_fmt_case(DCPairPtr);
+        dv_fmt_case(DCDynValPtr);
 
         default:
             return "";
@@ -74,6 +77,8 @@ string dc_tostr_dvt(DCDynVal* dv)
 
     switch (dv->type)
     {
+        dvt_case(b1);
+
         dvt_case(u8);
         dvt_case(u16);
         dvt_case(u32);
@@ -97,6 +102,8 @@ string dc_tostr_dvt(DCDynVal* dv)
         dvt_case(DCDynArrPtr);
         dvt_case(DCHashTablePtr);
         dvt_case(DCPairPtr);
+
+        dvt_case(DCDynValPtr);
 
         default:
             return "unknown or unimplemented";
@@ -211,6 +218,13 @@ DCResString dc_tostr_dv(DCDynVal* dv)
             break;
         }
 
+        case dc_dvt(b1):
+            dc_sappend(&result, "%s", dc_tostr_bool(dc_dv_as(*dv, b1)));
+            break;
+
+        case dc_dvt(DCDynValPtr):
+            return dc_tostr_dv(dc_dv_as(*dv, DCDynValPtr));
+            break;
 
         default:
             dc_sprintf(&result, "%s", "(unknown dynamic value)");
@@ -245,7 +259,7 @@ DCResVoid dc_dv_println(DCDynVal* dv)
 }
 
 
-DCResBool dc_dv_as_bool(DCDynVal* dv)
+DCResBool dc_dv_to_bool(DCDynVal* dv)
 {
     DC_RES_bool();
 
@@ -254,10 +268,12 @@ DCResBool dc_dv_as_bool(DCDynVal* dv)
 
 #define type_to_bool(TYPE)                                                                                                     \
     case dc_dvt(TYPE):                                                                                                         \
-        dc_ret_ok(dc_as_bool(TYPE, dv->value.dc_dvf(TYPE)));
+        dc_ret_ok(dc_to_bool(TYPE, dv->value.dc_dvf(TYPE)));
 
     switch (dv->type)
     {
+        type_to_bool(b1);
+
         type_to_bool(u8);
         type_to_bool(u16);
         type_to_bool(u32);
@@ -282,6 +298,8 @@ DCResBool dc_dv_as_bool(DCDynVal* dv)
         type_to_bool(DCHashTablePtr);
         type_to_bool(DCPairPtr);
 
+        type_to_bool(DCDynValPtr);
+
         default:
             break;
     };
@@ -302,15 +320,20 @@ DCResBool dc_dv_eq(DCDynVal* dv1, DCDynVal* dv2)
         dc_ret_e(1, "cannot compare DCDynVal with NULL");
     }
 
-    if (dv1->type != dv2->type) dc_ret_ok(false);
+    DCDynVal* lval = (dv1->type == dc_dvt(DCDynValPtr)) ? dc_dv_as(*dv1, DCDynValPtr) : dv1;
+    DCDynVal* rval = (dv2->type == dc_dvt(DCDynValPtr)) ? dc_dv_as(*dv2, DCDynValPtr) : dv2;
+
+    if (lval->type != rval->type) dc_ret_ok(false);
 
 #define check_eq(TYPE)                                                                                                         \
     case dc_dvt(TYPE):                                                                                                         \
-        if (dv1->value.dc_dvf(TYPE) == dv2->value.dc_dvf(TYPE)) dc_ret_ok(true);                                               \
+        if (lval->value.dc_dvf(TYPE) == rval->value.dc_dvf(TYPE)) dc_ret_ok(true);                                             \
         break
 
-    switch (dv1->type)
+    switch (lval->type)
     {
+        check_eq(b1);
+
         check_eq(i8);
         check_eq(i16);
         check_eq(i32);
@@ -334,15 +357,15 @@ DCResBool dc_dv_eq(DCDynVal* dv1, DCDynVal* dv2)
 
         case dc_dvt(string):
         {
-            if (strcmp(dc_dv_as(*dv1, string), dc_dv_as(*dv2, string)) == 0) dc_ret_ok(true);
+            if (strcmp(dc_dv_as(*lval, string), dc_dv_as(*rval, string)) == 0) dc_ret_ok(true);
             break;
         }
 
         case dc_dvt(DCStringView):
         {
-            if (dc_dv_as(*dv1, DCStringView).str && dc_dv_as(*dv2, DCStringView).str &&
-                (dc_dv_as(*dv1, DCStringView).str == dc_dv_as(*dv2, DCStringView).str) &&
-                (dc_dv_as(*dv1, DCStringView).len == dc_dv_as(*dv2, DCStringView).len))
+            if (dc_dv_as(*lval, DCStringView).str && dc_dv_as(*rval, DCStringView).str &&
+                (dc_dv_as(*lval, DCStringView).str == dc_dv_as(*rval, DCStringView).str) &&
+                (dc_dv_as(*lval, DCStringView).len == dc_dv_as(*rval, DCStringView).len))
                 dc_ret_ok(true);
 
             break;
@@ -350,8 +373,8 @@ DCResBool dc_dv_eq(DCDynVal* dv1, DCDynVal* dv2)
 
         case dc_dvt(DCPairPtr):
         {
-            DCPairPtr _pair1 = dc_dv_as(*dv1, DCPairPtr);
-            DCPairPtr _pair2 = dc_dv_as(*dv2, DCPairPtr);
+            DCPairPtr _pair1 = dc_dv_as(*lval, DCPairPtr);
+            DCPairPtr _pair2 = dc_dv_as(*rval, DCPairPtr);
 
             if ((_pair1 && !_pair2) || (!_pair1 && _pair2)) dc_ret_ok(false);
 
@@ -363,6 +386,8 @@ DCResBool dc_dv_eq(DCDynVal* dv1, DCDynVal* dv2)
             break;
         }
 
+        case dc_dvt(DCDynValPtr):
+            return dc_dv_eq(lval, rval);
 
         default:
             break;
@@ -425,12 +450,15 @@ DCResVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn)
         {
             if (custom_free_fn) dc_try_fail(custom_free_fn(element));
 
-            DCPairPtr _pair = dc_dv_as(*element, DCPairPtr);
+            if (dc_dv_is_allocated(*element) && dc_dv_as(*element, DCPairPtr) != NULL)
+            {
+                DCPairPtr _pair = dc_dv_as(*element, DCPairPtr);
 
-            dc_try_fail(dc_dv_free(&_pair->first, custom_free_fn));
-            dc_try_fail(dc_dv_free(&_pair->second, custom_free_fn));
+                dc_try_fail(dc_dv_free(&_pair->first, custom_free_fn));
+                dc_try_fail(dc_dv_free(&_pair->second, custom_free_fn));
 
-            if (dc_dv_is_allocated(*element) && dc_dv_as(*element, DCPairPtr) != NULL) free(_pair);
+                free(_pair);
+            }
 
             dc_dv_set(*element, DCPairPtr, NULL);
             break;
@@ -439,9 +467,12 @@ DCResVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn)
         case dc_dvt(DCDynArrPtr):
             if (custom_free_fn) dc_try_fail(custom_free_fn(element));
 
-            dc_try_fail(dc_da_free(dc_dv_as(*element, DCDynArrPtr)));
+            if (dc_dv_is_allocated(*element) && dc_dv_as(*element, DCDynArrPtr) != NULL)
+            {
+                dc_try_fail(dc_da_free(dc_dv_as(*element, DCDynArrPtr)));
 
-            if (dc_dv_is_allocated(*element) && dc_dv_as(*element, DCDynArrPtr) != NULL) free(dc_dv_as(*element, DCDynArrPtr));
+                free(dc_dv_as(*element, DCDynArrPtr));
+            }
 
             dc_dv_set(*element, DCDynArrPtr, NULL);
 
@@ -450,10 +481,12 @@ DCResVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn)
         case dc_dvt(DCHashTablePtr):
             if (custom_free_fn) dc_try_fail(custom_free_fn(element));
 
-            dc_try_fail(dc_ht_free(dc_dv_as(*element, DCHashTablePtr)));
-
             if (dc_dv_is_allocated(*element) && dc_dv_as(*element, DCHashTablePtr) != NULL)
+            {
+                dc_try_fail(dc_ht_free(dc_dv_as(*element, DCHashTablePtr)));
+
                 free(dc_dv_as(*element, DCHashTablePtr));
+            }
 
             dc_dv_set(*element, DCHashTablePtr, NULL);
 
@@ -467,6 +500,18 @@ DCResVoid dc_dv_free(DCDynVal* element, DCDynValFreeFn custom_free_fn)
 
             break;
         }
+
+        case dc_dvt(DCDynValPtr):
+            if (custom_free_fn) dc_try_fail(custom_free_fn(element));
+
+            if (dc_dv_is_allocated(*element))
+            {
+                dc_try_fail(dc_dv_free(dc_dv_as(*element, DCDynValPtr), custom_free_fn));
+
+                free(dc_dv_as(*element, DCDynValPtr));
+            }
+
+            break;
 
         // Do nothing for literal types (integer, float, etc.)
         default:

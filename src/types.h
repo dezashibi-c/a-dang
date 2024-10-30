@@ -21,19 +21,26 @@
 
 typedef struct DNode DNode;
 typedef struct DNode* DNodePtr;
+typedef struct DEnv DEnv;
 
-typedef struct DObj DObj;
-typedef struct DObj* DObjPtr;
+/**
+ * Function pointer type for all dang builtin functions
+ *
+ * NOTE: As DCDynVal is forward declared at this stage, I couldn't use DCRes
+ *       So simply I've used DCDynVal for output and DCError as a pointer
+ *       Now if it returns an error (error is not null), I can continue the flow
+ *       The normal way with redirecting the error
+ */
+typedef DCDynVal (*DBuiltinFunction)(DCDynValPtr call_obj, DCError* error);
 
-DCResType(DObjPtr, ResObj);
-
-typedef ResObj (*DBuiltinFunction)(DObj* call_obj);
-
-#define DC_DV_EXTRA_TYPES dc_dvt(DNodePtr), dc_dvt(DObjPtr), dc_dvt(DBuiltinFunction),
-#define DC_DV_EXTRA_FIELDS                                                                                                     \
+#define DC_DV_EXTRA_TYPES dc_dvt(DNodePtr), dc_dvt(DBuiltinFunction),
+#define DC_DV_EXTRA_UNION_FIELDS                                                                                               \
     dc_dvf_decl(DNodePtr);                                                                                                     \
-    dc_dvf_decl(DObjPtr);                                                                                                      \
     dc_dvf_decl(DBuiltinFunction);
+
+#define DC_DV_EXTRA_FIELDS                                                                                                     \
+    b1 is_returned;                                                                                                            \
+    DEnv* env;
 
 #include "dcommon/dcommon.h"
 

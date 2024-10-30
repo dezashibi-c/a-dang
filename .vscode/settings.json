@@ -1,9 +1,11 @@
 {
     "files.associations": {
+        ".fantomasignore": "ignore",
         "*.h": "c",
         "clove-unit.h": "c",
         "stdlib.h": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "string": "c"
     },
     "cSpell.words": [
         "arcname",
@@ -11,6 +13,7 @@
         "dcommon",
         "DCOMMON",
         "DCPR",
+        "defa",
         "denv",
         "dnode",
         "DOBJ",
@@ -18,7 +21,9 @@
         "dynarr",
         "DYNARR",
         "dynval",
+        "errora",
         "foreachp",
+        "inita",
         "LGREEN",
         "litp",
         "LRED",

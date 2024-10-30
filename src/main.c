@@ -32,6 +32,8 @@ static void repl()
     {
         dc_err_log2(de_res, "cannot initialize environment");
 
+        dc_result_free(&de_res);
+
         return;
     }
 
@@ -60,13 +62,19 @@ static void repl()
             dc_err_log2(res, DC_FG_LRED "DParser initialization error");
             printf("%s", DC_COLOR_RESET);
 
+            dc_result_free(&res);
+
             continue;
         }
 
         ResNode program_res = dang_parser_parse_program(&p);
         if (dc_is_err2(program_res))
+        {
             dc_log("parser could not finish the job properly: (code %d) %s", dc_err_code2(program_res),
                    dc_err_msg2(program_res));
+
+            dc_result_free(&program_res);
+        }
         else
         {
             if (dang_parser_has_error(&p)) dang_parser_log_errors(&p);
@@ -78,26 +86,32 @@ static void repl()
             if (dc_is_err2(inspection_res))
             {
                 dc_err_log2(inspection_res, "Inspection error");
+
+                dc_result_free(&inspection_res);
             }
             else
             {
                 printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", result);
 
-                ResObj evaluated = dang_eval(dc_unwrap2(program_res), de);
+                DCRes evaluated = dang_eval(program, de);
                 if (dc_is_err2(evaluated))
                 {
                     dc_err_log2(evaluated, DC_FG_LRED "Evaluation error");
                     printf("%s", DC_COLOR_RESET);
+
+                    dc_result_free(&evaluated);
                 }
                 else
                 {
                     printf("%s", "Result: " DC_FG_LGREEN);
 
-                    print_obj(dc_unwrap2(evaluated), true);
+                    dobj_print(&dc_unwrap2(evaluated));
 
                     printf("\n%s", DC_COLOR_RESET);
                 }
             }
+
+            if (result) free(result);
         }
 
         dang_parser_free(&p);
@@ -115,7 +129,8 @@ int main(int argc, string argv[])
         repl();
     }
     else if (argc == 2)
-    { // file_run(argv[1]);
+    {
+        // file_run(argv[1]);
     }
     else
     {

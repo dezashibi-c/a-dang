@@ -83,6 +83,8 @@ typedef enum
 
 #define dn_child_push(NODE, CHILD) dc_da_push(&NODE->children, dc_dva(DNodePtr, CHILD))
 
+#define dn_child_push_unwrapped(NODE, CHILD_RES) dc_da_push(&NODE->children, dc_dva(DNodePtr, dc_unwrap2(CHILD_RES)))
+
 struct DNode
 {
     DNType type;
@@ -95,11 +97,10 @@ DCResType(DNode*, ResNode);
 string tostr_DNType(DNType dnt);
 DCResVoid dang_node_inspect(DNode* dn, string* result);
 
-ResNode dn_new(DNType type, DCDynVal data, bool has_children);
+ResNode dn_new(DNType type, DCDynVal data, b1 has_children);
 DCResVoid dn_program_free(DNode* program);
 DCResVoid dn_free(DNode* dn);
 
-DC_CLEANUP_FN_DECL(dn_cleanup);
 DC_DV_FREE_FN_DECL(dn_child_free);
 
 #endif // DANG_AST_H

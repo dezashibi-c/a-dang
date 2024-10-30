@@ -23,28 +23,6 @@
 #endif
 
 // ***************************************************************************************
-// * DEFAULT PRIMITIVE RESULT TYPE DECLARATIONS
-// ***************************************************************************************
-DCResType(i8, DCResI8);
-DCResType(i16, DCResI16);
-DCResType(i32, DCResI32);
-DCResType(i64, DCResI64);
-DCResType(u8, DCResU8);
-DCResType(u16, DCResU16);
-DCResType(u32, DCResU32);
-DCResType(u64, DCResU64);
-DCResType(f32, DCResF32);
-DCResType(f64, DCResF64);
-DCResType(uptr, DCResUptr);
-DCResType(size, DCResSize);
-DCResType(usize, DCResUsize);
-DCResType(string, DCResString);
-DCResType(voidptr, DCResVoidptr);
-DCResType(fileptr, DCResFileptr);
-
-DCResType(bool, DCResBool);
-
-// ***************************************************************************************
 // * STRING VIEW TYPE DECLARATION
 // ***************************************************************************************
 
@@ -70,6 +48,8 @@ struct DCStringView
  */
 typedef enum
 {
+    dc_dvt(b1),
+
     dc_dvt(i8),
     dc_dvt(i16),
     dc_dvt(i32),
@@ -91,6 +71,8 @@ typedef enum
     dc_dvt(voidptr),
     dc_dvt(fileptr),
 
+    dc_dvt(DCDynValPtr),
+
     dc_dvt(DCStringView),
 
     dc_dvt(DCHashTablePtr),
@@ -107,12 +89,19 @@ typedef enum
  * Dynamic value type with ability to keep track of holding allocated string or
  * voidptr for further cleanup
  */
-typedef struct
+struct DCDynVal
 {
     DCDynValType type;
-    bool allocated;
+    b1 allocated;
+
+#ifdef DC_DV_EXTRA_FIELDS
+    DC_DV_EXTRA_FIELDS
+#endif
+
     union
     {
+        dc_dvf_decl(b1);
+
         dc_dvf_decl(i8);
         dc_dvf_decl(i16);
         dc_dvf_decl(i32);
@@ -135,17 +124,19 @@ typedef struct
         dc_dvf_decl(size);
         dc_dvf_decl(usize);
 
+        dc_dvf_decl(DCDynValPtr);
+
         dc_dvf_decl(DCStringView);
 
         dc_dvf_decl(DCDynArrPtr);
         dc_dvf_decl(DCHashTablePtr);
         dc_dvf_decl(DCPairPtr);
 
-#ifdef DC_DV_EXTRA_FIELDS
-        DC_DV_EXTRA_FIELDS
+#ifdef DC_DV_EXTRA_UNION_FIELDS
+        DC_DV_EXTRA_UNION_FIELDS
 #endif
     } value;
-} DCDynVal;
+};
 
 /**
  * Custom function type for cleaning up a dynamic value
@@ -294,6 +285,6 @@ DCResType(DCDynVal, DCRes);
 DCResType(DCStringView, DCResSv);
 DCResType(DCDynArr*, DCResDa);
 DCResType(DCHashTable*, DCResHt);
-DCResType(DCDynVal*, DCResDv);
+DCResType(DCDynVal*, DCResPtr);
 
 #endif // DC_ALIASES_H

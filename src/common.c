@@ -20,7 +20,7 @@
 
 #include "common.h"
 
-void configure(bool init_pool, string log_file, bool append_logs)
+void configure(b1 init_pool, string log_file, b1 append_logs)
 {
     if (log_file) dc_error_logs_init(log_file, append_logs);
 

@@ -25,6 +25,8 @@
 // * PRIMITIVE TYPES DECLARATIONS
 // ***************************************************************************************
 
+typedef bool b1;
+
 typedef int8_t i8;
 typedef int16_t i16;
 typedef int32_t i32;
@@ -48,16 +50,19 @@ typedef char* string;
 typedef void* voidptr;
 typedef FILE* fileptr;
 
+typedef struct DCDynVal DCDynVal;
+typedef DCDynVal* DCDynValPtr;
+
 typedef struct DCStringView DCStringView;
 
 typedef struct DCHashTable DCHashTable;
-typedef struct DCHashTable* DCHashTablePtr;
+typedef DCHashTable* DCHashTablePtr;
 
 typedef struct DCDynArr DCDynArr;
-typedef struct DCDynArr* DCDynArrPtr;
+typedef DCDynArr* DCDynArrPtr;
 
 typedef struct DCPair DCPair;
-typedef struct DCPair* DCPairPtr;
+typedef DCPair* DCPairPtr;
 
 // ***************************************************************************************
 // * RESULT TYPE DECLARATIONS
@@ -93,7 +98,7 @@ typedef struct
 {
     i8 code;
     string message;
-    bool allocated;
+    b1 allocated;
 } DCError;
 
 /**
@@ -123,6 +128,53 @@ typedef struct
         DCError e;
     } data;
 } DCResVoid;
+
+/**
+ * `[MACRO]` creates new DCError with passed string literal
+ */
+#define dc_error_init(ERR, NUM, MSG)                                                                                           \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        (ERR).message = (MSG);                                                                                                 \
+        (ERR).code = (NUM);                                                                                                    \
+        (ERR).allocated = false;                                                                                               \
+    } while (0)
+
+/**
+ * `[MACRO]` creates new DCError with passed printf style parameter
+ *
+ * NOTE: Allocates memory
+ */
+#define dc_error_inita(ERR, NUM, ...)                                                                                          \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        (ERR).message = NULL;                                                                                                  \
+        dc_sprintf(&(ERR).message, __VA_ARGS__);                                                                               \
+        (ERR).code = (NUM);                                                                                                    \
+        (ERR).allocated = true;                                                                                                \
+    } while (0)
+
+// ***************************************************************************************
+// * DEFAULT PRIMITIVE RESULT TYPE DECLARATIONS
+// ***************************************************************************************
+DCResType(b1, DCResBool);
+
+DCResType(i8, DCResI8);
+DCResType(i16, DCResI16);
+DCResType(i32, DCResI32);
+DCResType(i64, DCResI64);
+DCResType(u8, DCResU8);
+DCResType(u16, DCResU16);
+DCResType(u32, DCResU32);
+DCResType(u64, DCResU64);
+DCResType(f32, DCResF32);
+DCResType(f64, DCResF64);
+DCResType(uptr, DCResUptr);
+DCResType(size, DCResSize);
+DCResType(usize, DCResUsize);
+DCResType(string, DCResString);
+DCResType(voidptr, DCResVoidptr);
+DCResType(fileptr, DCResFileptr);
 
 #undef __DC_BYPASS_PRIVATE_PROTECTION
 

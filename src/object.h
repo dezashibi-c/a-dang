@@ -22,57 +22,24 @@
 // ***************************************************************************************
 // * TYPES
 // ***************************************************************************************
-
-typedef enum
-{
-    DOBJ_INTEGER,
-    DOBJ_BOOLEAN,
-    DOBJ_STRING,
-    DOBJ_NULL,
-
-    DOBJ_FUNCTION,
-    DOBJ_BUILTIN,
-    DOBJ_ARRAY,
-    DOBJ_HASH,
-
-    DOBJ__MAX,
-} DObjType;
-
-typedef struct DEnv
+struct DEnv
 {
     DCHashTable memory;
     struct DEnv* outer;
 
     DCDynArr cleanups;
-} DEnv;
-
-DCResType(DEnv*, ResEnv);
-
-struct DObj
-{
-    DObjType type;
-    DCDynVal dv;
-    bool is_returned;
-
-    bool not_allocated;
-
-    DEnv* env;
-    DCDynArr children;
-
-    DCHashTable ht;
 };
 
-extern DObj dobj_null;
-extern DObj dobj_null_return;
-extern DObj dobj_true;
-extern DObj dobj_false;
+DCResType(DEnv*, ResEnv);
 
 // ***************************************************************************************
 // * MACROS
 // ***************************************************************************************
 
 
-#define DECL_DBUILTIN_FUNCTION(NAME) ResObj NAME(DObj* call_obj)
+#define DECL_DBUILTIN_FUNCTION(NAME) DCDynVal NAME(DCDynValPtr call_obj, DCError* error)
+
+#if 0
 
 #define dobj(OBJ_TYPE, VAL_TYPE, VAL)                                                                                          \
     (DObj)                                                                                                                     \
@@ -122,5 +89,7 @@ extern DObj dobj_false;
 #define dobj_is_null(DOBJ) ((DOBJ).type == DOBJ_NULL)
 
 #define dobj_child(DOBJ, INDEX) (dc_da_get_as((DOBJ)->children, INDEX, DObjPtr))
+
+#endif
 
 #endif // DANG_OBJECT_H

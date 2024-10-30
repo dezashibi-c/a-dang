@@ -14,7 +14,7 @@ typedef struct
 #define DC_STOPPER_TestExpectedResult ((TestExpectedResult){.type = TOK_EOF, .text = ""})
 #define DC_IS_STOPPER_TestExpectedResult(EL) ((EL).type == TOK_EOF)
 
-static bool perform_token_test(TestExpectedResult* expected_token, DTok* actual_token, u8 token_index)
+static b1 perform_token_test(TestExpectedResult* expected_token, DTok* actual_token, u8 token_index)
 {
     dc_action_on(actual_token->text.str == NULL || expected_token->text == NULL, return false,
                  "Null string in Token comparison at index %d", token_index);
@@ -32,7 +32,7 @@ static bool perform_token_test(TestExpectedResult* expected_token, DTok* actual_
     return true;
 }
 
-static bool perform_dang_scanner_test(const string input, TestExpectedResult tests[], size tok_count)
+static b1 perform_dang_scanner_test(const string input, TestExpectedResult tests[], size tok_count)
 {
     DScanner s;
     dang_scanner_init(&s, input);

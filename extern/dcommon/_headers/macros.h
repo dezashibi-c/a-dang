@@ -95,6 +95,8 @@
  */
 #define dc_fmt(TYPE) DC_##TYPE##_FMT
 
+#define DC_b1_FMT "%s"
+
 #define DC_u8_FMT "%" PRIu8
 #define DC_u16_FMT "%" PRIu16
 #define DC_u32_FMT "%" PRIu32
@@ -119,6 +121,7 @@
 #define DC_DCDynArrPtr_FMT "%s"
 #define DC_DCHashTablePtr_FMT "%s"
 #define DC_DCPairPtr_FMT "%s"
+#define DC_DCDynValPtr_FMT "%s"
 
 // ***************************************************************************************
 // * PRIMITIVE TYPES TO BOOLEAN CONVERTER MACROS
@@ -128,35 +131,39 @@
  * `[MACRO]` Returns boolean equivalent value (true/false or 1/0) for given type and
  * value.
  *
- * @example dc_as_bool(u8, 10); // true
- * @example dc_as_bool(voidptr, NULL); // false
+ * @example dc_to_bool(u8, 10); // true
+ * @example dc_to_bool(voidptr, NULL); // false
  */
-#define dc_as_bool(TYPE, VAL) dc_##TYPE##_as_bool(VAL)
+#define dc_to_bool(TYPE, VAL) dc_##TYPE##_to_bool(VAL)
 
-#define dc_u8_as_bool(VAL) ((bool)(VAL))
-#define dc_u16_as_bool(VAL) ((bool)(VAL))
-#define dc_u32_as_bool(VAL) ((bool)(VAL))
-#define dc_u64_as_bool(VAL) ((bool)(VAL))
-#define dc_i8_as_bool(VAL) ((bool)(VAL))
-#define dc_i16_as_bool(VAL) ((bool)(VAL))
-#define dc_i32_as_bool(VAL) ((bool)(VAL))
-#define dc_i64_as_bool(VAL) ((bool)(VAL))
-#define dc_f32_as_bool(VAL) ((bool)(VAL))
-#define dc_f64_as_bool(VAL) ((bool)(VAL))
+#define dc_b1_to_bool(VAL) (VAL)
 
-#define dc_uptr_as_bool(VAL) ((VAL) != 0)
-#define dc_char_as_bool(VAL) ((VAL) != '\0')
-#define dc_string_as_bool(VAL) ((VAL) != NULL && *(VAL) != '\0')
-#define dc_voidptr_as_bool(VAL) ((VAL) != NULL)
-#define dc_fileptr_as_bool(VAL) ((VAL) != NULL)
-#define dc_size_as_bool(VAL) ((VAL) != 0)
-#define dc_usize_as_bool(VAL) ((VAL) != 0)
+#define dc_u8_to_bool(VAL) ((bool)(VAL))
+#define dc_u16_to_bool(VAL) ((bool)(VAL))
+#define dc_u32_to_bool(VAL) ((bool)(VAL))
+#define dc_u64_to_bool(VAL) ((bool)(VAL))
+#define dc_i8_to_bool(VAL) ((bool)(VAL))
+#define dc_i16_to_bool(VAL) ((bool)(VAL))
+#define dc_i32_to_bool(VAL) ((bool)(VAL))
+#define dc_i64_to_bool(VAL) ((bool)(VAL))
+#define dc_f32_to_bool(VAL) ((bool)(VAL))
+#define dc_f64_to_bool(VAL) ((bool)(VAL))
 
-#define dc_DCStringView_as_bool(VAL) (((VAL).str) && (VAL).len != 0)
+#define dc_uptr_to_bool(VAL) ((VAL) != 0)
+#define dc_char_to_bool(VAL) ((VAL) != '\0')
+#define dc_string_to_bool(VAL) ((VAL) != NULL && *(VAL) != '\0')
+#define dc_voidptr_to_bool(VAL) ((VAL) != NULL)
+#define dc_fileptr_to_bool(VAL) ((VAL) != NULL)
+#define dc_size_to_bool(VAL) ((VAL) != 0)
+#define dc_usize_to_bool(VAL) ((VAL) != 0)
 
-#define dc_DCDynArrPtr_as_bool(VAL) ((VAL) != NULL && (VAL)->count != 0)
-#define dc_DCHashTablePtr_as_bool(VAL) ((VAL) != NULL && (VAL)->key_count != 0)
-#define dc_DCPairPtr_as_bool(VAL) ((VAL) != NULL)
+#define dc_DCDynValPtr_to_bool(VAL) ((VAL) && dc_dv_is_not_null(*(VAL)))
+
+#define dc_DCStringView_to_bool(VAL) (((VAL).str) && (VAL).len != 0)
+
+#define dc_DCDynArrPtr_to_bool(VAL) ((VAL) != NULL && (VAL)->count != 0)
+#define dc_DCHashTablePtr_to_bool(VAL) ((VAL) != NULL && (VAL)->key_count != 0)
+#define dc_DCPairPtr_to_bool(VAL) ((VAL) != NULL)
 
 // ***************************************************************************************
 // * DYNAMIC VALUE MACROS
@@ -266,6 +273,20 @@
 #define dc_dv_is_not(NAME, TYPE) ((NAME).type != dc_dvt(TYPE))
 
 /**
+ * `[MACRO]` Expands to compare if the dynamic value is of type voidptr with NULL value
+ *
+ * NOTE: This is meant to be used for where dc_dv_null pattern is followed
+ */
+#define dc_dv_is_null(NAME) ((NAME).type == dc_dvt(voidptr) && dc_dv_as((NAME), voidptr) == NULL)
+
+/**
+ * `[MACRO]` Expands to compare if the dynamic value is not of type voidptr or it's not NULL value
+ *
+ * NOTE: This is meant to be used for where dc_dv_null pattern is followed
+ */
+#define dc_dv_is_not_null(NAME) ((NAME).type != dc_dvt(voidptr) || dc_dv_as((NAME), voidptr) != NULL)
+
+/**
  * `[MACRO]` Retrieves the value of the given dynamic value for the given type
  */
 #define dc_dv_as(NAME, TYPE) ((NAME).value.dc_dvf(TYPE))
@@ -281,17 +302,17 @@
 #define dc_dv_is_not_allocated(NAME) (!(NAME).allocated)
 
 /**
- * `[MACRO]` Creates an u8 based boolean dynamic value with 0 or 1
+ * `[MACRO]` Creates an b1 based boolean dynamic value with 0 or 1
  */
-#define dc_dv_bool(BOOL_VAL) dc_dv(u8, (bool)(BOOL_VAL))
+#define dc_dv_bool(BOOL_VAL) dc_dv(b1, (bool)(BOOL_VAL))
 
 /**
- * `[MACRO]` Default value of boolean based on u8 dynamic value of 1
+ * `[MACRO]` Default value of boolean based on b1 dynamic value of 1
  */
 #define dc_dv_true() dc_dv_bool(true)
 
 /**
- * `[MACRO]` Default value of boolean based on u8 dynamic value of 0
+ * `[MACRO]` Default value of boolean based on b1 dynamic value of 0
  */
 #define dc_dv_false() dc_dv_bool(false)
 
@@ -333,6 +354,10 @@
 #define DC_STOPPER_size -1
 #define DC_STOPPER_usize SIZE_MAX
 
+#define DC_STOPPER_DCDynValPtr NULL
+#define DC_STOPPER_DCDynArrPtr NULL
+#define DC_STOPPER_DCHashTablePtr NULL
+
 #define DC_STOPPER_DCDynVal dc_dv_nullptr()
 #define DC_STOPPER_DCStringView ((DCStringView){0})
 
@@ -361,6 +386,10 @@
 
 #define DC_IS_STOPPER_DCDynVal(EL) ((EL).type == dc_dvt(voidptr) && (EL).value.dc_dvf(voidptr) == NULL)
 #define DC_IS_STOPPER_DCStringView(EL) (!(EL).str)
+
+#define DC_IS_STOPPER_DCDynValPtr(EL) ((EL))
+#define DC_IS_STOPPER_DCDynArrPtr(EL) ((EL))
+#define DC_IS_STOPPER_DCHashTablePtr(EL) ((EL))
 
 /**
  * `[MACRO]` Provides proper stopper for given type
@@ -405,7 +434,7 @@
 #define dc_system(OUT_VAL, ...)                                                                                                \
     do                                                                                                                         \
     {                                                                                                                          \
-        string __cmd_string;                                                                                                   \
+        string __cmd_string = NULL;                                                                                            \
         dc_sprintf(&__cmd_string, __VA_ARGS__);                                                                                \
         OUT_VAL = system(__cmd_string);                                                                                        \
         free(__cmd_string);                                                                                                    \
@@ -546,10 +575,10 @@
 #define DC_RES_ht() DC_RES2(DCResHt)
 
 /**
- * `[MACRO]` Defines the main result variable (__dc_res) as DCResDv type and
+ * `[MACRO]` Defines the main result variable (__dc_res) as DCResPtr type and
  * initiates it as DC_RES_OK
  */
-#define DC_RES_dv() DC_RES2(DCResDv)
+#define DC_RES_dv() DC_RES2(DCResPtr)
 
 /**
  * `[MACRO]` Defines the main result variable (__dc_res) as DCResI8 type and
@@ -677,7 +706,7 @@
 #define dc_ea(NUM, ...)                                                                                                        \
     do                                                                                                                         \
     {                                                                                                                          \
-        string __err;                                                                                                          \
+        string __err = NULL;                                                                                                   \
         dc_sprintf(&__err, __VA_ARGS__);                                                                                       \
         __dc_res.status = DC_RES_ERR;                                                                                          \
         __dc_res.data.e = (DCError){NUM, __err, 1};                                                                            \
@@ -808,6 +837,32 @@
         dc_ok_dva(TYPE, (VALUE));                                                                                              \
         dc_ret();                                                                                                              \
     } while (0)
+
+
+/**
+ * `[MACRO]` Returns ok value of a b1 based boolean dynamic value with 0 or 1
+ */
+#define dc_ret_ok_dv_bool(BOOL_VAL) dc_ret_ok_dv(b1, (BOOL_VAL))
+
+/**
+ * `[MACRO]` Returns ok value of boolean based on b1 dynamic value of 1
+ */
+#define dc_ret_ok_dv_true() dc_ret_ok_dv_bool(true)
+
+/**
+ * `[MACRO]` Returns ok value of boolean based on b1 dynamic value of 0
+ */
+#define dc_ret_ok_dv_false() dc_ret_ok_dv_bool(false)
+
+/**
+ * `[MACRO]` Returns ok NULL value of voidptr
+ */
+#define dc_ret_ok_dv_nullptr() dc_ret_ok_dv(voidptr, NULL)
+
+/**
+ * `[MACRO]` Returns ok NULL value of fileptr
+ */
+#define dc_ret_ok_dv_nofile() dc_ret_ok_dv(fileptr, NULL)
 
 /**
  * `[MACRO]` Expands to an if statements that checks if main result variable (__dc_res)
@@ -1204,7 +1259,7 @@
     {                                                                                                                          \
         usize _idx = 0;                                                                                                        \
         TYPE* _it = ARR;                                                                                                       \
-        bool __dc_break = false;                                                                                               \
+        b1 __dc_break = false;                                                                                                 \
         while (!dc_is_stopper(TYPE, *_it) && !__dc_break)                                                                      \
         {                                                                                                                      \
             do                                                                                                                 \
@@ -1227,7 +1282,7 @@
     {                                                                                                                          \
         usize _idx = 0;                                                                                                        \
         TYPE* _it = ARR;                                                                                                       \
-        bool __dc_break = false;                                                                                               \
+        b1 __dc_break = false;                                                                                                 \
         while (_idx < LIMIT && !__dc_break)                                                                                    \
         {                                                                                                                      \
             do                                                                                                                 \
@@ -1321,7 +1376,7 @@
     {                                                                                                                          \
         usize _idx = 0;                                                                                                        \
         DCDynVal* _it = (DARR).elements;                                                                                       \
-        bool __dc_break = false;                                                                                               \
+        b1 __dc_break = false;                                                                                                 \
         while (_idx < (DARR).count && !__dc_break)                                                                             \
         {                                                                                                                      \
             do                                                                                                                 \
@@ -1712,6 +1767,22 @@
  * NOTE: There is no boundary check in this macro, be careful
  */
 #define dc_sv(STR, START, LEN) ((DCStringView){.cstr = NULL, .str = (STR) + (START), .len = (LEN)})
+
+/**
+ * `[MACRO]` expands to set the SV to a literal string view
+ *
+ * @param SV is a variable name or field of type DCStringView to be set to the string view
+ * @param STR is a pointer to an array of chars (`string` or `char*`)
+ * @param START is the start index
+ * @param LEN is the length we need from and including the start index
+ *
+ * NOTE: There is no boundary check in this macro, be careful
+ */
+#define dc_sv_set(SV, STR, START, LEN)                                                                                         \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        SV = dc_sv(STR, START, LEN);                                                                                           \
+    } while (0)
 
 /**
  * `[MACRO]` If DCPRIsv is used as format specifier this macro should be used to provide

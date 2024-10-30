@@ -44,19 +44,17 @@ DCResUsize dc_sprintf(string* str, string fmt, ...)
     if (!str)
     {
         dc_dbg_log("got NULL str");
-
         dc_ret_e(1, "got NULL str");
     }
 
     va_list argp;
     va_start(argp, fmt);
 
-    char one_char[1];
-    int len = vsnprintf(one_char, 1, fmt, argp);
-    if (len < 1)
+    // Calculate the length of the formatted string
+    int len = vsnprintf(NULL, 0, fmt, argp);
+    if (len < 0)
     {
         dc_dbg_log("An encoding error occurred. Setting the input pointer to NULL.");
-
         *str = NULL;
         va_end(argp);
 
@@ -64,14 +62,15 @@ DCResUsize dc_sprintf(string* str, string fmt, ...)
     }
     va_end(argp);
 
+    // Allocate memory for the new string
     *str = malloc(len + 1);
-    if (!str)
+    if (!*str)
     {
         dc_dbg_log("Couldn't allocate %i chars.", len + 1);
-
         dc_ret_e(1, "Memory allocation failed");
     }
 
+    // Write the formatted string into the allocated memory
     va_start(argp, fmt);
     vsnprintf(*str, len + 1, fmt, argp);
     va_end(argp);
@@ -86,20 +85,17 @@ DCResUsize dc_sappend(string* str, const string fmt, ...)
     if (!str)
     {
         dc_dbg_log("got NULL str");
-
         dc_ret_e(1, "got NULL str");
     }
 
     va_list argp;
     va_start(argp, fmt);
 
-    // Calculate the length of the formatted string
-    char one_char[1];
-    int len = vsnprintf(one_char, 1, fmt, argp);
+    // Calculate the length of the formatted string in one go
+    int len = vsnprintf(NULL, 0, fmt, argp);
     if (len < 0)
     {
         dc_dbg_log("An encoding error occurred. Setting the input pointer to NULL.");
-
         *str = NULL;
         va_end(argp);
 
@@ -115,7 +111,6 @@ DCResUsize dc_sappend(string* str, const string fmt, ...)
     if (!new_str)
     {
         dc_dbg_log("Couldn't allocate %i chars.", len + 1);
-
         dc_ret_e(1, "Memory allocation failed");
     }
 
@@ -624,7 +619,7 @@ void dc_date(fileptr stream)
     dc_fprintf_datetime(stream, "%Y-%m-%d");
 }
 
-void dc_error_logs_init(string filename, bool append)
+void dc_error_logs_init(string filename, b1 append)
 {
     DC_RES_fileptr();
 

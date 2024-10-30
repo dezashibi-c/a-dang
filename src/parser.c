@@ -178,13 +178,13 @@ static ResNode parse_string_literal(DParser* p)
 {
     DC_RES2(ResNode);
 
-    string data_str = NULL;
     DCDynVal data;
 
     if (p->current_token.text.len == 0)
         data = dc_dv(string, "");
     else
     {
+        string data_str = NULL;
         dc_try_fail_temp(DCResUsize, dc_sprintf(&data_str, DCPRIsv, dc_sv_fmt(p->current_token.text)));
         data = dc_dva(string, data_str);
     }
@@ -196,13 +196,16 @@ static ResNode parse_integer_literal(DParser* p)
 {
     DC_RES2(ResNode);
 
-    DCResString str_res = dc_sv_as_cstr(&p->current_token.text);
-    dc_ret_if_err2(str_res, { dc_err_dbg_log2(str_res, "Cannot retrieve string value of the current token"); });
+    string str = NULL;
+    dc_try_fail_temp(DCResUsize, dc_sprintf(&str, DCPRIsv, dc_sv_fmt(p->current_token.text)));
 
-    DCResI64 i64_res = dc_str_to_i64(dc_unwrap2(str_res));
-    dc_ret_if_err2(i64_res, { dc_err_dbg_log2(i64_res, "could not parse token text to i64 number"); });
+    DCResI64 i64_res = dc_str_to_i64(str);
+    dc_ret_if_err2(i64_res, {
+        dc_err_dbg_log2(i64_res, "could not parse token text to i64 number");
+        free(str);
+    });
 
-    free(dc_unwrap2(str_res));
+    free(str);
 
     return dn_new(DN_INTEGER_LITERAL, dc_dv(i64, dc_unwrap2(i64_res)), false);
 }
@@ -223,7 +226,7 @@ static DCResVoid parse_function_params(DParser* p, DNode* parent_node)
         ResNode ident = parse_identifier(p);
         dc_ret_if_err2(ident, {});
 
-        DCResVoid res = dn_child_push(parent_node, dc_unwrap2(ident));
+        DCResVoid res = dn_child_push_unwrapped(parent_node, ident);
         dc_ret_if_err2(res, dc_try_fail(dn_free(dc_unwrap2(ident))));
 
         dc_try_fail(next_token(p));
@@ -277,7 +280,7 @@ static ResNode parse_function_literal(DParser* p)
 
     /* add body to function literal to finish up parsing */
 
-    res = dn_child_push(dc_unwrap(), dc_unwrap2(body));
+    res = dn_child_push_unwrapped(dc_unwrap(), body);
     dc_ret_if_err2(res, {
         dc_err_dbg_log2(res, "could not push the body to the function literal");
 
@@ -303,7 +306,7 @@ static DCResVoid parse_expression_list(DParser* p, DNode* parent_node)
 
         dc_ret_if_err2(param, {});
 
-        DCResVoid res = dn_child_push(parent_node, dc_unwrap2(param));
+        DCResVoid res = dn_child_push_unwrapped(parent_node, param);
         dc_ret_if_err2(res, dc_try_fail(dn_free(dc_unwrap2(param))));
 
         dang_parser_dbg_log_tokens(p);
@@ -355,11 +358,7 @@ static ResNode parse_hash_literal(DParser* p)
     dc_try_fail_temp(DCResVoid, next_token(p));
 
     /* Bypassing all the meaningless newlines */
-    try_bypassing_all_nls_or_fail_with(p, {
-        dc_err_dbg_log2(res, "could move to the next token");
-
-        // dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
+    try_bypassing_all_nls_or_fail_with(p, { dc_err_dbg_log2(res, "could move to the next token"); });
 
 
     DCResVoid res;
@@ -375,7 +374,7 @@ static ResNode parse_hash_literal(DParser* p)
 
         dc_ret_if_err2(key, dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
 
-        dc_try_or_fail_with2(res, dn_child_push(dc_unwrap(), dc_unwrap2(key)), {
+        dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), key), {
             dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
             dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(key)));
         });
@@ -390,7 +389,7 @@ static ResNode parse_hash_literal(DParser* p)
 
         dc_ret_if_err2(value, dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
 
-        dc_try_or_fail_with2(res, dn_child_push(dc_unwrap(), dc_unwrap2(value)), {
+        dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), value), {
             dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
             dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(value)));
         });
@@ -489,7 +488,7 @@ static ResNode parse_if_expression(DParser* p)
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
     });
 
-    DCResVoid res = dn_child_push(dc_unwrap(), dc_unwrap2(condition));
+    DCResVoid res = dn_child_push_unwrapped(dc_unwrap(), condition);
     dc_ret_if_err2(res, {
         dc_err_dbg_log2(res, "could not push the condition to the if expression");
 
@@ -515,7 +514,7 @@ static ResNode parse_if_expression(DParser* p)
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
     });
 
-    res = dn_child_push(dc_unwrap(), dc_unwrap2(consequence));
+    res = dn_child_push_unwrapped(dc_unwrap(), consequence);
     dc_ret_if_err2(res, {
         dc_err_dbg_log2(res, "could not push the consequence to the if expression");
 
@@ -552,7 +551,7 @@ static ResNode parse_if_expression(DParser* p)
             dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
         });
 
-        res = dn_child_push(dc_unwrap(), dc_unwrap2(alternative));
+        res = dn_child_push_unwrapped(dc_unwrap(), alternative);
         dc_ret_if_err2(res, {
             dc_err_dbg_log2(res, "could not push the alternative to the if expression");
 
@@ -583,7 +582,7 @@ static ResNode parse_prefix_expression(DParser* p)
 
     dc_try_fail(dn_new(DN_PREFIX_EXPRESSION, dc_dva(string, data), true));
 
-    DCResVoid res = dn_child_push(dc_unwrap(), dc_unwrap2(right));
+    DCResVoid res = dn_child_push_unwrapped(dc_unwrap(), right);
     dc_ret_if_err2(res, {
         dc_err_dbg_log2(res, "could not push the value to expression");
 
@@ -632,7 +631,7 @@ static ResNode parse_infix_expression(DParser* p, DNode* left)
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
     });
 
-    res = dn_child_push(dc_unwrap(), dc_unwrap2(right));
+    res = dn_child_push_unwrapped(dc_unwrap(), right);
     dc_ret_if_err2(res, {
         dc_err_dbg_log2(res, "could not push the value to expression");
 
@@ -673,7 +672,7 @@ static ResNode parse_index_expression(DParser* p, DNode* left)
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
     });
 
-    res = dn_child_push(dc_unwrap(), dc_unwrap2(expression));
+    res = dn_child_push_unwrapped(dc_unwrap(), expression);
     dc_ret_if_err2(res, {
         dc_err_dbg_log2(res, "could not push the value to expression");
 
@@ -713,7 +712,7 @@ static ResNode parse_let_statement(DParser* p)
     });
 
     // Try to push the identifier to the let statement as the first child
-    dc_try_or_fail_with2(res, dn_child_push(dc_unwrap(), dc_unwrap2(temp_node)), {
+    dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), temp_node), {
         dc_err_dbg_log2(res, "could not push the name to statement");
 
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
@@ -749,7 +748,7 @@ static ResNode parse_let_statement(DParser* p)
     });
 
     // Try to push the initial value expression
-    dc_try_or_fail_with2(res, dn_child_push(dc_unwrap(), dc_unwrap2(temp_node)), {
+    dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), temp_node), {
         dc_err_dbg_log2(res, "could not push the value to statement");
 
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
@@ -808,7 +807,7 @@ static ResNode parse_return_statement(DParser* p)
 
     dang_parser_dbg_log_tokens(p);
 
-    dc_try_or_fail_with2(res, dn_child_push(dc_unwrap(), dc_unwrap2(value)), {
+    dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), value), {
         dc_err_dbg_log2(res, "could not push the value to statement");
 
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
@@ -862,7 +861,7 @@ static ResNode parse_block_statement(DParser* p)
 
         dang_parser_dbg_log_tokens(p);
 
-        res = dn_child_push(dc_unwrap(), dc_unwrap2(stmt));
+        res = dn_child_push_unwrapped(dc_unwrap(), stmt);
         dc_ret_if_err2(res, {
             dc_err_dbg_log2(res, "could not push the statement to the block");
 
@@ -960,11 +959,12 @@ static ResNode parse_expression_statement(DParser* p)
         // mark the first child as NULL so it won't get freed
         dc_dv_set(dc_unwrap2(call)->children.elements[0], voidptr, NULL);
 
-        // free the call node
+        // free the call node inner allocation and call node itself
         dc_try_or_fail_with2(res, dn_free(dc_unwrap2(call)), {
             dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
             dc_try_fail_temp(DCResVoid, dn_free(first_child));
         });
+        free(dc_unwrap2(call));
 
         // push the first child to the expression statement
         dc_try_or_fail_with2(res, dn_child_push(dc_unwrap(), first_child), {
@@ -975,7 +975,7 @@ static ResNode parse_expression_statement(DParser* p)
         dc_ret();
     }
 
-    dc_try_or_fail_with2(res, dn_child_push(dc_unwrap(), dc_unwrap2(call)), {
+    dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), call), {
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(call)));
     });
@@ -1135,7 +1135,7 @@ ResNode dang_parser_parse_program(DParser* p)
 
         if (dc_is_ok2(stmt))
         {
-            res = dn_child_push(dc_unwrap(), dc_unwrap2(stmt));
+            res = dn_child_push_unwrapped(dc_unwrap(), stmt);
             if (dc_is_err2(res))
             {
                 dc_err_dbg_log2(res, "could not push the statement to program");
