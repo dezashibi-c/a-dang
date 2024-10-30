@@ -85,19 +85,6 @@ static DC_HT_KEY_CMP_FN_DECL(string_key_cmp)
     return dc_dv_eq(_key1, _key2);
 }
 
-// todo:: test deactivating this totally to see if it is even needed or not, we already have everything registered in the
-//        cleanups as they are generated so everything else is just un-allocated dynamic values
-// static DC_HT_PAIR_FREE_FN_DECL(env_memory_free)
-// {
-//     DC_RES_void();
-
-//     if (dc_dv_is_allocated(_pair->first)) dc_try_fail(dang_obj_free(&_pair->first));
-
-//     if (dc_dv_is_allocated(_pair->second)) dc_try_fail(dang_obj_free(&_pair->second));
-
-//     dc_ret();
-// }
-
 // ***************************************************************************************
 // * PRIVATE FUNCTIONS
 // ***************************************************************************************
@@ -114,7 +101,6 @@ static ResEnv _env_new(b1 is_main)
         dc_ret_e(2, "Memory allocation failed");
     }
 
-    // todo:: env_memory_free
     dc_try_or_fail_with3(DCResVoid, res, dc_ht_init(&de->memory, 17, env_hash_fn, string_key_cmp, NULL), {
         dc_dbg_log("cannot initialize dang environment hash table");
 
@@ -435,7 +421,6 @@ static DCRes eval_hash_literal(DNode* dn, DEnv* de, DEnv* main_de)
 
     if (dn_child_count(dn) % 2 != 0) dc_ret_e(-1, "wrong hash literal node");
 
-    // todo:: env_memory_free
     dc_try_or_fail_with3(DCResHt, ht_res, dc_ht_new(17, hash_obj_hash_fn, hash_obj_hash_key_cmp_fn, NULL), {});
 
     DCHashTablePtr ht = dc_unwrap2(ht_res);
