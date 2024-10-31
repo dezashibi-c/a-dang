@@ -395,7 +395,7 @@ DCResVoid dc_cleanup_batch_run(DCCleanupBatch* batch)
     dc_dbg_log("cleaning up '" dc_fmt(usize) "' elements", batch->count);
 
     // run cleanup of each item
-    dc_da_for(*batch, {
+    dc_da_for(cleanup_loop, *batch, {
         DCCleanupJob* pair = dc_dv_as(*_it, voidptr);
 
         dc_dbg_log("cleaning index: '" dc_fmt(usize) "', cleanup perform: %p", _idx, (*pair).element);
@@ -432,7 +432,7 @@ void dc_cleanup_pool_run(i32 selection)
 
             dc_dbg_log("performing pool cleanup");
 
-            dc_for(dc_cleanup_pool.pool, DCCleanupBatch, dc_cleanup_pool.count, {
+            dc_for(cleanup_pool_loop, dc_cleanup_pool.pool, DCCleanupBatch, dc_cleanup_pool.count, {
                 dc_dbg_log("cleaning up the batch index [" dc_fmt(usize) "]", _idx);
                 dc_try(dc_cleanup_batch_run(&dc_cleanup_pool.pool[_idx]));
 

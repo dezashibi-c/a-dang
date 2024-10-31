@@ -40,7 +40,7 @@ static b1 perform_dang_scanner_test(const string input, TestExpectedResult tests
     ResTok token;
 
     size i = 0;
-    dc_foreach(tests, TestExpectedResult, {
+    dc_foreach(main_test_loop, tests, TestExpectedResult, {
         token = dang_scanner_next_token(&s);
         if (dc_is_err2(token))
         {

@@ -44,4 +44,7 @@ typedef DCDynVal (*DBuiltinFunction)(DCDynValPtr call_obj, DCError* error);
 
 #include "dcommon/dcommon.h"
 
+#define MACRO_PACK "quote"
+#define MACRO_UNPACK "unquote"
+
 #endif // DANG_TYPES_H

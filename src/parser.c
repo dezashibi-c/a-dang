@@ -45,6 +45,20 @@ static ResNode parse_statement(DParser* p);
 #define dang_parser_location_revert(P) (P)->loc = __dang_parser_loc_snapshot
 #define dang_parser_location_set(P, LOC) (P)->loc = LOC
 
+#define check_quote(NODE)                                                                                                      \
+    do                                                                                                                         \
+    {                                                                                                                          \
+        if (dn_child((NODE), 0)->type == DN_IDENTIFIER && (strcmp(dn_child_data_as((NODE), 0, string), MACRO_PACK) == 0 ||     \
+                                                           strcmp(dn_child_data_as((NODE), 0, string), MACRO_UNPACK) == 0))    \
+        {                                                                                                                      \
+            if (dn_child_count((NODE)) > 2)                                                                                    \
+                dc_ea(-1, "'%s' accept only and only one argument, got=" dc_fmt(usize), dn_child_data_as((NODE), 0, string),   \
+                      dn_child_count((NODE)) - 1);                                                                             \
+            else if (strcmp(dn_child_data_as((NODE), 0, string), MACRO_PACK) == 0)                                             \
+                (NODE)->quoted = true;                                                                                         \
+        }                                                                                                                      \
+    } while (0)
+
 /**
  * expands to checking if the token is end of statement or not
  *
@@ -339,8 +353,9 @@ static ResNode parse_call_expression(DParser* p)
     // Switch to call loc to specify proper ending signal
     dang_parser_location_set(p, LOC_CALL);
     res = parse_expression_list(p, dc_unwrap());
-
     dang_parser_location_revert(p);
+
+    check_quote(dc_unwrap());
 
     dc_ret_if_err2(res, { dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())); });
 
@@ -975,6 +990,16 @@ static ResNode parse_expression_statement(DParser* p)
         dc_ret();
     }
 
+    check_quote(dc_unwrap2(call));
+
+    if (dc_is_err())
+    {
+        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(call)));
+
+        dc_ret();
+    }
+
     dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), call), {
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
         dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(call)));
@@ -1156,7 +1181,7 @@ ResNode dang_parser_parse_program(DParser* p)
 
 void dang_parser_log_errors(DParser* p)
 {
-    dc_da_for(p->errors, {
+    dc_da_for(error_print_loop, p->errors, {
         string error = dc_dv_as(*_it, string);
         dc_log(dc_colorize_fg(LRED, "%s"), error);
     });

@@ -57,7 +57,7 @@ static DC_HT_HASH_FN_DECL(hash_obj_hash_fn)
             dc_ret_ok(integer_hash(dc_dv_as(*_key, i64)));
 
         case DOBJ_BOOLEAN:
-            dc_ret_ok(bool_hash(dc_dv_as(*_key, u8)));
+            dc_ret_ok(bool_hash(dc_dv_as(*_key, b1)));
 
         default:
             break;
@@ -141,13 +141,13 @@ static DCRes eval_program_statements(DNode* dn, DEnv* de, DEnv* main_de)
 
     if (dn_child_count(dn) == 0) dc_ret_ok_dv_nullptr();
 
-    dc_da_for(dn->children, {
+    dc_da_for(program_eval_loop, dn->children, {
         DNode* stmt = dn_child(dn, _idx);
         dc_try_fail(perform_evaluation_process(stmt, de, main_de));
 
         // This means the actual syntax of the current node must be 'return'
         // in order to stop the evaluation
-        if (stmt->type == DN_RETURN_STATEMENT) DC_BREAK;
+        if (stmt->type == DN_RETURN_STATEMENT) DC_BREAK(program_eval_loop);
     });
 
     dc_ret();
@@ -159,11 +159,11 @@ static DCRes eval_block_statements(DNode* dn, DEnv* de, DEnv* main_de)
 
     if (dn_child_count(dn) == 0) dc_ret_ok_dv_nullptr();
 
-    dc_da_for(dn->children, {
+    dc_da_for(block_eval_loop, dn->children, {
         DNode* stmt = dn_child(dn, _idx);
         dc_try_fail(perform_evaluation_process(stmt, de, main_de));
 
-        if (dc_unwrap().is_returned) DC_BREAK;
+        if (dc_unwrap().is_returned) DC_BREAK(block_eval_loop);
     });
 
     dc_ret();
@@ -427,7 +427,7 @@ static DCRes eval_hash_literal(DNode* dn, DEnv* de, DEnv* main_de)
 
     REGISTER_CLEANUP(DCHashTablePtr, ht, dc_ht_free(ht));
 
-    dc_da_for(dn->children, {
+    dc_da_for(hash_lit_eval_loop, dn->children, {
         if (_idx % 2 != 0) continue; // odd numbers are values
 
         DNode* key_node = dn_child(dn, _idx);
@@ -476,9 +476,9 @@ static ResEnv extend_function_env(DCDynValPtr call_obj, DNode* fn_node)
 
     // extending the environment by defining arguments
     // with given evaluated objects assigning to them
-    dc_da_for(fn_node->children, {
+    dc_da_for(extend_env_loop, fn_node->children, {
         // we shouldn't get the last child as it is the function body
-        if (_idx >= (dn_child_count(fn_node) - 1)) DC_BREAK;
+        if (_idx >= (dn_child_count(fn_node) - 1)) DC_BREAK(extend_env_loop);
 
         string arg_name = dn_child_data_as(fn_node, _idx, string);
 
@@ -514,6 +514,56 @@ static DCRes apply_function(DCDynValPtr call_obj, DNode* fn_node, DEnv* main_de)
     if (dc_is_ok()) dc_unwrap().is_returned = false;
 
     dc_ret();
+}
+
+static b1 is_unquote_call(DNodePtr dn)
+{
+    // todo:: we've checked this before??
+    // if (dn->type != DN_CALL_EXPRESSION) return false;
+
+    DNodePtr fn = dn_child(dn, 0);
+
+    return (fn->type == DN_IDENTIFIER) && strcmp(dn_data_as(fn, string), MACRO_UNPACK) == 0;
+}
+
+static DECL_DNODE_MODIFIER_FN(default_modifier)
+{
+    (void)de;
+    (void)main_de;
+
+    DC_RES_void();
+
+    if (dn->type != DN_CALL_EXPRESSION) dc_ret();
+
+    if (!is_unquote_call(dn)) dc_ret();
+
+    // hold the first arg
+    DNodePtr arg = dn_child(dn, 0);
+
+    // eval the first arg
+    dc_try_or_fail_with3(DCRes, unquoted_res, perform_evaluation_process(arg, de, main_de), { dn_free(arg); });
+
+    // convert the dobj to node
+    DNodePtr new_node = NULL;
+
+    // replace dn with the newly generated node
+    *dn = *new_node;
+
+    dc_ret();
+}
+
+static DCResVoid eval_unquote_calls(DNodePtr dn, DEnv* de, DEnv* main_de)
+{
+    return dn_modify(dn, de, main_de, default_modifier);
+}
+
+static DCRes process_quoted(DNode* dn, DEnv* de, DEnv* main_de)
+{
+    DC_RES();
+
+    dc_try_fail_temp(DCResVoid, eval_unquote_calls(dn, de, main_de));
+
+    dc_ret_ok(dobj_def(DNodePtr, dn, NULL));
 }
 
 // ***************************************************************************************
@@ -593,7 +643,7 @@ static DECL_DBUILTIN_FUNCTION(rest)
 
     DCDynArrPtr result_arr = dc_unwrap2(res);
 
-    dc_da_for(arr, {
+    dc_da_for(rest_fn_loop, arr, {
         // not the first child but the rest
         if (_idx == 0) continue;
 
@@ -620,7 +670,7 @@ static DECL_DBUILTIN_FUNCTION(print)
 
     BUILTIN_FN_GET_ARGS;
 
-    dc_da_for(_args, {
+    dc_da_for(print_loop, _args, {
         dobj_print(_it);
         printf("%s", " ");
     });
@@ -818,6 +868,11 @@ static DCRes perform_evaluation_process(DNode* dn, DEnv* de, DEnv* main_de)
             // function node is the first child
             DNode* fn_node = dn_child(dn, 0);
 
+            if (dn->quoted)
+            {
+                return process_quoted(dn, de, main_de);
+            }
+
             // evaluating it must return a function object
             // that is in fact the function literal node saved in the environment before
             // it also holds pointer to its environment
@@ -939,6 +994,8 @@ DObjType dobj_get_type(DCDynValPtr dobj)
         {
             DNodePtr dn = dc_dv_as(*dobj, DNodePtr);
 
+            if (dn->quoted) return DOBJ_QUOTE;
+
             switch (dn->type)
             {
                 case DN_FUNCTION_LITERAL:
@@ -978,8 +1035,12 @@ DObjType dobj_get_type(DCDynValPtr dobj)
     return DOBJ_UNKNOWN;
 }
 
-void dobj_print(DCDynValPtr dobj)
+DCResString dobj_tostr(DCDynValPtr dobj)
 {
+    DC_RES_string();
+
+    string result = NULL;
+
     switch (dobj_get_type(dobj))
     {
         case DOBJ_HASH_TABLE:
@@ -987,29 +1048,50 @@ void dobj_print(DCDynValPtr dobj)
         case DOBJ_BOOLEAN:
         case DOBJ_NUMBER:
         case DOBJ_STRING:
-            dc_dv_print(dobj);
+            return dc_tostr_dv(dobj);
+            break;
+
+        case DOBJ_QUOTE:
+            dang_node_inspect(dc_dv_as(*dobj, DNodePtr), &result);
             break;
 
         case DOBJ_MACRO:
-            printf("%s", "(macro)");
+            dc_sprintf(&result, "%s", "(macro)");
             break;
 
         case DOBJ_FUNCTION:
-            printf("%s", "(function)");
+            dc_sprintf(&result, "%s", "(function)");
             break;
 
         case DOBJ_BUILTIN_FUNCTION:
-            printf("%s", "(builtin function)");
+            dc_sprintf(&result, "%s", "(builtin function)");
             break;
 
         case DOBJ_NULL:
-            printf("%s", "(null)");
+            dc_sprintf(&result, "%s", "(null)");
             break;
 
         default:
-            printf("%s", "(unknown object)");
+            dc_sprintf(&result, "%s", "(unknown object)");
             break;
     }
+
+    dc_ret_ok(result);
+}
+
+void dobj_print(DCDynValPtr dobj)
+{
+    DCResString res = dobj_tostr(dobj);
+
+    if (dc_is_err2(res))
+    {
+        printf("%s", "(conversion to string error)");
+        return;
+    }
+
+    printf("%s", dc_unwrap2(res));
+
+    free(dc_unwrap2(res));
 }
 
 ResEnv dang_env_new()
@@ -1088,6 +1170,9 @@ string tostr_DObjType(DCDynValPtr dobj)
         case DOBJ_MACRO:
             return "macro";
 
+        case DOBJ_QUOTE:
+            return "(QUOTE)";
+
         case DOBJ_FUNCTION:
             return "function";
 
@@ -1108,4 +1193,30 @@ string tostr_DObjType(DCDynValPtr dobj)
     }
 
     return "(unknown object type)";
+}
+
+DCResVoid dn_modify(DNodePtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier)
+{
+    DC_RES_void();
+
+    if (!modifier) dc_ret_e(dc_e_code(NV), "modifier function cannot be null");
+
+    dc_da_for(statement_modification_loop, dn->children,
+              { dc_try_fail(dn_modify(dn_child(dn, _idx), de, main_de, modifier)); });
+
+    // todo:: check these
+    // switch (dn->type)
+    // {
+    //     case DN_PROGRAM:
+    //         break;
+
+    //     case DN_EXPRESSION_STATEMENT:
+    //         dc_try_fail(dn_modify(dn_child(dn, 0), modifier));
+    //         break;
+
+    //     default:
+    //         break;
+    // };
+
+    return modifier(dn, de, main_de);
 }

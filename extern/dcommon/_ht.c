@@ -87,7 +87,7 @@ DCResVoid dc_ht_free(DCHashTable* ht)
     {
         DC_HT_GET_AND_DEF_CONTAINER_ROW(darr, *ht, i);
 
-        dc_da_for(*darr, {
+        dc_da_for(ht_element_free_loop, *darr, {
             if (ht->pair_free_fn) dc_try_fail(ht->pair_free_fn(dc_dv_as(*_it, DCPairPtr)));
 
             if (dc_dv_is_allocated(*_it) && dc_dv_as(*_it, DCPairPtr) != NULL) free(dc_dv_as(*_it, DCPairPtr));
@@ -141,7 +141,7 @@ DCResUsize dc_ht_find_by_key(DCHashTable* ht, DCDynVal key, DCDynVal** out_resul
 
     DC_HT_GET_AND_DEF_CONTAINER_ROW(darr, *ht, _index);
 
-    dc_da_for(*darr, {
+    dc_da_for(ht_search_loop, *darr, {
         if (_it->type != dc_dvt(DCPairPtr))
         {
             dc_dbg_log("wrong type, DCPairPtr needed");
@@ -397,7 +397,7 @@ DCResUsize dc_ht_keys(DCHashTable* ht, DCDynVal** out_arr)
 
         if (darr->cap == 0) continue;
 
-        dc_da_for(*darr, {
+        dc_da_for(ht_key_extraction_loop, *darr, {
             if (_it->type != dc_dvt(DCPairPtr))
             {
                 free(*out_arr);

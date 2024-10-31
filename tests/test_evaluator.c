@@ -35,7 +35,6 @@ static DCRes test_eval(string input, DEnv* de)
     dang_parser_init(&p, &s);
 
     ResNode program_res = dang_parser_parse_program(&p);
-    dang_parser_free(&p);
 
     DNode* program = dc_unwrap2(program_res);
 
@@ -45,6 +44,7 @@ static DCRes test_eval(string input, DEnv* de)
 
         dc_ret_ea(-1, "parser has error on input '%s'", input);
     }
+    dang_parser_free(&p);
 
     dc_try_or_fail_with(dang_eval(program, de), { dang_parser_free(&p); });
 
@@ -85,7 +85,7 @@ static b1 test_evaluated_literal(DCDynValPtr obj, DCDynValPtr expected)
 
 static b1 test_evaluated_array_literal(DCDynArrPtr obj, DCDynArrPtr expected)
 {
-    dc_da_for(*expected, {
+    dc_da_for(array_tesT_loop, *expected, {
         if (!test_evaluated_literal(&dc_da_get2(*obj, _idx), _it)) return false;
     });
 
@@ -94,7 +94,7 @@ static b1 test_evaluated_array_literal(DCDynArrPtr obj, DCDynArrPtr expected)
 
 static b1 perform_evaluation_tests(TestCase tests[])
 {
-    dc_foreach(tests, TestCase, {
+    dc_foreach(main_test_loop, tests, TestCase, {
         ResEnv de_res = dang_env_new();
 
         if (dc_is_err2(de_res))
@@ -122,6 +122,22 @@ static b1 perform_evaluation_tests(TestCase tests[])
                 !test_evaluated_array_literal(dc_dv_as(dc_unwrap2(res), DCDynArrPtr), dc_dv_as(_it->expected, DCDynArrPtr)),
                 dang_env_free(de);
                 return false, "array test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
+        else if (dobj_get_type(&dc_unwrap2(res)) == DOBJ_QUOTE)
+        {
+            DCResString str_res = dobj_tostr(&dc_unwrap2(res));
+            dc_action_on(dc_is_err2(str_res), dang_env_free(de);
+                         return false, "quote test '" dc_fmt(usize) "' failed: string conversion failed", _idx);
+
+            bool result = strcmp(dc_unwrap2(str_res), dc_dv_as(_it->expected, string)) == 0;
+            if (!result)
+            {
+                dc_log("quote/unquote test '" dc_fmt(usize) "' failed: expected '%s' bot got '%s'", _idx,
+                       dc_dv_as(_it->expected, string), dc_unwrap2(str_res));
+            }
+            free(dc_unwrap2(str_res));
+
+            return result;
+        }
         else
             dc_action_on(!test_evaluated_literal(&dc_unwrap2(res), &_it->expected), dang_env_free(de);
                          return false, "literal test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
@@ -302,7 +318,7 @@ CLOVE_TEST(array_literal)
 CLOVE_TEST(hash_index_expression)
 {
 #define FIXED_INPUT                                                                                                            \
-    "let two = 'two'\n"                                                                                                        \
+    "let two 'two'\n"                                                                                                          \
     "{\n"                                                                                                                      \
     " 'one': 10 - 9,\n"                                                                                                        \
     " 'thr' + 'ee': 6 / 2,\n"                                                                                                  \
@@ -312,7 +328,7 @@ CLOVE_TEST(hash_index_expression)
     "}"
 
 #define FIXED_INPUT2                                                                                                           \
-    "let two = 'two'\n"                                                                                                        \
+    "let two 'two'\n"                                                                                                          \
     "let a {\n"                                                                                                                \
     " 'one': 10 - 9,\n"                                                                                                        \
     " 'thr' + 'ee': 6 / 2,\n"                                                                                                  \
@@ -564,6 +580,54 @@ CLOVE_TEST(closures)
     }
 }
 
+CLOVE_TEST(quote)
+{
+    TestCase tests[] = {
+        {.input = "quote 5", .expected = dobj_string("QUOTE(5)")},
+
+        {.input = "quote 5 + 8", .expected = dobj_string("QUOTE((5 + 8))")},
+
+        {.input = "quote foobar", .expected = dobj_string("QUOTE(foobar)")},
+
+        {.input = "quote foobar + baz", .expected = dobj_string("QUOTE((foobar + baz))")},
+
+
+        {.input = "", .expected = dc_dv_nullptr()},
+    };
+
+    if (perform_evaluation_tests(tests))
+        CLOVE_PASS();
+    else
+    {
+        dc_log("test has failed");
+        CLOVE_FAIL();
+    }
+}
+
+// CLOVE_TEST(quote_unquote)
+// {
+//     TestCase tests[] = {
+//         {.input = "quote ${unquote 4}", .expected = dobj_string("QUOTE(4)")},
+
+//         {.input = "quote ${unquote 4 + 4}", .expected = dobj_string("QUOTE(8)")},
+
+//         {.input = "quote 8 + ${unquote 4 + 4}", .expected = dobj_string("QUOTE((8 + 8))")},
+
+//         {.input = "quote ${unquote 4 + 4} + 8", .expected = dobj_string("QUOTE((8 + 8))")},
+
+
+//         {.input = "", .expected = dc_dv_nullptr()},
+//     };
+
+//     if (perform_evaluation_tests(tests))
+//         CLOVE_PASS();
+//     else
+//     {
+//         dc_log("test has failed");
+//         CLOVE_FAIL();
+//     }
+// }
+
 CLOVE_TEST(error_handling)
 {
     string error_tests[] = {
@@ -597,11 +661,15 @@ CLOVE_TEST(error_handling)
 
         "{'name': 'Monkey'}[fn(x) { x }]", // function cannot be used as key
 
+        "quote 1 2 3",
+
+        "unquote 1 2 3",
+
         NULL,
     };
 
 
-    dc_foreach(error_tests, string, {
+    dc_foreach(error_checking_loop, error_tests, string, {
         ResEnv de_res = dang_env_new();
 
         if (dc_is_err2(de_res))
@@ -617,13 +685,10 @@ CLOVE_TEST(error_handling)
             dc_log("test #" dc_fmt(usize) " error, expected input '%s' to have error result but evaluated to ok result", _idx,
                    *_it);
 
-            dc_result_free(&res);
-
             dang_env_free(de);
 
             CLOVE_FAIL();
         }
-        dang_env_free(de);
     });
 
 

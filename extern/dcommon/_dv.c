@@ -164,7 +164,7 @@ DCResString dc_tostr_dv(DCDynVal* dv)
             {
                 DC_HT_GET_AND_DEF_CONTAINER_ROW(darr, *_ht, i);
 
-                dc_da_for(*darr, {
+                dc_da_for(ht_pair_print, *darr, {
                     dc_try_or_fail_with3(DCResString, pair, dc_tostr_dv(_it), {});
                     dc_sappend(&result, "%s", dc_unwrap2(pair));
 
@@ -190,7 +190,7 @@ DCResString dc_tostr_dv(DCDynVal* dv)
             }
 
             DCDynArrPtr _darr = dc_dv_as(*dv, DCDynArrPtr);
-            dc_da_for(*_darr, {
+            dc_da_for(da_print_elements, *_darr, {
                 dc_try_or_fail_with3(DCResString, item, dc_tostr_dv(_it), {});
                 dc_sappend(&result, "%s", dc_unwrap2(item));
 

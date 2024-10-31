@@ -90,6 +90,7 @@ struct DNode
     DNType type;
     DCDynVal data;
     DCDynArr children;
+    b1 quoted;
 };
 
 DCResType(DNode*, ResNode);

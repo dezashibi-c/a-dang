@@ -81,10 +81,19 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
 
     dc_dbg_log("inspecting node type: %s", tostr_DNType(dn->type));
 
+    if (dn->quoted)
+    {
+        dc_sappend(result, "%s", "QUOTE(");
+        dc_try_fail(dang_node_inspect(dn_child(dn, 1), result));
+        dc_sappend(result, "%s", ")");
+
+        dc_ret();
+    }
+
     switch (dn->type)
     {
         case DN_PROGRAM:
-            dc_da_for(dn->children, {
+            dc_da_for(program_inspect_loop, dn->children, {
                 dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
                 dc_sappend(result, "%s", "\n");
             });
@@ -157,7 +166,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
 
         case DN_BLOCK_STATEMENT:
             dc_sappend(result, "%s", "{ ");
-            dc_da_for(dn->children, {
+            dc_da_for(block_loop, dn->children, {
                 dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
                 dc_sappend(result, "%s", "; ");
             });
@@ -168,7 +177,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
         case DN_FUNCTION_LITERAL:
             dc_sappend(result, "%s", "Fn (");
 
-            dc_da_for(dn->children, {
+            dc_da_for(function_lit_loop, dn->children, {
                 if (_idx == dn_child_count(dn) - 1) break;
 
                 dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
@@ -184,7 +193,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
             break;
 
         case DN_CALL_EXPRESSION:
-            dc_da_for(dn->children, {
+            dc_da_for(call_exp_loop, dn->children, {
                 dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
 
                 if (_idx == 0)
@@ -202,7 +211,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
 
         case DN_ARRAY_LITERAL:
             dc_sappend(result, "%s", "[");
-            dc_da_for(dn->children, {
+            dc_da_for(array_lit_loop, dn->children, {
                 dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
 
                 if (_idx < dn_child_count(dn) - 1) dc_sappend(result, "%s", ", ");
@@ -237,7 +246,7 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
         case DN_HASH_LITERAL:
             dc_sappend(result, "%s", "{");
 
-            dc_da_for(dn->children, {
+            dc_da_for(hash_table_loop, dn->children, {
                 dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
 
                 if (_idx % 2 == 0)
@@ -281,6 +290,8 @@ ResNode dn_new(DNType type, DCDynVal data, b1 has_children)
     node->children = (DCDynArr){0};
 
     if (has_children) dc_try_fail_temp(DCResVoid, dc_da_init(&node->children, dn_child_free));
+
+    node->quoted = false;
 
     dc_ret_ok(node);
 }

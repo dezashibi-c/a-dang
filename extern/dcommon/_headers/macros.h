@@ -1240,27 +1240,24 @@
 #define dc_last(ARR) ARR[(dc_len(ARR) - 1)]
 
 /**
- * `[MACRO]` Expands to assigning __dc_break = true
+ * `[MACRO]` Expands to exit the current or outer loop
+ *
+ * @param LABEL is the label that is defined in the loop command
  *
  * NOTE: only to be used in dc_for, dc_foreach and dc_da_for
  */
-#define DC_BREAK                                                                                                               \
-    {                                                                                                                          \
-        __dc_break = true;                                                                                                     \
-        break;                                                                                                                 \
-    }
+#define DC_BREAK(LABEL) goto __##LABEL##_exit
 
 /**
  * `[MACRO]` Iterator in a stopper terminated array provided with pointer to the current
  * element in each iteration as `_it` with current index as `_idx`
  */
-#define dc_foreach(ARR, TYPE, ACTIONS)                                                                                         \
+#define dc_foreach(LABEL, ARR, TYPE, ACTIONS)                                                                                  \
     do                                                                                                                         \
     {                                                                                                                          \
         usize _idx = 0;                                                                                                        \
         TYPE* _it = ARR;                                                                                                       \
-        b1 __dc_break = false;                                                                                                 \
-        while (!dc_is_stopper(TYPE, *_it) && !__dc_break)                                                                      \
+        while (!dc_is_stopper(TYPE, *_it))                                                                                     \
         {                                                                                                                      \
             do                                                                                                                 \
             {                                                                                                                  \
@@ -1269,6 +1266,8 @@
             ++_idx;                                                                                                            \
             ++_it;                                                                                                             \
         }                                                                                                                      \
+        goto __##LABEL##_exit;                                                                                                 \
+        __##LABEL##_exit :;                                                                                                    \
     } while (0)
 
 /**
@@ -1277,13 +1276,12 @@
  *
  * @param LIMIT is a number to checks on very iteration to see if _idx is less than it
  */
-#define dc_for(ARR, TYPE, LIMIT, ACTIONS)                                                                                      \
+#define dc_for(LABEL, ARR, TYPE, LIMIT, ACTIONS)                                                                               \
     do                                                                                                                         \
     {                                                                                                                          \
         usize _idx = 0;                                                                                                        \
         TYPE* _it = ARR;                                                                                                       \
-        b1 __dc_break = false;                                                                                                 \
-        while (_idx < LIMIT && !__dc_break)                                                                                    \
+        while (_idx < LIMIT)                                                                                                   \
         {                                                                                                                      \
             do                                                                                                                 \
             {                                                                                                                  \
@@ -1292,6 +1290,8 @@
             ++_idx;                                                                                                            \
             ++_it;                                                                                                             \
         }                                                                                                                      \
+        goto __##LABEL##_exit;                                                                                                 \
+        __##LABEL##_exit :;                                                                                                    \
     } while (0)
 
 /**
@@ -1300,11 +1300,11 @@
  *
  * @example dc_foreach2(u8, printf("index: [" dc_fmt(usize)  "] is %d\n", _idx, *_it), 1, 2, 3, 4);
  */
-#define dc_foreach2(TYPE, ACTIONS, ...)                                                                                        \
+#define dc_foreach2(LABEL, TYPE, ACTIONS, ...)                                                                                 \
     do                                                                                                                         \
     {                                                                                                                          \
         DC_DEF_ARRAY(__dc_temp_arr, TYPE, __VA_ARGS__);                                                                        \
-        dc_foreach(__dc_temp_arr, TYPE, ACTIONS);                                                                              \
+        dc_foreach(LABEL, __dc_temp_arr, TYPE, ACTIONS);                                                                       \
     } while (0)
 
 // ***************************************************************************************
@@ -1371,13 +1371,12 @@
  * `[MACRO]` Expands to a for loop for the given dynamic array, index can be accessed by
  * `_idx`
  */
-#define dc_da_for(DARR, ACTIONS)                                                                                               \
+#define dc_da_for(LABEL, DARR, ACTIONS)                                                                                        \
     do                                                                                                                         \
     {                                                                                                                          \
         usize _idx = 0;                                                                                                        \
         DCDynVal* _it = (DARR).elements;                                                                                       \
-        b1 __dc_break = false;                                                                                                 \
-        while (_idx < (DARR).count && !__dc_break)                                                                             \
+        while (_idx < (DARR).count)                                                                                            \
         {                                                                                                                      \
             do                                                                                                                 \
             {                                                                                                                  \
@@ -1386,6 +1385,8 @@
             ++_idx;                                                                                                            \
             ++_it;                                                                                                             \
         }                                                                                                                      \
+        goto __##LABEL##_exit;                                                                                                 \
+        __##LABEL##_exit :;                                                                                                    \
     } while (0)
 
 // for (usize _idx = 0; _idx < (DARR).count; _idx++)
