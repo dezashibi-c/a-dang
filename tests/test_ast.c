@@ -39,7 +39,7 @@ CLOVE_TEST(node_string)
         CLOVE_FAIL();
     }
     else
-        dc_action_on(strcmp("let my_var another_var\n(-1)\n", result) != 0, CLOVE_FAIL(),
+        dc_action_on(strcmp("let my_var another_var\n(-1)\n", result ? result : "") != 0, CLOVE_FAIL(),
                      "expected='let my_var another_var\n(-1)\n', got=%s", result);
 
     dc_dv_free(&program_statements, NULL);

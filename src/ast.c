@@ -23,7 +23,8 @@ static DCResVoid array_inspector(DCDynArrPtr darr, string prefix, string postfix
 
     if (prefix && prefix[0] != '\0') dc_sappend(result, "%s", prefix);
 
-    if (darr)
+    if (darr != NULL)
+    {
         dc_da_for(arr_inspector_loop, *darr, {
             dc_try_fail(dang_node_inspect(_it, result));
 
@@ -36,6 +37,7 @@ static DCResVoid array_inspector(DCDynArrPtr darr, string prefix, string postfix
                     dc_sappend(result, "%s", delimiter);
             }
         });
+    }
 
     if (postfix && postfix[0] != '\0') dc_sappend(result, "%s", postfix);
 
