@@ -17,7 +17,7 @@
 #ifndef DANG_TOKEN_H
 #define DANG_TOKEN_H
 
-#include "types.h"
+#include "common.h"
 
 typedef enum
 {

@@ -2,8 +2,8 @@
 
 #include "clove-unit/clove-unit.h"
 
+#include "common.h"
 #include "scanner.h"
-#include "types.h"
 
 typedef struct
 {

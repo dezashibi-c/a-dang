@@ -20,11 +20,6 @@
 #include "ast.h"
 #include "scanner.h"
 
-typedef struct DParser DParser;
-
-typedef ResNode (*ParsePrefixFn)(DParser*);
-typedef ResNode (*ParseInfixFn)(DParser*, DNode*);
-
 typedef enum
 {
     PREC_LOWEST,
@@ -45,26 +40,26 @@ typedef enum
     LOC_ARRAY,
 } DParserStatementLoc;
 
-typedef struct DParser
+typedef struct
 {
-    DScanner* scanner;
-
+    DParserStatementLoc loc;
     DTok current_token;
     DTok peek_token;
 
-    DCDynArr errors;
+    DScanner scanner;
 
-    DParserStatementLoc loc;
-
-    ParsePrefixFn parse_prefix_fns[DN__MAX];
-    ParseInfixFn parse_infix_fns[DN__MAX];
+    DCDynArrPtr pool;
+    DCDynArrPtr errors;
 } DParser;
 
-#define dang_parser_has_error(P) ((P)->errors.count != 0)
+#define dang_parser_has_error(P) ((P)->errors->count != 0)
 
-DCResVoid dang_parser_init(DParser* p, DScanner* s);
-DCResVoid dang_parser_free(DParser* p);
-ResNode dang_parser_parse_program(DParser* p);
+ResDNodeProgram dang_parser_parse(DParser* p, const string source);
+
+DCResVoid dang_parser_init(DParser* p, DCDynArrPtr pool, DCDynArrPtr errors);
 void dang_parser_log_errors(DParser* p);
+
+typedef DCRes (*ParsePrefixFn)(DParser*);
+typedef DCRes (*ParseInfixFn)(DParser*, DCDynValPtr);
 
 #endif // DANG_PARSER_H

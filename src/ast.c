@@ -16,48 +16,37 @@
 
 #include "ast.h"
 
-string tostr_DNType(DNType dnt)
+static DCResVoid array_inspector(DCDynArrPtr darr, string prefix, string postfix, string delimiter, b1 no_delim_for_last,
+                                 string* result)
 {
-    switch (dnt)
-    {
-        dc_str_case(DN__UNKNOWN);
-        dc_str_case(DN_PROGRAM);
-        dc_str_case(DN__START_STATEMENT);
-        dc_str_case(DN_LET_STATEMENT);
-        dc_str_case(DN_RETURN_STATEMENT);
-        dc_str_case(DN_EXPRESSION_STATEMENT);
-        dc_str_case(DN_BLOCK_STATEMENT);
-        dc_str_case(DN__END_STATEMENT);
-        dc_str_case(DN__START_EXPRESSION);
-        dc_str_case(DN_IDENTIFIER);
-        dc_str_case(DN_PREFIX_EXPRESSION);
-        dc_str_case(DN_INFIX_EXPRESSION);
-        dc_str_case(DN_IF_EXPRESSION);
-        dc_str_case(DN_WHILE_EXPRESSION);
-        dc_str_case(DN_CALL_EXPRESSION);
-        dc_str_case(DN_INDEX_EXPRESSION);
-        dc_str_case(DN__END_EXPRESSION);
-        dc_str_case(DN__START_LITERAL);
-        dc_str_case(DN_FUNCTION_LITERAL);
-        dc_str_case(DN_ARRAY_LITERAL);
-        dc_str_case(DN_HASH_LITERAL);
-        dc_str_case(DN_MACRO_LITERAL);
-        dc_str_case(DN_BOOLEAN_LITERAL);
-        dc_str_case(DN_STRING_LITERAL);
-        dc_str_case(DN_INTEGER_LITERAL);
-        dc_str_case(DN__END_LITERAL);
-        dc_str_case(DN__MAX);
-    };
+    DC_RES_void();
 
-    return NULL;
+    if (prefix && prefix[0] != '\0') dc_sappend(result, "%s", prefix);
+
+    dc_da_for(arr_inspector_loop, *darr, {
+        dc_try_fail(dang_node_inspect(_it, result));
+
+        if (delimiter && delimiter[0] != '\0')
+        {
+            if (!no_delim_for_last)
+                dc_sappend(result, "%s", delimiter);
+
+            else if (_idx < darr->count - 1)
+                dc_sappend(result, "%s", delimiter);
+        }
+    });
+
+    if (postfix && postfix[0] != '\0') dc_sappend(result, "%s", postfix);
+
+    dc_ret();
 }
 
-DCResVoid dang_node_inspect(DNode* dn, string* result)
+DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
 {
 #define append_data_str(FMT)                                                                                                   \
     do                                                                                                                         \
     {                                                                                                                          \
-        dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(&dn->data), {});                                           \
+        dc_try_or_fail_with3(DCResString, data_str_res, dc_tostr_dv(dn), {});                                                  \
         dc_sappend(result, FMT, dc_unwrap2(data_str_res));                                                                     \
         if (dc_unwrap2(data_str_res)) free(dc_unwrap2(data_str_res));                                                          \
     } while (0)
@@ -72,191 +61,176 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
         dc_ret_e(dc_e_code(NV), "cannot inspect null node");
     }
 
-    if (!dn_type_is_valid(dn->type))
-    {
-        dc_dbg_log("cannot inspect invalid node type: %s", tostr_DNType(dn->type));
-
-        dc_ret_e(dc_e_code(TYPE), "cannot inspect invalid node type");
-    }
-
     dc_dbg_log("inspecting node type: %s", tostr_DNType(dn->type));
 
-    if (dn->quoted)
-    {
-        dc_sappend(result, "%s", "QUOTE(");
-        dc_try_fail(dang_node_inspect(dn_child(dn, 1), result));
-        dc_sappend(result, "%s", ")");
-
-        dc_ret();
-    }
+    if (dn->quoted) dc_sappend(result, "%s", "QUOTE(");
 
     switch (dn->type)
     {
-        case DN_PROGRAM:
-            dc_da_for(program_inspect_loop, dn->children, {
-                dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
-                dc_sappend(result, "%s", "\n");
-            });
+        case dc_dvt(DCDynValPtr):
+            return dang_node_inspect(dc_dv_as(*dn, DCDynValPtr), result);
 
+        case dc_dvt(DNodeIdentifier):
+            dc_sappend(result, "%s", dc_dv_as(*dn, DNodeIdentifier).value);
             break;
 
-        case DN_LET_STATEMENT:
-            dc_sappend(result, "%s", "let ");
-            dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
+        case dc_dvt(DNodeProgram):
+        {
+            DCDynArrPtr statements = dc_dv_as(*dn, DNodeProgram).statements;
 
-            if (dn_child_count(dn) > 1)
+            dc_try_fail(array_inspector(statements, NULL, NULL, "\n", false, result));
+
+            break;
+        }
+
+        case dc_dvt(DNodeLetStatement):
+        {
+            DNodeLetStatement let_stmt = dc_dv_as(*dn, DNodeLetStatement);
+
+            dc_sappend(result, "let %s", let_stmt.name);
+
+            if (let_stmt.value)
             {
                 dc_sappend(result, "%s", " ");
-                dc_try_fail(dang_node_inspect(dn_child(dn, 1), result));
+                dc_try_fail(dang_node_inspect(let_stmt.value, result));
             }
 
             break;
+        }
 
-        case DN_RETURN_STATEMENT:
+        case dc_dvt(DNodeReturnStatement):
+        {
             dc_sappend(result, "%s", "return");
 
-            if (dn_child_count(dn) > 0)
+            DNodeReturnStatement ret_stmt = dc_dv_as(*dn, DNodeReturnStatement);
+
+            if (ret_stmt.ret_val)
             {
                 dc_sappend(result, "%s", " ");
-                dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
+                dc_try_fail(dang_node_inspect(ret_stmt.ret_val, result));
             }
 
             break;
+        }
 
-        case DN_EXPRESSION_STATEMENT:
-            if (dn_child_count(dn) > 0) dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
-
-            break;
-
-        case DN_PREFIX_EXPRESSION:
+        case dc_dvt(DNodePrefixExpression):
         {
-            append_data_str("(%s");
+            DNodePrefixExpression prefix_exp = dc_dv_as(*dn, DNodePrefixExpression);
 
-            dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
+            dc_sappend(result, "(%s", prefix_exp.op);
+            dc_try_fail(dang_node_inspect(prefix_exp.operand, result));
             dc_sappend(result, "%s", ")");
             break;
         }
 
-        case DN_INFIX_EXPRESSION:
+        case dc_dvt(DNodeInfixExpression):
         {
+            DNodeInfixExpression infix_exp = dc_dv_as(*dn, DNodeInfixExpression);
+
             dc_sappend(result, "%s", "(");
-            dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
-            append_data_str(" %s ");
-            dc_try_fail(dang_node_inspect(dn_child(dn, 1), result));
+            dc_try_fail(dang_node_inspect(infix_exp.left, result));
+            dc_sappend(result, " %s ", infix_exp.op);
+            dc_try_fail(dang_node_inspect(infix_exp.right, result));
             dc_sappend(result, "%s", ")");
             break;
         }
 
-        case DN_IF_EXPRESSION:
+        case dc_dvt(DNodeIfExpression):
+        {
+            DNodeIfExpression if_exp = dc_dv_as(*dn, DNodeIfExpression);
+
             dc_sappend(result, "%s", "if ");
 
-            dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
+            dc_try_fail(dang_node_inspect(if_exp.condition, result));
 
             dc_sappend(result, "%s", " ");
 
-            dc_try_fail(dang_node_inspect(dn_child(dn, 1), result));
+            dc_try_fail(array_inspector(if_exp.consequence, "{ ", " }", ";", false, result));
 
-            if (dn_child_count(dn) > 2)
+            if (if_exp.alternative)
             {
                 dc_sappend(result, "%s", " else ");
-                dc_try_fail(dang_node_inspect(dn_child(dn, 2), result));
+                dc_try_fail(array_inspector(if_exp.alternative, "{ ", " }", "; ", false, result));
             }
 
             break;
+        }
 
-        case DN_BLOCK_STATEMENT:
-            dc_sappend(result, "%s", "{ ");
-            dc_da_for(block_loop, dn->children, {
-                dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
-                dc_sappend(result, "%s", "; ");
-            });
-            dc_sappend(result, "%s", "}");
-
-            break;
-
-        case DN_FUNCTION_LITERAL:
-            dc_sappend(result, "%s", "Fn (");
-
-            dc_da_for(function_lit_loop, dn->children, {
-                if (_idx == dn_child_count(dn) - 1) break;
-
-                dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
-
-                if (_idx < dn_child_count(dn) - 2) dc_sappend(result, "%s", ", ");
-            });
-
-            dc_sappend(result, "%s", ") ");
-
-            // The Body
-            dc_try_fail(dang_node_inspect(dn_child(dn, dn_child_count(dn) - 1), result));
-
-            break;
-
-        case DN_CALL_EXPRESSION:
-            dc_da_for(call_exp_loop, dn->children, {
-                dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
-
-                if (_idx == 0)
-                {
-                    dc_sappend(result, "%s", "(");
-                    continue;
-                }
-
-                if (_idx < dn_child_count(dn) - 1) dc_sappend(result, "%s", ", ");
-            });
-
-            dc_sappend(result, "%s", ")");
-
-            break;
-
-        case DN_ARRAY_LITERAL:
-            dc_sappend(result, "%s", "[");
-            dc_da_for(array_lit_loop, dn->children, {
-                dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
-
-                if (_idx < dn_child_count(dn) - 1) dc_sappend(result, "%s", ", ");
-            });
-
-            dc_sappend(result, "%s", "]");
-
-            break;
-
-        case DN_INDEX_EXPRESSION:
-            dc_sappend(result, "%s", "(");
-            dc_try_fail(dang_node_inspect(dn_child(dn, 0), result));
-
-            dc_sappend(result, "%s", "[");
-            dc_try_fail(dang_node_inspect(dn_child(dn, 1), result));
-            dc_sappend(result, "%s", "])");
-
-            break;
-
-        case DN_STRING_LITERAL:
-            append_data_str("\"%s\"");
-            break;
-
-        case DN_BOOLEAN_LITERAL:
+        case dc_dvt(DNodeBlockStatement):
         {
-            dc_try_or_fail_with3(DCResBool, data_bool_res, dc_dv_to_bool(&dn->data), {});
+            DCDynArrPtr statements = dc_dv_as(*dn, DNodeBlockStatement).statements;
 
-            dc_sappend(result, "%s", dc_tostr_bool(dc_unwrap2(data_bool_res)));
+            dc_try_fail(array_inspector(statements, "{ ", " }", "; ", false, result));
+
             break;
         }
 
-        case DN_HASH_LITERAL:
+        case dc_dvt(DNodeFunctionLiteral):
+        {
+            DNodeFunctionLiteral func_lit = dc_dv_as(*dn, DNodeFunctionLiteral);
+
+            dc_try_fail(array_inspector(func_lit.parameters, "Fn (", ") ", ", ", true, result));
+
+            // The Body
+            dc_try_fail(array_inspector(func_lit.body, "{ ", " }", "; ", false, result));
+
+            break;
+        }
+
+        case dc_dvt(DNodeCallExpression):
+        {
+            DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
+
+            dc_try_fail(dang_node_inspect(call_exp.expression, result));
+            dc_try_fail(array_inspector(call_exp.arguments, "(", ")", ", ", true, result));
+
+            break;
+        }
+
+        case dc_dvt(DNodeArrayLiteral):
+        {
+            DCDynArrPtr arr_lit = dc_dv_as(*dn, DNodeArrayLiteral).array;
+            dc_try_fail(array_inspector(arr_lit, "[", "]", ", ", true, result));
+
+            break;
+        }
+
+        case dc_dvt(DNodeIndexExpression):
+        {
+            DNodeIndexExpression index_exp = dc_dv_as(*dn, DNodeIndexExpression);
+
+            dc_sappend(result, "%s", "(");
+            dc_try_fail(dang_node_inspect(index_exp.operand, result));
+
+            dc_sappend(result, "%s", "[");
+            dc_try_fail(dang_node_inspect(index_exp.index, result));
+            dc_sappend(result, "%s", "])");
+
+            break;
+        }
+
+        case dc_dvt(string):
+            append_data_str("\"%s\"");
+            break;
+
+        case dc_dvt(DNodeHashTableLiteral):
+        {
+            DCDynArr key_values = *dc_dv_as(*dn, DNodeHashTableLiteral).key_values;
+
             dc_sappend(result, "%s", "{");
 
-            dc_da_for(hash_table_loop, dn->children, {
-                dc_try_fail(dang_node_inspect(dn_child(dn, _idx), result));
+            dc_da_for(hash_table_loop, key_values, {
+                dc_try_fail(dang_node_inspect(_it, result));
 
                 if (_idx % 2 == 0)
                     dc_sappend(result, "%s", ": ");
-                else if (_idx < dn_child_count(dn) - 1)
+                else if (_idx < key_values.count - 1)
                     dc_sappend(result, "%s", ", ");
             });
 
             dc_sappend(result, "%s", "}");
             break;
+        }
 
         default:
             append_data_str("%s");
@@ -267,70 +241,9 @@ DCResVoid dang_node_inspect(DNode* dn, string* result)
             // DN_MACRO_LITERAL,
     };
 
+    if (dn->quoted) dc_sappend(result, "%s", ")");
+
     dc_ret();
 
 #undef append_data_str
-}
-
-ResNode dn_new(DNType type, DCDynVal data, b1 has_children)
-{
-    DC_RES2(ResNode);
-
-    DNode* node = malloc(sizeof(DNode));
-    if (node == NULL)
-    {
-        dc_dbg_log("DNode Memory allocation failed");
-
-        dc_ret_e(2, "DNode Memory allocation failed");
-    }
-
-    node->type = type;
-    node->data = data;
-
-    node->children = (DCDynArr){0};
-
-    if (has_children) dc_try_fail_temp(DCResVoid, dc_da_init(&node->children, dn_child_free));
-
-    node->quoted = false;
-
-    dc_ret_ok(node);
-}
-
-DCResVoid dn_program_free(DNode* program)
-{
-    DC_RES_void();
-
-    if (program)
-    {
-        dc_try(dn_free(program));
-        free(program);
-    }
-
-    dc_ret();
-}
-
-DCResVoid dn_free(DNode* dn)
-{
-    DC_RES_void();
-
-    dc_try_fail(dc_dv_free(&dn->data, NULL));
-
-    if (dn->children.cap != 0) dc_try(dc_da_free(&dn->children));
-
-    dc_ret();
-}
-
-DC_DV_FREE_FN_DECL(dn_child_free)
-{
-    DC_RES_void();
-
-    if (dc_dv_is_allocated(*_value) && dc_dv_is(*_value, DNodePtr) && dc_dv_as(*_value, DNodePtr) != NULL)
-    {
-        dc_try(dn_free(dc_dv_as(*_value, DNodePtr)));
-        free(dc_dv_as(*_value, DNodePtr));
-
-        dc_dv_set(*_value, DNodePtr, NULL);
-    }
-
-    dc_ret();
 }

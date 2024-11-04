@@ -2,14 +2,34 @@
 
 #include "clove-unit/clove-unit.h"
 
+#include "common.h"
 #include "parser.h"
 #include "scanner.h"
-#include "types.h"
+
+static DCDynArr pool;
+static DCDynArr errors;
+
+static DScanner scanner;
+static DParser parser;
+
+CLOVE_SUITE_SETUP()
+{
+    pool = (DCDynArr){0};
+    pool = (DCDynArr){0};
+
+    parser = (DParser){0};
+}
+
+CLOVE_SUITE_TEARDOWN()
+{
+    dc_da_free(&pool);
+    dc_da_free(&errors);
+}
 
 static b1 dang_parser_has_no_error(DParser* p)
 {
-    dc_action_on(p->errors.count != 0, dang_parser_log_errors(p);
-                 return false, "parser has " dc_fmt(usize) " errors", p->errors.count);
+    dc_action_on(p->errors->count != 0, dang_parser_log_errors(p);
+                 return false, "parser has " dc_fmt(usize) " errors", p->errors->count);
 
     return true;
 }
@@ -42,13 +62,13 @@ static b1 perform_test_batch(string tests[], usize tests_count)
 
         ResNode program_res = dang_parser_parse_program(&p);
 
-        DNode* program = dc_unwrap2(program_res);
+        DNodePtr program = dc_unwrap2(program_res);
 
         if (!dang_parser_has_no_error(&p))
         {
             dc_log("parser error on input '%s'", input);
 
-            dn_program_free(program);
+            dn_full_free(program);
             dang_parser_free(&p);
 
             success = false;
@@ -67,7 +87,7 @@ static b1 perform_test_batch(string tests[], usize tests_count)
         else
             dc_action_on(strcmp(expected, result) != 0, return false, "expected=%s, got=%s", expected, result);
 
-        dn_program_free(program);
+        dn_full_free(program);
         dang_parser_free(&p);
     }
 

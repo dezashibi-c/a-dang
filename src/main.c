@@ -14,6 +14,8 @@
 // *  Description:
 // ***************************************************************************************
 
+#if 0
+
 #define DCOMMON_IMPL
 #include "evaluator.h"
 #include "parser.h"
@@ -79,7 +81,7 @@ static void repl()
         {
             if (dang_parser_has_error(&p)) dang_parser_log_errors(&p);
 
-            DNode* program = dc_unwrap2(program_res);
+            DNodePtr program = dc_unwrap2(program_res);
 
             string result = NULL;
             DCResVoid inspection_res = dang_node_inspect(program, &result);
@@ -139,3 +141,12 @@ int main(int argc, string argv[])
 
     return 0;
 }
+
+#else
+
+int main()
+{
+    return 0;
+}
+
+#endif

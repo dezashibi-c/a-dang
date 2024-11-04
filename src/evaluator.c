@@ -16,7 +16,7 @@
 
 #include "evaluator.h"
 
-static DCRes perform_evaluation_process(DNode* dn, DEnv* de, DEnv* main_de);
+static DCRes perform_evaluation_process(DNodePtr dn, DEnv* de, DEnv* main_de);
 
 // ***************************************************************************************
 // * PRIVATE HELPER FUNCTIONS
@@ -53,7 +53,7 @@ static DC_HT_HASH_FN_DECL(hash_obj_hash_fn)
         case DOBJ_STRING:
             dc_ret_ok(string_hash(dc_dv_as(*_key, string)));
 
-        case DOBJ_NUMBER:
+        case DOBJ_INTEGER:
             dc_ret_ok(integer_hash(dc_dv_as(*_key, i64)));
 
         case DOBJ_BOOLEAN:
@@ -135,14 +135,14 @@ static ResEnv _env_new_enclosed(DEnv* outer)
 }
 
 
-static DCRes eval_program_statements(DNode* dn, DEnv* de, DEnv* main_de)
+static DCRes eval_program_statements(DNodePtr dn, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
     if (dn_child_count(dn) == 0) dc_ret_ok_dv_nullptr();
 
     dc_da_for(program_eval_loop, dn->children, {
-        DNode* stmt = dn_child(dn, _idx);
+        DNodePtr stmt = dn_child(dn, _idx);
         dc_try_fail(perform_evaluation_process(stmt, de, main_de));
 
         // This means the actual syntax of the current node must be 'return'
@@ -153,14 +153,14 @@ static DCRes eval_program_statements(DNode* dn, DEnv* de, DEnv* main_de)
     dc_ret();
 }
 
-static DCRes eval_block_statements(DNode* dn, DEnv* de, DEnv* main_de)
+static DCRes eval_block_statements(DNodePtr dn, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
     if (dn_child_count(dn) == 0) dc_ret_ok_dv_nullptr();
 
     dc_da_for(block_eval_loop, dn->children, {
-        DNode* stmt = dn_child(dn, _idx);
+        DNodePtr stmt = dn_child(dn, _idx);
         dc_try_fail(perform_evaluation_process(stmt, de, main_de));
 
         if (dc_unwrap().is_returned) DC_BREAK(block_eval_loop);
@@ -188,7 +188,7 @@ static DCRes eval_minus_prefix_operator(DCDynValPtr right)
     dc_ret_ok_dv(i64, -dc_dv_as(*right, i64));
 }
 
-static DCRes eval_prefix_expression(DNode* dn, DCDynValPtr right)
+static DCRes eval_prefix_expression(DNodePtr dn, DCDynValPtr right)
 {
     DC_RES();
 
@@ -204,7 +204,7 @@ static DCRes eval_prefix_expression(DNode* dn, DCDynValPtr right)
     dc_ret_ea(-1, "unimplemented infix operator '%s'", node_text);
 }
 
-static DCRes eval_integer_infix_expression(DNode* dn, DCDynValPtr left, DCDynValPtr right)
+static DCRes eval_integer_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr right)
 {
     DC_RES();
 
@@ -246,7 +246,7 @@ static DCRes eval_integer_infix_expression(DNode* dn, DCDynValPtr left, DCDynVal
     dc_ret_ok(value);
 }
 
-static DCRes eval_boolean_infix_expression(DNode* dn, DCDynValPtr left, DCDynValPtr right)
+static DCRes eval_boolean_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr right)
 {
     DC_RES();
 
@@ -268,7 +268,7 @@ static DCRes eval_boolean_infix_expression(DNode* dn, DCDynValPtr left, DCDynVal
               tostr_DObjType(right));
 }
 
-static DCRes eval_string_infix_expression(DNode* dn, DCDynValPtr left, DCDynValPtr right, DEnv* main_de)
+static DCRes eval_string_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr right, DEnv* main_de)
 {
     DC_RES();
 
@@ -294,7 +294,7 @@ static DCRes eval_string_infix_expression(DNode* dn, DCDynValPtr left, DCDynValP
               tostr_DObjType(right));
 }
 
-static DCRes eval_infix_expression(DNode* dn, DCDynValPtr left, DCDynValPtr right, DEnv* main_de)
+static DCRes eval_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr right, DEnv* main_de)
 {
     DC_RES();
 
@@ -369,13 +369,13 @@ static DCRes eval_hash_index_expression(DCDynValPtr left, DCDynValPtr index)
     dc_ret_ok(*found);
 }
 
-static DCRes eval_if_expression(DNode* dn, DEnv* de, DEnv* main_de)
+static DCRes eval_if_expression(DNodePtr dn, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
-    DNode* condition = dn_child(dn, 0);
-    DNode* consequence = dn_child(dn, 1);
-    DNode* alternative = (dn_child_count(dn) > 2) ? dn_child(dn, 2) : NULL;
+    DNodePtr condition = dn_child(dn, 0);
+    DNodePtr consequence = dn_child(dn, 1);
+    DNodePtr alternative = (dn_child_count(dn) > 2) ? dn_child(dn, 2) : NULL;
 
     dc_try_or_fail_with3(DCRes, condition_evaluated, perform_evaluation_process(condition, de, main_de), {});
 
@@ -390,7 +390,7 @@ static DCRes eval_if_expression(DNode* dn, DEnv* de, DEnv* main_de)
     dc_ret_ok_dv_nullptr();
 }
 
-static DCRes eval_let_statement(DNode* dn, DEnv* de, DEnv* main_de)
+static DCRes eval_let_statement(DNodePtr dn, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
@@ -399,7 +399,7 @@ static DCRes eval_let_statement(DNode* dn, DEnv* de, DEnv* main_de)
     DCDynValPtr value = NULL;
     if (dn_child_count(dn) > 1)
     {
-        DNode* value_node = dn_child(dn, 1);
+        DNodePtr value_node = dn_child(dn, 1);
 
         dc_try_or_fail_with3(DCRes, v_res, perform_evaluation_process(value_node, de, main_de), {});
 
@@ -415,7 +415,7 @@ static DCRes eval_let_statement(DNode* dn, DEnv* de, DEnv* main_de)
     dc_ret_ok_dv_nullptr();
 }
 
-static DCRes eval_hash_literal(DNode* dn, DEnv* de, DEnv* main_de)
+static DCRes eval_hash_literal(DNodePtr dn, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
@@ -430,13 +430,13 @@ static DCRes eval_hash_literal(DNode* dn, DEnv* de, DEnv* main_de)
     dc_da_for(hash_lit_eval_loop, dn->children, {
         if (_idx % 2 != 0) continue; // odd numbers are values
 
-        DNode* key_node = dn_child(dn, _idx);
+        DNodePtr key_node = dn_child(dn, _idx);
 
         // this child is the key
         dc_try_or_fail_with3(DCRes, key_obj, perform_evaluation_process(key_node, de, main_de), {});
 
         // next child is the value
-        DNode* value_node = dn_child(dn, _idx + 1);
+        DNodePtr value_node = dn_child(dn, _idx + 1);
         dc_try_or_fail_with3(DCRes, value_obj, perform_evaluation_process(value_node, de, main_de), {});
 
         dc_try_or_fail_with3(DCResVoid, res,
@@ -446,7 +446,7 @@ static DCRes eval_hash_literal(DNode* dn, DEnv* de, DEnv* main_de)
     dc_ret_ok_dv(DCHashTablePtr, ht);
 }
 
-static DCResVoid eval_children_nodes(DNode* call_node, DCDynArrPtr parent_result, usize child_start_index, DEnv* de,
+static DCResVoid eval_children_nodes(DNodePtr call_node, DCDynArrPtr parent_result, usize child_start_index, DEnv* de,
                                      DEnv* main_de)
 {
     DC_RES_void();
@@ -464,7 +464,7 @@ static DCResVoid eval_children_nodes(DNode* call_node, DCDynArrPtr parent_result
     dc_ret();
 }
 
-static ResEnv extend_function_env(DCDynValPtr call_obj, DNode* fn_node)
+static ResEnv extend_function_env(DCDynValPtr call_obj, DNodePtr fn_node)
 {
     DC_TRY_DEF2(ResEnv, _env_new_enclosed(call_obj->env));
 
@@ -494,7 +494,7 @@ static ResEnv extend_function_env(DCDynValPtr call_obj, DNode* fn_node)
  * call_obj holds all the evaluated object arguments in its children field
  * call_obj holds current env as well
  */
-static DCRes apply_function(DCDynValPtr call_obj, DNode* fn_node, DEnv* main_de)
+static DCRes apply_function(DCDynValPtr call_obj, DNodePtr fn_node, DEnv* main_de)
 {
     DC_RES();
 
@@ -505,7 +505,7 @@ static DCRes apply_function(DCDynValPtr call_obj, DNode* fn_node, DEnv* main_de)
 
     REGISTER_CLEANUP2(dobj_defa(voidptr, NULL, fn_env), dang_env_free(fn_env));
 
-    DNode* body = dn_child(fn_node, dn_child_count(fn_node) - 1);
+    DNodePtr body = dn_child(fn_node, dn_child_count(fn_node) - 1);
 
     dc_try(perform_evaluation_process(body, fn_env, main_de));
 
@@ -518,52 +518,82 @@ static DCRes apply_function(DCDynValPtr call_obj, DNode* fn_node, DEnv* main_de)
 
 static b1 is_unquote_call(DNodePtr dn)
 {
-    // todo:: we've checked this before??
-    // if (dn->type != DN_CALL_EXPRESSION) return false;
+    if (dn->type != DN_CALL_EXPRESSION) return false;
 
     DNodePtr fn = dn_child(dn, 0);
 
     return (fn->type == DN_IDENTIFIER) && strcmp(dn_data_as(fn, string), MACRO_UNPACK) == 0;
 }
 
-static DECL_DNODE_MODIFIER_FN(default_modifier)
+ResNode convert_dobj_to_nodeptr(DCDynValPtr dobj)
 {
-    (void)de;
-    (void)main_de;
+    DC_RES2(ResNode);
 
-    DC_RES_void();
+    // DNodePtr result = NULL;
 
-    if (dn->type != DN_CALL_EXPRESSION) dc_ret();
+    switch (dobj_get_type(dobj))
+    {
+        case DOBJ_INTEGER:
+            return dn_new(DN_INTEGER_LITERAL, *dobj, false);
 
-    if (!is_unquote_call(dn)) dc_ret();
+        case DOBJ_BOOLEAN:
+            return dn_new(DN_BOOLEAN_LITERAL, *dobj, false);
 
-    // hold the first arg
-    DNodePtr arg = dn_child(dn, 0);
+        case DOBJ_QUOTE:
+        {
+            DNodePtr node = dc_dv_as(*dobj, DNodePtr);
+            node->quoted = false; // todo:: check this afterward
+            dc_ret_ok(node);
+        }
 
-    // eval the first arg
-    dc_try_or_fail_with3(DCRes, unquoted_res, perform_evaluation_process(arg, de, main_de), { dn_free(arg); });
+        default:
+            break;
+    };
 
-    // convert the dobj to node
-    DNodePtr new_node = NULL;
-
-    // replace dn with the newly generated node
-    *dn = *new_node;
-
-    dc_ret();
+    dc_ret_ok(NULL);
 }
 
-static DCResVoid eval_unquote_calls(DNodePtr dn, DEnv* de, DEnv* main_de)
+static DECL_DNODE_MODIFIER_FN(default_modifier)
+{
+    DC_RES2(ResNode);
+
+    if (!is_unquote_call(dn)) dc_ret_ok(NULL);
+
+    /* If the node is unquote call it must be evaluated and replaced by a node representing the result */
+
+    // hold the first arg
+    DNodePtr arg = dn_child(dn, 1);
+
+    // eval the first arg
+    dc_try_or_fail_with3(DCRes, unquoted_res, perform_evaluation_process(arg, de, main_de), { dn_full_free(arg); });
+
+    // convert the dobj to node
+    dc_try_or_fail_with3(ResNode, new_node_res, convert_dobj_to_nodeptr(&dc_unwrap2(unquoted_res)), {});
+    DNodePtr new_node = dc_unwrap2(new_node_res);
+
+    dc_ret_ok(new_node);
+}
+
+static ResNode eval_unquote_calls(DNodePtr dn, DEnv* de, DEnv* main_de)
 {
     return dn_modify(dn, de, main_de, default_modifier);
 }
 
-static DCRes process_quoted(DNode* dn, DEnv* de, DEnv* main_de)
+static DCRes process_quoted(DNodePtr dn, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
-    dc_try_fail_temp(DCResVoid, eval_unquote_calls(dn, de, main_de));
+    dc_try_or_fail_with3(ResNode, unquote_res, eval_unquote_calls(dn, de, main_de), {});
 
-    dc_ret_ok(dobj_def(DNodePtr, dn, NULL));
+    // DNodePtr processed_node = dc_unwrap2(unquote_res) ? dc_unwrap2(unquote_res) : dn;
+
+    // if (dc_unwrap2(unquote_res))
+    // {
+    //     // add the newly created node to to the cleanups
+    //     // REGISTER_CLEANUP(DNodePtr, processed_node, dn_full_free(processed_node));
+    // }
+
+    dc_ret_ok(dobj_def(DNodePtr, dc_unwrap2(unquote_res), NULL));
 }
 
 // ***************************************************************************************
@@ -718,7 +748,7 @@ static DCRes find_builtin(string name)
 // * MAIN EVALUATION PROCESS
 // ***************************************************************************************
 
-static DCRes perform_evaluation_process(DNode* dn, DEnv* de, DEnv* main_de)
+static DCRes perform_evaluation_process(DNodePtr dn, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
@@ -782,7 +812,7 @@ static DCRes perform_evaluation_process(DNode* dn, DEnv* de, DEnv* main_de)
 
         case DN_RETURN_STATEMENT:
         {
-            DNode* ret_val = (dn_child_count(dn) > 0) ? dn_child(dn, 0) : NULL;
+            DNodePtr ret_val = (dn_child_count(dn) > 0) ? dn_child(dn, 0) : NULL;
 
             if (!ret_val) dc_ret_ok_dv_nullptr();
 
@@ -841,7 +871,7 @@ static DCRes perform_evaluation_process(DNode* dn, DEnv* de, DEnv* main_de)
                 dc_ret_e(-1, "indexing is not supporting on this type");
             }
 
-            else if (left_type == DOBJ_ARRAY && index_type != DOBJ_NUMBER)
+            else if (left_type == DOBJ_ARRAY && index_type != DOBJ_INTEGER)
             {
                 dc_try_fail_temp(DCResVoid, dang_obj_free(&left));
                 dc_try_fail_temp(DCResVoid, dang_obj_free(&index));
@@ -866,7 +896,7 @@ static DCRes perform_evaluation_process(DNode* dn, DEnv* de, DEnv* main_de)
         case DN_CALL_EXPRESSION:
         {
             // function node is the first child
-            DNode* fn_node = dn_child(dn, 0);
+            DNodePtr fn_node = dn_child(dn, 0);
 
             if (dn->quoted)
             {
@@ -935,14 +965,14 @@ static DCRes perform_evaluation_process(DNode* dn, DEnv* de, DEnv* main_de)
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-DCRes dang_eval(DNode* program, DEnv* main_de)
+DCRes dang_eval(DNodePtr program, DEnv* main_de)
 {
     DC_RES();
 
     if (!program) dc_ret_e(dc_e_code(NV), "cannot evaluate NULL node");
     if (!main_de) dc_ret_e(dc_e_code(NV), "cannot run evaluation on NULL environment");
 
-    REGISTER_CLEANUP(DNodePtr, program, dn_program_free(program));
+    REGISTER_CLEANUP(DNodePtr, program, dn_full_free(program));
 
     return perform_evaluation_process(program, main_de, main_de);
 }
@@ -965,7 +995,7 @@ DCResVoid dang_obj_free(DCDynValPtr dobj)
     {
         dc_dbg_log("node pointer is being cleaned");
 
-        dc_try_fail(dn_program_free(dc_dv_as(*dobj, DNodePtr)));
+        dc_try_fail(dn_full_free(dc_dv_as(*dobj, DNodePtr)));
 
         dc_dv_set(*dobj, DNodePtr, NULL);
 
@@ -982,7 +1012,7 @@ DObjType dobj_get_type(DCDynValPtr dobj)
     switch (dobj->type)
     {
         case dc_dvt(i64):
-            return DOBJ_NUMBER;
+            return DOBJ_INTEGER;
 
         case dc_dvt(b1):
             return DOBJ_BOOLEAN;
@@ -1046,7 +1076,7 @@ DCResString dobj_tostr(DCDynValPtr dobj)
         case DOBJ_HASH_TABLE:
         case DOBJ_ARRAY:
         case DOBJ_BOOLEAN:
-        case DOBJ_NUMBER:
+        case DOBJ_INTEGER:
         case DOBJ_STRING:
             return dc_tostr_dv(dobj);
             break;
@@ -1158,8 +1188,8 @@ string tostr_DObjType(DCDynValPtr dobj)
 {
     switch (dobj_get_type(dobj))
     {
-        case DOBJ_NUMBER:
-            return "number";
+        case DOBJ_INTEGER:
+            return "integer";
 
         case DOBJ_STRING:
             return "string";
@@ -1195,28 +1225,29 @@ string tostr_DObjType(DCDynValPtr dobj)
     return "(unknown object type)";
 }
 
-DCResVoid dn_modify(DNodePtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier)
+ResNode dn_modify(DNodePtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier)
 {
-    DC_RES_void();
+    DC_RES2(ResNode);
 
     if (!modifier) dc_ret_e(dc_e_code(NV), "modifier function cannot be null");
 
-    dc_da_for(statement_modification_loop, dn->children,
-              { dc_try_fail(dn_modify(dn_child(dn, _idx), de, main_de, modifier)); });
+    dc_da_for(statement_modification_loop, dn->children, {
+        // get pointer to the first child
+        DNodePtr child = dn_child(dn, _idx);
 
-    // todo:: check these
-    // switch (dn->type)
-    // {
-    //     case DN_PROGRAM:
-    //         break;
+        // modify the child
+        dc_try_or_fail_with3(ResNode, modified_res, dn_modify(child, de, main_de, modifier), {});
 
-    //     case DN_EXPRESSION_STATEMENT:
-    //         dc_try_fail(dn_modify(dn_child(dn, 0), modifier));
-    //         break;
+        if (!dc_unwrap2(modified_res)) continue;
 
-    //     default:
-    //         break;
-    // };
+        // register the node
+        // REGISTER_CLEANUP(DNodePtr, child, dn_full_free(child));
 
-    return modifier(dn, de, main_de);
+        // replace the node
+        dn_child(dn, _idx) = dc_unwrap2(modified_res);
+    });
+
+    dc_try(modifier(dn, de, main_de));
+
+    dc_ret_ok(dc_unwrap() ? dc_unwrap() : dn);
 }

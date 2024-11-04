@@ -17,7 +17,7 @@
 #ifndef DANG_SCANNER_H
 #define DANG_SCANNER_H
 
-#include "types.h"
+#include "common.h"
 
 #include "token.h"
 

@@ -25,7 +25,7 @@
 
 typedef enum
 {
-    DOBJ_NUMBER,
+    DOBJ_INTEGER,
     DOBJ_STRING,
     DOBJ_BOOLEAN,
     DOBJ_QUOTE,
@@ -49,7 +49,7 @@ struct DEnv
 
 DCResType(DEnv*, ResEnv);
 
-typedef DCResVoid (*DNodeModifierFn)(DNodePtr dn, DEnv* de, DEnv* main_de);
+typedef ResNode (*DNodeModifierFn)(DNodePtr dn, DEnv* de, DEnv* main_de);
 
 // ***************************************************************************************
 // * MACROS
@@ -115,13 +115,13 @@ typedef DCResVoid (*DNodeModifierFn)(DNodePtr dn, DEnv* de, DEnv* main_de);
         dc_try_or_fail_with3(DCResVoid, res, dc_da_push(&main_de->cleanups, dc_dva(TYPE, VALUE)), FAILURE_ACTIONS);            \
     } while (0)
 
-#define DECL_DNODE_MODIFIER_FN(NAME) DCResVoid NAME(DNodePtr dn, DEnv* de, DEnv* main_de)
+#define DECL_DNODE_MODIFIER_FN(NAME) ResNode NAME(DNodePtr dn, DEnv* de, DEnv* main_de)
 
 // ***************************************************************************************
 // * FUNCTION DECLARATIONS
 // ***************************************************************************************
 
-DCRes dang_eval(DNode* program, DEnv* main_de);
+DCRes dang_eval(DNodePtr program, DEnv* main_de);
 
 DCResVoid dang_obj_free(DCDynValPtr dobj);
 
@@ -136,6 +136,6 @@ DCRes dang_env_set(DEnv* de, string name, DCDynValPtr value, b1 update_only);
 
 string tostr_DObjType(DCDynValPtr dobj);
 
-DCResVoid dn_modify(DNodePtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier);
+ResNode dn_modify(DNodePtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier);
 
 #endif // DANG_EVAL_H

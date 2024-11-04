@@ -36,7 +36,7 @@ static DCRes test_eval(string input, DEnv* de)
 
     ResNode program_res = dang_parser_parse_program(&p);
 
-    DNode* program = dc_unwrap2(program_res);
+    DNodePtr program = dc_unwrap2(program_res);
 
     if (!dang_parser_has_no_error(&p))
     {
@@ -604,29 +604,37 @@ CLOVE_TEST(quote)
     }
 }
 
-// CLOVE_TEST(quote_unquote)
-// {
-//     TestCase tests[] = {
-//         {.input = "quote ${unquote 4}", .expected = dobj_string("QUOTE(4)")},
+CLOVE_TEST(quote_unquote)
+{
+    TestCase tests[] = {
+        {.input = "quote ${unquote 4}", .expected = dobj_string("QUOTE(4)")},
 
-//         {.input = "quote ${unquote 4 + 4}", .expected = dobj_string("QUOTE(8)")},
+        {.input = "quote ${unquote 4 + 4}", .expected = dobj_string("QUOTE(8)")},
 
-//         {.input = "quote 8 + ${unquote 4 + 4}", .expected = dobj_string("QUOTE((8 + 8))")},
+        {.input = "quote 8 + ${unquote 4 + 4}", .expected = dobj_string("QUOTE((8 + 8))")},
 
-//         {.input = "quote ${unquote 4 + 4} + 8", .expected = dobj_string("QUOTE((8 + 8))")},
+        {.input = "quote ${unquote 4 + 4} + 8", .expected = dobj_string("QUOTE((8 + 8))")},
+
+        {.input = "let foobar = 8; quote foobar", .expected = dobj_string("QUOTE(foobar)")},
+
+        {.input = "let foobar 8; quote ${unquote foobar}", .expected = dobj_string("QUOTE(8)")},
+
+        {.input = "quote ${unquote true}", .expected = dobj_string("QUOTE(true)")},
+
+        {.input = "quote ${unquote true == false}", .expected = dobj_string("QUOTE(false)")},
 
 
-//         {.input = "", .expected = dc_dv_nullptr()},
-//     };
+        {.input = "", .expected = dc_dv_nullptr()},
+    };
 
-//     if (perform_evaluation_tests(tests))
-//         CLOVE_PASS();
-//     else
-//     {
-//         dc_log("test has failed");
-//         CLOVE_FAIL();
-//     }
-// }
+    if (perform_evaluation_tests(tests))
+        CLOVE_PASS();
+    else
+    {
+        dc_log("test has failed");
+        CLOVE_FAIL();
+    }
+}
 
 CLOVE_TEST(error_handling)
 {
