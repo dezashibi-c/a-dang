@@ -194,11 +194,9 @@ static DCRes parse_identifier(DParser* p)
     string data = NULL;
     dc_try_fail_temp(DCResUsize, dc_sprintf(&data, DCPRIsv, dc_sv_fmt(p->current_token.text)));
 
-    dc_try_or_fail_with3(DCResVoid, res, dc_da_push(p->pool, dc_dva(string, data)), {});
+    dc_try_or_fail_with3(DCResVoid, res, dc_da_push(p->pool, dc_dva(string, data)), { free(data); });
 
-    dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_dv(DNodeIdentifier, dn_identifier(data))), {});
-
-    return_pool_last_el(p);
+    dc_ret_ok(dc_dv(DNodeIdentifier, dn_identifier(data)));
 }
 
 static DCRes parse_string_literal(DParser* p)
@@ -213,7 +211,9 @@ static DCRes parse_string_literal(DParser* p)
     {
         string data_str = NULL;
         dc_try_fail_temp(DCResUsize, dc_sprintf(&data_str, DCPRIsv, dc_sv_fmt(p->current_token.text)));
-        data = dc_dva(string, data_str);
+        data = dc_dv(string, data_str);
+
+        dc_try_or_fail_with3(DCResVoid, res, dc_da_push(p->pool, dc_dva(string, data_str)), { free(data_str); });
     }
 
     dc_ret_ok(data);
@@ -239,29 +239,57 @@ static DCRes parse_integer_literal(DParser* p)
 
 static DCRes parse_boolean_literal(DParser* p)
 {
-    return dn_new(DN_BOOLEAN_LITERAL, dc_dv_bool(p->current_token.type == TOK_TRUE), false);
+    DC_RES();
+    dc_ret_ok_dv_bool(p->current_token.type == TOK_TRUE);
 }
 
-static DCResVoid parse_function_params(DParser* p, DNodePtr parent_node)
+static DCResDa parse_function_params(DParser* p)
 {
-    DC_RES_void();
+    DC_RES_da();
 
-    dc_try_fail(next_token(p));
+    dc_try_fail_temp(DCResVoid, next_token(p));
+
+    dc_try_fail(dc_da_new(NULL));
+
+    DCDynArrPtr arr = dc_unwrap();
 
     while (current_token_is_not(p, TOK_RPAREN) && current_token_is_not(p, TOK_EOF))
     {
         DCRes ident = parse_identifier(p);
-        dc_ret_if_err2(ident, {});
+        dc_ret_if_err2(ident, {
+            dc_try_fail_temp(DCResVoid, dc_da_free(arr));
+            free(arr);
+        });
 
-        DCResVoid res = dn_child_push_unwrapped(parent_node, ident);
-        dc_ret_if_err2(res, dc_try_fail(dn_free(dc_unwrap2(ident))));
+        dc_try_or_fail_with3(DCResVoid, res, dc_da_push(arr, dc_unwrap2(ident)), {
+            dc_try_fail_temp(DCResVoid, dc_da_free(arr));
+            free(arr);
+        });
 
-        dc_try_fail(next_token(p));
+        dc_try_or_fail_with2(res, next_token(p), {
+            dc_try_fail_temp(DCResVoid, dc_da_free(arr));
+            free(arr);
+        });
 
-        if (current_token_is(p, TOK_COMMA)) dc_try_fail(next_token(p));
+        if (current_token_is(p, TOK_COMMA))
+            dc_try_or_fail_with2(res, next_token(p), {
+                dc_try_fail_temp(DCResVoid, dc_da_free(arr));
+                free(arr);
+            });
     }
 
-    if (current_token_is_not(p, TOK_RPAREN)) dc_ret_ea(-1, "unclosed parenthesis, " current_token_err_fmt(p, TOK_RPAREN));
+    if (current_token_is_not(p, TOK_RPAREN))
+    {
+        dc_try_fail_temp(DCResVoid, dc_da_free(arr));
+        free(arr);
+
+        dc_ret_ea(-1, "unclosed parenthesis, " current_token_err_fmt(p, TOK_RPAREN));
+    }
+
+    dc_try_or_fail_with3(DCResVoid, res, dc_da_push(p->pool, dc_dva(DCDynArrPtr, arr)), {
+        dc_try_fail_temp(DCResVoid, dc_da_free(arr));
+        free(arr);
+    });
 
     dc_ret();
 }
@@ -275,24 +303,19 @@ static DCRes parse_function_literal(DParser* p)
 
     dc_try_fail_temp(DCResVoid, move_if_peek_token_is(p, TOK_LPAREN));
 
-    dc_try_fail(dn_new(DN_FUNCTION_LITERAL, dc_dv_nullptr(), true));
-
     /* parsing function parameters  */
+    dc_try_or_fail_with3(DCResDa, params_arr_res, parse_function_params(p), {});
 
-    DCResVoid res = parse_function_params(p, dc_unwrap());
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not parse function literal params");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
+    DCDynArrPtr params_arr = dc_unwrap2(params_arr_res);
 
     /* a function also needs body which can be empty but it's mandatory */
 
-    res = move_if_peek_token_is(p, TOK_LBRACE);
+    DCResVoid res = move_if_peek_token_is(p, TOK_LBRACE);
     dc_ret_if_err2(res, {
         dc_err_dbg_log2(res, "function literal needs body");
 
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+        dc_try_fail_temp(DCResVoid, dc_da_free(params_arr));
+        free(params_arr);
     });
 
     dang_parser_location_preserve(p);
@@ -302,20 +325,15 @@ static DCRes parse_function_literal(DParser* p)
     dc_ret_if_err2(body, {
         dc_err_dbg_log2(body, "could not parse function literal body");
 
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+        dc_try_fail_temp(DCResVoid, dc_da_free(params_arr));
+        free(params_arr);
     });
+
+    DCDynArrPtr body_statements = dc_dv_as(dc_unwrap2(body), DNodeBlockStatement).statements;
 
     /* add body to function literal to finish up parsing */
 
-    res = dn_child_push_unwrapped(dc_unwrap(), body);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not push the body to the function literal");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(body)));
-    });
-
-    dc_ret();
+    dc_ret_ok(dc_dv(DNodeFunctionLiteral, dn_function(params_arr, body_statements)));
 }
 
 /**
@@ -323,24 +341,46 @@ static DCRes parse_function_literal(DParser* p)
  * Until it reaches the proper end of statement that is proper for current location
  * Generally they are '\n' and ';' but also EOF, '}' based on the context
  */
-static DCResVoid parse_expression_list(DParser* p, DCDynArrPtr exp_list)
+static DCResDa parse_expression_list(DParser* p)
 {
-    DC_RES_void();
+    DC_RES_da();
+
+    dc_try_fail(dc_da_new(NULL));
+
+    DCDynArrPtr exp_list = dc_unwrap();
 
     while (!token_is_end_of_the_statement(p, current) && current_token_is_not(p, TOK_EOF))
     {
         DCRes param = parse_expression(p, PREC_LOWEST);
 
-        dc_ret_if_err2(param, {});
+        dc_ret_if_err2(param, {
+            dc_try_fail_temp(DCResVoid, dc_da_free(exp_list));
+            free(exp_list);
+        });
 
-        DCResVoid res = dn_child_push_unwrapped(parent_node, param);
-        dc_ret_if_err2(res, dc_try_fail(dn_free(dc_unwrap2(param))));
+        DCResVoid res = dc_da_push(exp_list, dc_unwrap2(param));
+        dc_ret_if_err2(res, {
+            dc_try_fail_temp(DCResVoid, dc_da_free(exp_list));
+            free(exp_list);
+        });
 
         dang_parser_dbg_log_tokens(p);
 
-        dc_try_fail(next_token(p));
-        if (current_token_is(p, TOK_COMMA)) dc_try_fail(next_token(p));
+        dc_try_or_fail_with2(res, next_token(p), {
+            dc_try_fail_temp(DCResVoid, dc_da_free(exp_list));
+            free(exp_list);
+        });
+        if (current_token_is(p, TOK_COMMA))
+            dc_try_or_fail_with2(res, next_token(p), {
+                dc_try_fail_temp(DCResVoid, dc_da_free(exp_list));
+                free(exp_list);
+            });
     }
+
+    dc_try_or_fail_with3(DCResVoid, res, dc_da_push(p->pool, dc_dva(DCDynArrPtr, exp_list)), {
+        dc_try_fail_temp(DCResVoid, dc_da_free(exp_list));
+        free(exp_list);
+    });
 
     dc_ret();
 }
@@ -357,22 +397,39 @@ static DCRes parse_call_expression(DParser* p)
     // Bypass opening '${'
     dc_try_fail_temp(DCResVoid, next_token(p));
 
-    DCResVoid res;
-
-    dc_try_or_fail_with(dn_new(DN_CALL_EXPRESSION, dc_dv_nullptr(), true), {});
-
     dang_parser_location_preserve(p);
 
-    // Switch to call loc to specify proper ending signal
+    // get the callee
     dang_parser_location_set(p, LOC_CALL);
-    res = parse_expression_list(p, dc_unwrap());
-    dang_parser_location_revert(p);
+    DCRes callee = parse_expression(p, PREC_LOWEST);
 
-    check_quote(dc_unwrap());
+    dc_ret_if_err2(callee, dang_parser_location_revert(p));
 
-    dc_ret_if_err2(res, { dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())); });
+    // go to next token and bypass if comma is seen
+    dc_try_or_fail_with3(DCResVoid, res, next_token(p), dang_parser_location_revert(p));
+    if (current_token_is(p, TOK_COMMA)) dc_try_or_fail_with2(res, next_token(p), dang_parser_location_revert(p));
 
-    dc_ret();
+    DCDynArrPtr params = NULL;
+
+    if (!token_is_end_of_the_statement(p, current) && current_token_is_not(p, TOK_EOF))
+    {
+        // Switch to call loc to specify proper ending signal
+        DCResDa params_res = parse_expression_list(p);
+        dang_parser_location_revert(p);
+
+        dc_ret_if_err2(res, {});
+
+        // check_quote(dc_unwrap()); // todo:: fix this later
+
+        // dc_ret_if_err2(res, { dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())); }); // todo:: if check_quote works I think
+        // this must be available or what?
+
+        params = dc_unwrap2(params_res);
+    }
+
+    dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_unwrap2(callee)), {});
+
+    dc_ret_ok(dc_dv(DNodeCallExpression, dn_call(pool_last_el(p), params)));
 }
 
 /**
@@ -387,7 +444,6 @@ static DCRes parse_hash_literal(DParser* p)
 
     /* Bypassing all the meaningless newlines */
     try_bypassing_all_nls_or_fail_with(p, { dc_err_dbg_log2(res, "could move to the next token"); });
-
 
     DCResVoid res;
 

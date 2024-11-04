@@ -23,18 +23,19 @@ static DCResVoid array_inspector(DCDynArrPtr darr, string prefix, string postfix
 
     if (prefix && prefix[0] != '\0') dc_sappend(result, "%s", prefix);
 
-    dc_da_for(arr_inspector_loop, *darr, {
-        dc_try_fail(dang_node_inspect(_it, result));
+    if (darr)
+        dc_da_for(arr_inspector_loop, *darr, {
+            dc_try_fail(dang_node_inspect(_it, result));
 
-        if (delimiter && delimiter[0] != '\0')
-        {
-            if (!no_delim_for_last)
-                dc_sappend(result, "%s", delimiter);
+            if (delimiter && delimiter[0] != '\0')
+            {
+                if (!no_delim_for_last)
+                    dc_sappend(result, "%s", delimiter);
 
-            else if (_idx < darr->count - 1)
-                dc_sappend(result, "%s", delimiter);
-        }
-    });
+                else if (_idx < darr->count - 1)
+                    dc_sappend(result, "%s", delimiter);
+            }
+        });
 
     if (postfix && postfix[0] != '\0') dc_sappend(result, "%s", postfix);
 
