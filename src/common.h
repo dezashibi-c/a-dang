@@ -247,6 +247,7 @@ typedef DCDynVal (*DBuiltinFunction)(DCDynValPtr call_obj, DCError* error);
 
 #define DC_DV_EXTRA_FIELDS                                                                                                     \
     b1 quoted;                                                                                                                 \
+    b1 is_returned;                                                                                                            \
     DEnv* env;
 
 #include "dcommon/dcommon.h"

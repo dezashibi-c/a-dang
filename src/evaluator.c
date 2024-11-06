@@ -16,7 +16,7 @@
 
 #include "evaluator.h"
 
-static DCRes perform_evaluation_process(DNodePtr dn, DEnv* de, DEnv* main_de);
+static DCRes perform_evaluation_process(DCDynValPtr dn, DEnv* de, DEnv* main_de);
 
 // ***************************************************************************************
 // * PRIVATE HELPER FUNCTIONS
@@ -135,33 +135,31 @@ static ResEnv _env_new_enclosed(DEnv* outer)
 }
 
 
-static DCRes eval_program_statements(DNodePtr dn, DEnv* de, DEnv* main_de)
+static DCRes eval_program_statements(DCDynArrPtr statements, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
-    if (dn_child_count(dn) == 0) dc_ret_ok_dv_nullptr();
+    if (!statements || statements->count == 0) dc_ret_ok_dv_nullptr();
 
-    dc_da_for(program_eval_loop, dn->children, {
-        DNodePtr stmt = dn_child(dn, _idx);
-        dc_try_fail(perform_evaluation_process(stmt, de, main_de));
+    dc_da_for(program_eval_loop, *statements, {
+        dc_try_fail(perform_evaluation_process(_it, de, main_de));
 
         // This means the actual syntax of the current node must be 'return'
         // in order to stop the evaluation
-        if (stmt->type == DN_RETURN_STATEMENT) DC_BREAK(program_eval_loop);
+        if (_it->type == dc_dvt(DNodeReturnStatement)) DC_BREAK(program_eval_loop);
     });
 
     dc_ret();
 }
 
-static DCRes eval_block_statements(DNodePtr dn, DEnv* de, DEnv* main_de)
+static DCRes eval_block_statements(DCDynArrPtr statements, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
-    if (dn_child_count(dn) == 0) dc_ret_ok_dv_nullptr();
+    if (!statements || statements->count == 0) dc_ret_ok_dv_nullptr();
 
-    dc_da_for(block_eval_loop, dn->children, {
-        DNodePtr stmt = dn_child(dn, _idx);
-        dc_try_fail(perform_evaluation_process(stmt, de, main_de));
+    dc_da_for(block_eval_loop, *statements, {
+        dc_try_fail(perform_evaluation_process(_it, de, main_de));
 
         if (dc_unwrap().is_returned) DC_BREAK(block_eval_loop);
     });
@@ -188,65 +186,60 @@ static DCRes eval_minus_prefix_operator(DCDynValPtr right)
     dc_ret_ok_dv(i64, -dc_dv_as(*right, i64));
 }
 
-static DCRes eval_prefix_expression(DNodePtr dn, DCDynValPtr right)
+static DCRes eval_prefix_expression(string op, DCDynValPtr operand)
 {
     DC_RES();
 
-    string node_text = dn_data_as(dn, string);
+    if (strcmp(op, "!") == 0)
+        return eval_bang_operator(operand);
 
-    if (strcmp(node_text, "!") == 0)
-        return eval_bang_operator(right);
-
-    else if (strcmp(node_text, "-") == 0)
-        return eval_minus_prefix_operator(right);
+    else if (strcmp(op, "-") == 0)
+        return eval_minus_prefix_operator(operand);
 
 
-    dc_ret_ea(-1, "unimplemented infix operator '%s'", node_text);
+    dc_ret_ea(-1, "unimplemented infix operator '%s'", op);
 }
 
-static DCRes eval_integer_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr right)
+static DCRes eval_integer_infix_expression(string op, DCDynValPtr left, DCDynValPtr right)
 {
     DC_RES();
 
     i64 lval = dc_dv_as(*left, i64);
     i64 rval = dc_dv_as(*right, i64);
 
-    string node_text = dn_data_as(dn, string);
-
     DCDynVal value = {0};
 
-    if (strcmp(node_text, "+") == 0)
+    if (strcmp(op, "+") == 0)
         value = dc_dv(i64, (lval + rval));
 
-    else if (strcmp(node_text, "-") == 0)
+    else if (strcmp(op, "-") == 0)
         value = dc_dv(i64, (lval - rval));
 
-    else if (strcmp(node_text, "*") == 0)
+    else if (strcmp(op, "*") == 0)
         value = dc_dv(i64, (lval * rval));
 
-    else if (strcmp(node_text, "/") == 0)
+    else if (strcmp(op, "/") == 0)
         value = dc_dv(i64, (lval / rval));
 
-    else if (strcmp(node_text, "<") == 0)
+    else if (strcmp(op, "<") == 0)
         dc_ret_ok_dv_bool(lval < rval);
 
-    else if (strcmp(node_text, ">") == 0)
+    else if (strcmp(op, ">") == 0)
         dc_ret_ok_dv_bool(lval > rval);
 
-    else if (strcmp(node_text, "==") == 0)
+    else if (strcmp(op, "==") == 0)
         dc_ret_ok_dv_bool(lval == rval);
 
-    else if (strcmp(node_text, "!=") == 0)
+    else if (strcmp(op, "!=") == 0)
         dc_ret_ok_dv_bool(lval != rval);
 
     else
-        dc_ret_ea(-1, "unimplemented infix operator '%s' for '%s' and '%s'", node_text, tostr_DObjType(left),
-                  tostr_DObjType(right));
+        dc_ret_ea(-1, "unimplemented infix operator '%s' for '%s' and '%s'", op, tostr_DObjType(left), tostr_DObjType(right));
 
     dc_ret_ok(value);
 }
 
-static DCRes eval_boolean_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr right)
+static DCRes eval_boolean_infix_expression(string op, DCDynValPtr left, DCDynValPtr right)
 {
     DC_RES();
 
@@ -256,65 +249,57 @@ static DCRes eval_boolean_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynV
     b1 lval = dc_unwrap2(lval_bool);
     b1 rval = dc_unwrap2(rval_bool);
 
-    string node_text = dn_data_as(dn, string);
-
-    if (strcmp(node_text, "==") == 0)
+    if (strcmp(op, "==") == 0)
         dc_ret_ok_dv_bool(lval == rval);
 
-    else if (strcmp(node_text, "!=") == 0)
+    else if (strcmp(op, "!=") == 0)
         dc_ret_ok_dv_bool(lval != rval);
 
-    dc_ret_ea(-1, "unimplemented infix operator '%s' for '%s' and '%s'", node_text, tostr_DObjType(left),
-              tostr_DObjType(right));
+    dc_ret_ea(-1, "unimplemented infix operator '%s' for '%s' and '%s'", op, tostr_DObjType(left), tostr_DObjType(right));
 }
 
-static DCRes eval_string_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr right, DEnv* main_de)
+static DCRes eval_string_infix_expression(string op, DCDynValPtr left, DCDynValPtr right, DEnv* main_de)
 {
     DC_RES();
 
     string lval = dc_dv_as(*left, string);
     string rval = dc_dv_as(*right, string);
 
-    string node_text = dn_data_as(dn, string);
-
-    if (strcmp(node_text, "+") == 0)
+    if (strcmp(op, "+") == 0)
     {
         string result;
         dc_sprintf(&result, "%s%s", lval, rval);
 
-        REGISTER_CLEANUP(string, result, free(result));
+        // REGISTER_CLEANUP(string, result, free(result)); // todo:: fix cleanup process
 
         dc_ret_ok_dv(string, result);
     }
 
-    else if (strcmp(node_text, "==") == 0)
+    else if (strcmp(op, "==") == 0)
         dc_ret_ok_dv_bool(strcmp(lval, rval) == 0);
 
-    dc_ret_ea(-1, "unimplemented infix operator '%s' for '%s' and '%s'", node_text, tostr_DObjType(left),
-              tostr_DObjType(right));
+    dc_ret_ea(-1, "unimplemented infix operator '%s' for '%s' and '%s'", op, tostr_DObjType(left), tostr_DObjType(right));
 }
 
-static DCRes eval_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr right, DEnv* main_de)
+static DCRes eval_infix_expression(string op, DCDynValPtr left, DCDynValPtr right, DEnv* main_de)
 {
     DC_RES();
 
-    string node_text = dn_data_as(dn, string);
-
     if (dc_dv_is(*left, i64) && dc_dv_is(*right, i64))
-        return eval_integer_infix_expression(dn, left, right);
+        return eval_integer_infix_expression(op, left, right);
 
     else if (dc_dv_is(*left, b1) || dc_dv_is(*right, b1))
     {
-        return eval_boolean_infix_expression(dn, left, right);
+        return eval_boolean_infix_expression(op, left, right);
     }
 
     else if (dc_dv_is(*right, string) && dc_dv_is(*left, string))
-        return eval_string_infix_expression(dn, left, right, main_de);
+        return eval_string_infix_expression(op, left, right, main_de);
 
-    else if (dc_dv_is(*left, string) && strcmp(node_text, "==") != 0)
+    else if (dc_dv_is(*left, string) && strcmp(op, "==") != 0)
     {
         DCDynVal right_converted = dc_dva(string, dc_unwrap2(dc_tostr_dv(right)));
-        DCRes res = eval_string_infix_expression(dn, left, &right_converted, main_de);
+        DCRes res = eval_string_infix_expression(op, left, &right_converted, main_de);
 
         // free the allocated string (in conversion)
         dc_dv_free(&right_converted, NULL);
@@ -322,10 +307,10 @@ static DCRes eval_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr ri
         return res;
     }
 
-    else if (dc_dv_is(*right, string) && strcmp(node_text, "==") != 0)
+    else if (dc_dv_is(*right, string) && strcmp(op, "==") != 0)
     {
         DCDynVal left_converted = dc_dva(string, dc_unwrap2(dc_tostr_dv(left)));
-        DCRes res = eval_string_infix_expression(dn, &left_converted, right, main_de);
+        DCRes res = eval_string_infix_expression(op, &left_converted, right, main_de);
 
         // free the allocated string (in conversion)
         dc_dv_free(&left_converted, NULL);
@@ -333,8 +318,7 @@ static DCRes eval_infix_expression(DNodePtr dn, DCDynValPtr left, DCDynValPtr ri
         return res;
     }
 
-    dc_ret_ea(-1, "unimplemented infix operator '%s' for '%s' and '%s'", node_text, tostr_DObjType(left),
-              tostr_DObjType(right));
+    dc_ret_ea(-1, "unimplemented infix operator '%s' for '%s' and '%s'", op, tostr_DObjType(left), tostr_DObjType(right));
 }
 
 static DCRes eval_array_index_expression(DCDynValPtr left, DCDynValPtr index)
@@ -369,39 +353,31 @@ static DCRes eval_hash_index_expression(DCDynValPtr left, DCDynValPtr index)
     dc_ret_ok(*found);
 }
 
-static DCRes eval_if_expression(DNodePtr dn, DEnv* de, DEnv* main_de)
+static DCRes eval_if_expression(DNodeIfExpression* if_node, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
-    DNodePtr condition = dn_child(dn, 0);
-    DNodePtr consequence = dn_child(dn, 1);
-    DNodePtr alternative = (dn_child_count(dn) > 2) ? dn_child(dn, 2) : NULL;
-
-    dc_try_or_fail_with3(DCRes, condition_evaluated, perform_evaluation_process(condition, de, main_de), {});
+    dc_try_or_fail_with3(DCRes, condition_evaluated, perform_evaluation_process(if_node->condition, de, main_de), {});
 
     dc_try_or_fail_with3(DCResBool, condition_as_bool, dc_dv_to_bool(&dc_unwrap2(condition_evaluated)), {});
 
     if (dc_unwrap2(condition_as_bool))
-        return perform_evaluation_process(consequence, de, main_de);
+        return perform_evaluation_process(&dc_dv(DNodeBlockStatement, dn_block(if_node->consequence)), de, main_de);
 
-    else if (alternative)
-        return perform_evaluation_process(alternative, de, main_de);
+    else if (if_node->alternative)
+        return perform_evaluation_process(&dc_dv(DNodeBlockStatement, dn_block(if_node->alternative)), de, main_de);
 
     dc_ret_ok_dv_nullptr();
 }
 
-static DCRes eval_let_statement(DNodePtr dn, DEnv* de, DEnv* main_de)
+static DCRes eval_let_statement(DNodeLetStatement* let_node, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
-    string var_name = dn_child_data_as(dn, 0, string);
-
     DCDynValPtr value = NULL;
-    if (dn_child_count(dn) > 1)
+    if (let_node->value)
     {
-        DNodePtr value_node = dn_child(dn, 1);
-
-        dc_try_or_fail_with3(DCRes, v_res, perform_evaluation_process(value_node, de, main_de), {});
+        dc_try_or_fail_with3(DCRes, v_res, perform_evaluation_process(let_node->value, de, main_de), {});
 
         value = &dc_unwrap2(v_res);
 
@@ -410,34 +386,31 @@ static DCRes eval_let_statement(DNodePtr dn, DEnv* de, DEnv* main_de)
         value->is_returned = false;
     }
 
-    dc_try_fail_temp(DCRes, dang_env_set(de, var_name, value, false));
+    dc_try_fail_temp(DCRes, dang_env_set(de, let_node->name, value, false));
 
     dc_ret_ok_dv_nullptr();
 }
 
-static DCRes eval_hash_literal(DNodePtr dn, DEnv* de, DEnv* main_de)
+static DCRes eval_hash_literal(DNodeHashTableLiteral* ht_node, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
-    if (dn_child_count(dn) % 2 != 0) dc_ret_e(-1, "wrong hash literal node");
+    if (ht_node->key_values->count % 2 != 0) dc_ret_e(-1, "wrong hash literal node");
 
     dc_try_or_fail_with3(DCResHt, ht_res, dc_ht_new(17, hash_obj_hash_fn, hash_obj_hash_key_cmp_fn, NULL), {});
 
     DCHashTablePtr ht = dc_unwrap2(ht_res);
 
-    REGISTER_CLEANUP(DCHashTablePtr, ht, dc_ht_free(ht));
+    // REGISTER_CLEANUP(DCHashTablePtr, ht, dc_ht_free(ht)); // todo:: fix cleanup calls
 
-    dc_da_for(hash_lit_eval_loop, dn->children, {
+    dc_da_for(hash_lit_eval_loop, *ht_node->key_values, {
         if (_idx % 2 != 0) continue; // odd numbers are values
 
-        DNodePtr key_node = dn_child(dn, _idx);
-
         // this child is the key
-        dc_try_or_fail_with3(DCRes, key_obj, perform_evaluation_process(key_node, de, main_de), {});
+        dc_try_or_fail_with3(DCRes, key_obj, perform_evaluation_process(_it, de, main_de), {});
 
         // next child is the value
-        DNodePtr value_node = dn_child(dn, _idx + 1);
-        dc_try_or_fail_with3(DCRes, value_obj, perform_evaluation_process(value_node, de, main_de), {});
+        dc_try_or_fail_with3(DCRes, value_obj, perform_evaluation_process(_it, de, main_de), {});
 
         dc_try_or_fail_with3(DCResVoid, res,
                              dc_ht_set(ht, dc_unwrap2(key_obj), dc_unwrap2(value_obj), DC_HT_SET_CREATE_OR_UPDATE), {});
@@ -748,7 +721,7 @@ static DCRes find_builtin(string name)
 // * MAIN EVALUATION PROCESS
 // ***************************************************************************************
 
-static DCRes perform_evaluation_process(DNodePtr dn, DEnv* de, DEnv* main_de)
+static DCRes perform_evaluation_process(DCDynValPtr dn, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 

@@ -49,11 +49,13 @@ struct DEnv
 
 DCResType(DEnv*, ResEnv);
 
-typedef ResNode (*DNodeModifierFn)(DNodePtr dn, DEnv* de, DEnv* main_de);
+typedef DCRes (*DNodeModifierFn)(DCRes dn, DEnv* de, DEnv* main_de);
 
 // ***************************************************************************************
 // * MACROS
 // ***************************************************************************************
+// todo:: take care of these
+#if 0
 #define dobj_def(TYPE, VALUE, ENV)                                                                                             \
     (DCDynVal)                                                                                                                 \
     {                                                                                                                          \
@@ -116,12 +118,12 @@ typedef ResNode (*DNodeModifierFn)(DNodePtr dn, DEnv* de, DEnv* main_de);
     } while (0)
 
 #define DECL_DNODE_MODIFIER_FN(NAME) ResNode NAME(DNodePtr dn, DEnv* de, DEnv* main_de)
-
+#endif
 // ***************************************************************************************
 // * FUNCTION DECLARATIONS
 // ***************************************************************************************
 
-DCRes dang_eval(DNodePtr program, DEnv* main_de);
+DCRes dang_eval(DNodeProgram* program, DEnv* main_de);
 
 DCResVoid dang_obj_free(DCDynValPtr dobj);
 
@@ -136,6 +138,6 @@ DCRes dang_env_set(DEnv* de, string name, DCDynValPtr value, b1 update_only);
 
 string tostr_DObjType(DCDynValPtr dobj);
 
-ResNode dn_modify(DNodePtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier);
+DCRes dn_modify(DCDynValPtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier);
 
 #endif // DANG_EVAL_H
