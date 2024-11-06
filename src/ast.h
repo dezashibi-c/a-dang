@@ -93,6 +93,8 @@ struct DNode
 DCResType(DNodePtr, ResNode);
 #endif
 
+DCResVoid dang_program_inspect(DNodeProgram* program, string* result);
+
 DCResVoid dang_node_inspect(DCDynValPtr dn, string* result);
 
 DC_DV_FREE_FN_DECL(dn_child_free);

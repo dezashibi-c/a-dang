@@ -28,10 +28,10 @@ CLOVE_TEST(node_string)
 
     DCDynVal program_statements = dc_dva(DCDynArrPtr, stmts);
 
-    DCDynVal program = dc_dv(DNodeProgram, dn_program(dc_dv_as(program_statements, DCDynArrPtr)));
+    DNodeProgram program = dn_program(dc_dv_as(program_statements, DCDynArrPtr));
 
     string result = NULL;
-    DCResVoid inspection_res = dang_node_inspect(&program, &result);
+    DCResVoid inspection_res = dang_program_inspect(&program, &result);
     if (dc_is_err2(inspection_res))
     {
         dc_err_log2(inspection_res, "Inspection error");

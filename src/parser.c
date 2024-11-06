@@ -990,9 +990,9 @@ static DCRes parse_statement(DParser* p)
  *
  * On each iteration the cursor must be at the end of the current statement (sentence terminator)
  */
-static DCResPtr parser_parse_program(DParser* p)
+static ResDNodeProgram parser_parse_program(DParser* p)
 {
-    DC_RES_dv();
+    DC_RES2(ResDNodeProgram);
 
     dc_try_or_fail_with3(DCResDa, statements_res, dc_da_new2(30, 3, NULL), {});
 
@@ -1053,18 +1053,16 @@ static DCResPtr parser_parse_program(DParser* p)
     // push the program statements in the pool
     dc_da_push(p->pool, dc_dva(DCDynArrPtr, statements));
 
-    dc_da_push(p->pool, dc_dv(DNodeProgram, dn_program(statements)));
-
-    dc_ret_ok(pool_last_el(p));
+    dc_ret_ok(dn_program(statements));
 }
 
 // ***************************************************************************************
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-DCResPtr dang_parser_parse(DParser* p, const string source)
+ResDNodeProgram dang_parser_parse(DParser* p, const string source)
 {
-    DC_RES_dv();
+    DC_RES2(ResDNodeProgram);
 
     dc_try_fail_temp(DCResVoid, dang_scanner_init(&p->scanner, source));
 

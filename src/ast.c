@@ -44,6 +44,15 @@ static DCResVoid array_inspector(DCDynArrPtr darr, string prefix, string postfix
     dc_ret();
 }
 
+DCResVoid dang_program_inspect(DNodeProgram* program, string* result)
+{
+    DC_RES_void();
+
+    dc_try_fail(array_inspector(program->statements, NULL, NULL, "\n", false, result));
+
+    dc_ret();
+}
+
 DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
 {
 #define append_data_str(FMT)                                                                                                   \

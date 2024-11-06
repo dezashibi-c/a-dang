@@ -50,7 +50,7 @@ static b1 perform_test_batch(string tests[], usize tests_count)
         string input = tests[i * 2];
         string expected = tests[(i * 2) + 1];
 
-        DCResPtr program_res = dang_parser_parse(&parser, input);
+        ResDNodeProgram program_res = dang_parser_parse(&parser, input);
 
         if (!dang_parser_has_no_error(&parser))
         {
@@ -59,10 +59,10 @@ static b1 perform_test_batch(string tests[], usize tests_count)
             return false;
         }
 
-        DCDynValPtr program = dc_unwrap2(program_res);
+        DNodeProgram program = dc_unwrap2(program_res);
 
         string result = NULL;
-        DCResVoid inspection_res = dang_node_inspect(program, &result);
+        DCResVoid inspection_res = dang_program_inspect(&program, &result);
         if (dc_is_err2(inspection_res))
         {
             dc_log("inspection failed on input: '%s'", input);
