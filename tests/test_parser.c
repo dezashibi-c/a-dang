@@ -9,15 +9,24 @@
 static DCDynArr pool;
 static DCDynArr errors;
 
-static DScanner scanner;
 static DParser parser;
 
 CLOVE_SUITE_SETUP()
 {
     pool = (DCDynArr){0};
-    pool = (DCDynArr){0};
+    errors = (DCDynArr){0};
 
     parser = (DParser){0};
+
+    DCResVoid res = dang_parser_init(&parser, &pool, &errors);
+    if (dc_is_err2(res))
+    {
+        dc_log("parser initialization error on input");
+
+        dc_err_log2(res, "error");
+
+        exit(dc_err_code2(res));
+    }
 }
 
 CLOVE_SUITE_TEARDOWN()
@@ -36,45 +45,21 @@ static b1 dang_parser_has_no_error(DParser* p)
 
 static b1 perform_test_batch(string tests[], usize tests_count)
 {
-    b1 success = true;
-
     for (usize i = 0; i < tests_count / 2; ++i)
     {
         string input = tests[i * 2];
         string expected = tests[(i * 2) + 1];
 
-        DScanner s;
-        dang_scanner_init(&s, input);
+        DCResPtr program_res = dang_parser_parse(&parser, input);
 
-        DParser p;
-        DCResVoid res = dang_parser_init(&p, &s);
-
-        if (dc_is_err2(res))
-        {
-            dc_log("parser initialization error on input '%s'", input);
-
-            dc_err_log2(res, "error");
-
-            success = false;
-
-            continue;
-        }
-
-        ResNode program_res = dang_parser_parse_program(&p);
-
-        DNodePtr program = dc_unwrap2(program_res);
-
-        if (!dang_parser_has_no_error(&p))
+        if (!dang_parser_has_no_error(&parser))
         {
             dc_log("parser error on input '%s'", input);
 
-            dn_full_free(program);
-            dang_parser_free(&p);
-
-            success = false;
-
-            continue;
+            return false;
         }
+
+        DCDynValPtr program = dc_unwrap2(program_res);
 
         string result = NULL;
         DCResVoid inspection_res = dang_node_inspect(program, &result);
@@ -82,16 +67,14 @@ static b1 perform_test_batch(string tests[], usize tests_count)
         {
             dc_log("inspection failed on input: '%s'", input);
             dc_err_log2(inspection_res, "Inspection error");
-            success = false;
+
+            return false;
         }
         else
             dc_action_on(strcmp(expected, result) != 0, return false, "expected=%s, got=%s", expected, result);
-
-        dn_full_free(program);
-        dang_parser_free(&p);
     }
 
-    return success;
+    return true;
 }
 
 CLOVE_TEST(literals)

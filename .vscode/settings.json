@@ -1,11 +1,12 @@
 {
     "files.associations": {
-        ".fantomasignore": "ignore",
         "*.h": "c",
+        ".fantomasignore": "ignore",
         "clove-unit.h": "c",
         "stdlib.h": "c",
         "typeinfo": "c",
-        "string": "c"
+        "string": "c",
+        "type_traits": "c"
     },
     "cSpell.words": [
         "arcname",

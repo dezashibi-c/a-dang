@@ -54,7 +54,7 @@ typedef struct
 
 #define dang_parser_has_error(P) ((P)->errors->count != 0)
 
-ResDNodeProgram dang_parser_parse(DParser* p, const string source);
+DCResPtr dang_parser_parse(DParser* p, const string source);
 
 DCResVoid dang_parser_init(DParser* p, DCDynArrPtr pool, DCDynArrPtr errors);
 void dang_parser_log_errors(DParser* p);

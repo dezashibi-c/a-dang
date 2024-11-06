@@ -333,7 +333,7 @@ static DCRes parse_function_literal(DParser* p)
 
     /* add body to function literal to finish up parsing */
 
-    dc_ret_ok(dc_dv(DNodeFunctionLiteral, dn_function(params_arr, body_statements)));
+    dc_ret_ok_dv(DNodeFunctionLiteral, dn_function(params_arr, body_statements));
 }
 
 /**
@@ -402,18 +402,20 @@ static DCRes parse_call_expression(DParser* p)
     // get the callee
     dang_parser_location_set(p, LOC_CALL);
     DCRes callee = parse_expression(p, PREC_LOWEST);
+    dang_parser_location_revert(p);
 
-    dc_ret_if_err2(callee, dang_parser_location_revert(p));
+    dc_ret_if_err2(callee, {});
 
     // go to next token and bypass if comma is seen
-    dc_try_or_fail_with3(DCResVoid, res, next_token(p), dang_parser_location_revert(p));
-    if (current_token_is(p, TOK_COMMA)) dc_try_or_fail_with2(res, next_token(p), dang_parser_location_revert(p));
+    dc_try_or_fail_with3(DCResVoid, res, next_token(p), {});
+    if (current_token_is(p, TOK_COMMA)) dc_try_or_fail_with2(res, next_token(p), {});
 
     DCDynArrPtr params = NULL;
 
     if (!token_is_end_of_the_statement(p, current) && current_token_is_not(p, TOK_EOF))
     {
         // Switch to call loc to specify proper ending signal
+        dang_parser_location_set(p, LOC_CALL);
         DCResDa params_res = parse_expression_list(p);
         dang_parser_location_revert(p);
 
@@ -429,7 +431,7 @@ static DCRes parse_call_expression(DParser* p)
 
     dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_unwrap2(callee)), {});
 
-    dc_ret_ok(dc_dv(DNodeCallExpression, dn_call(pool_last_el(p), params)));
+    dc_ret_ok_dv(DNodeCallExpression, dn_call(pool_last_el(p), params));
 }
 
 /**
@@ -445,54 +447,78 @@ static DCRes parse_hash_literal(DParser* p)
     /* Bypassing all the meaningless newlines */
     try_bypassing_all_nls_or_fail_with(p, { dc_err_dbg_log2(res, "could move to the next token"); });
 
-    DCResVoid res;
-
-    dc_try_or_fail_with(dn_new(DN_HASH_LITERAL, dc_dv_nullptr(), true), {});
+    dc_try_or_fail_with3(DCResDa, key_values_res, dc_da_new(NULL), {});
+    DCDynArrPtr key_values = dc_unwrap2(key_values_res);
 
     dang_parser_location_preserve(p);
 
+    DCResVoid res;
     while (current_token_is_not(p, TOK_RBRACE) && current_token_is_not(p, TOK_EOF))
     {
         DCRes key = parse_expression(p, PREC_LOWEST);
         dang_parser_location_revert(p);
 
-        dc_ret_if_err2(key, dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+        dc_ret_if_err2(key, {
+            dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+            free(key_values);
+        });
 
-        dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), key), {
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(key)));
+        dc_try_or_fail_with2(res, dc_da_push(key_values, dc_unwrap2(key)), {
+            dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+            free(key_values);
         });
 
         dang_parser_dbg_log_tokens(p);
 
-        dc_try_or_fail_with2(res, move_if_peek_token_is(p, TOK_COLON), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
-        dc_try_or_fail_with2(res, next_token(p), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+        dc_try_or_fail_with2(res, move_if_peek_token_is(p, TOK_COLON), {
+            dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+            free(key_values);
+        });
+        dc_try_or_fail_with2(res, next_token(p), {
+            dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+            free(key_values);
+        });
 
         DCRes value = parse_expression(p, PREC_LOWEST);
         dang_parser_location_revert(p);
 
-        dc_ret_if_err2(value, dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+        dc_ret_if_err2(value, {
+            dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+            free(key_values);
+        });
 
-        dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), value), {
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(value)));
+        dc_try_or_fail_with2(res, dc_da_push(key_values, dc_unwrap2(value)), {
+            dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+            free(key_values);
         });
 
         dang_parser_dbg_log_tokens(p);
 
-        dc_try_or_fail_with2(res, next_token(p), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+        dc_try_or_fail_with2(res, next_token(p), {
+            dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+            free(key_values);
+        });
         if (current_token_is(p, TOK_COMMA))
-            dc_try_or_fail_with2(res, next_token(p), dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())));
+            dc_try_or_fail_with2(res, next_token(p), {
+                dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+                free(key_values);
+            });
 
         /* Bypassing all the meaningless newlines */
         try_bypassing_all_nls_or_fail_with(p, {
             dc_err_dbg_log2(res, "could move to the next token");
 
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+            dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+            free(key_values);
         });
     }
 
-    dc_ret();
+    dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_dva(DCDynArrPtr, key_values)), {
+        dc_try_fail_temp(DCResVoid, dc_da_free(key_values));
+        free(key_values);
+    });
+
+    dc_ret_ok_dv(DNodeHashTableLiteral, dn_hash_table(key_values));
 }
 
 /**
@@ -505,21 +531,16 @@ static DCRes parse_array_literal(DParser* p)
     // Bypass opening '['
     dc_try_fail_temp(DCResVoid, next_token(p));
 
-    DCResVoid res;
-
-    dc_try_or_fail_with(dn_new(DN_ARRAY_LITERAL, dc_dv_nullptr(), true), {});
-
     dang_parser_location_preserve(p);
 
     // Switch to array loc to specify proper ending signal
     dang_parser_location_set(p, LOC_ARRAY);
-    res = parse_expression_list(p, dc_unwrap());
-
+    dc_try_or_fail_with3(DCResDa, array_res, parse_expression_list(p), {});
     dang_parser_location_revert(p);
 
-    dc_ret_if_err2(res, { dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())); });
+    DCDynArrPtr array = dc_unwrap2(array_res);
 
-    dc_ret();
+    dc_ret_ok_dv(DNodeArrayLiteral, dn_array(array));
 }
 
 /**
@@ -537,11 +558,8 @@ static DCRes parse_grouped_expression(DParser* p)
 
     dc_ret_if_err();
 
-    dc_try_or_fail_with3(DCResVoid, res, move_if_peek_token_is(p, TOK_RPAREN), {
-        dc_err_dbg_log2(res, "end of group ')' needed");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
+    dc_try_or_fail_with3(DCResVoid, res, move_if_peek_token_is(p, TOK_RPAREN),
+                         { dc_err_dbg_log2(res, "end of group ')' needed"); });
 
     dang_parser_dbg_log_tokens(p);
 
@@ -559,92 +577,51 @@ static DCRes parse_if_expression(DParser* p)
     // try to move next to bypass the 'if' token
     dc_try_fail_temp(DCResVoid, next_token(p));
 
-    dc_try_fail(dn_new(DN_IF_EXPRESSION, dc_dv_nullptr(), true));
-
     /* Getting the condition expression */
     dang_parser_location_preserve(p);
     DCRes condition = parse_expression(p, PREC_LOWEST);
     dang_parser_location_revert(p);
 
-    dc_ret_if_err2(condition, {
-        dc_err_dbg_log2(condition, "could not extract condition node for if expression");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
-
-    DCResVoid res = dn_child_push_unwrapped(dc_unwrap(), condition);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not push the condition to the if expression");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(condition)));
-    });
+    dc_ret_if_err2(condition, { dc_err_dbg_log2(condition, "could not extract condition node for if expression"); });
 
     /* Expecting to get a '{' in order to start the consequence block */
 
-    res = move_if_peek_token_is(p, TOK_LBRACE);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "If expression's consequence: Block Statement expected");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
+    DCResVoid res = move_if_peek_token_is(p, TOK_LBRACE);
+    dc_ret_if_err2(res, { dc_err_dbg_log2(res, "If expression's consequence: Block Statement expected"); });
 
     DCRes consequence = parse_block_statement(p);
     dang_parser_location_revert(p);
 
-    dc_ret_if_err2(consequence, {
-        dc_err_dbg_log2(consequence, "could not extract consequence node for if expression");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
-
-    res = dn_child_push_unwrapped(dc_unwrap(), consequence);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not push the consequence to the if expression");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(consequence)));
-    });
+    dc_ret_if_err2(consequence, { dc_err_dbg_log2(consequence, "could not extract consequence node for if expression"); });
 
     dang_parser_dbg_log_tokens(p);
+
+    DCDynArrPtr consequence_statements = dc_dv_as(dc_unwrap2(consequence), DNodeBlockStatement).statements;
+
+    DCDynArrPtr alternative_statements = NULL;
 
     if (peek_token_is(p, TOK_ELSE))
     {
         // bypass previous 'else'
-        dc_try_or_fail_with2(res, next_token(p), {
-            dc_err_dbg_log2(res, "could not move to the next token");
-
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        });
+        dc_try_or_fail_with2(res, next_token(p), { dc_err_dbg_log2(res, "could not move to the next token"); });
 
         /* Expecting to get a '{' in order to start the alternative block */
 
         res = move_if_peek_token_is(p, TOK_LBRACE);
-        dc_ret_if_err2(res, {
-            dc_err_dbg_log2(res, "If expression's alternative: Block Statement expected");
-
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        });
+        dc_ret_if_err2(res, { dc_err_dbg_log2(res, "If expression's alternative: Block Statement expected"); });
 
         DCRes alternative = parse_block_statement(p);
         dang_parser_location_revert(p);
 
-        dc_ret_if_err2(alternative, {
-            dc_err_dbg_log2(alternative, "could not extract alternative node for if expression");
+        dc_ret_if_err2(alternative, { dc_err_dbg_log2(alternative, "could not extract alternative node for if expression"); });
 
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        });
-
-        res = dn_child_push_unwrapped(dc_unwrap(), alternative);
-        dc_ret_if_err2(res, {
-            dc_err_dbg_log2(res, "could not push the alternative to the if expression");
-
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(alternative)));
-        });
+        alternative_statements = dc_dv_as(dc_unwrap2(alternative), DNodeBlockStatement).statements;
     }
 
-    dc_ret();
+    // push condition to the pool
+    dc_try_fail_temp(DCResVoid, dc_da_push(p->pool, dc_unwrap2(condition)));
+
+    dc_ret_ok_dv(DNodeIfExpression, (dn_if(pool_last_el(p), consequence_statements, alternative_statements)));
 }
 
 static DCRes parse_prefix_expression(DParser* p)
@@ -661,48 +638,33 @@ static DCRes parse_prefix_expression(DParser* p)
 
     dc_ret_if_err2(right, { dc_err_dbg_log2(right, "could not parse right hand side"); });
 
-    string data = NULL;
-    dc_try_fail_temp(DCResUsize, dc_sprintf(&data, DCPRIsv, dc_sv_fmt(tok.text)));
+    string op = NULL;
+    dc_try_fail_temp(DCResUsize, dc_sprintf(&op, DCPRIsv, dc_sv_fmt(tok.text)));
 
-    dc_try_fail(dn_new(DN_PREFIX_EXPRESSION, dc_dva(string, data), true));
+    dc_try_or_fail_with3(DCResVoid, res, dc_da_push(p->pool, dc_dva(string, op)), if (op) free(op));
 
-    DCResVoid res = dn_child_push_unwrapped(dc_unwrap(), right);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not push the value to expression");
+    dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_unwrap2(right)), if (op) free(op));
 
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(right)));
-    });
-
-    dc_ret();
+    dc_ret_ok_dv(DNodePrefixExpression, dn_prefix(op, pool_last_el(p)));
 }
 
 /**
  * Infix Expressions: - + * / == < etc.
  */
-static DCRes parse_infix_expression(DParser* p, DNodePtr left)
+static DCRes parse_infix_expression(DParser* p, DCDynValPtr left)
 {
     DC_RES();
 
-    string data = NULL;
-    dc_try_fail_temp(DCResUsize, dc_sprintf(&data, DCPRIsv, dc_sv_fmt(p->current_token.text)));
-
-    dc_try_fail(dn_new(DN_INFIX_EXPRESSION, dc_dva(string, data), true));
-
-    DCResVoid res = dn_child_push(dc_unwrap(), left);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not push the value to expression");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
+    string op = NULL;
+    dc_try_fail_temp(DCResUsize, dc_sprintf(&op, DCPRIsv, dc_sv_fmt(p->current_token.text)));
 
     Precedence prec = current_prec(p);
 
-    res = next_token(p);
+    DCResVoid res = next_token(p);
     dc_ret_if_err2(res, {
         dc_err_dbg_log2(res, "could not move to the next token");
 
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+        if (op) free(op);
     });
 
     dang_parser_location_preserve(p);
@@ -712,65 +674,36 @@ static DCRes parse_infix_expression(DParser* p, DNodePtr left)
     dc_ret_if_err2(right, {
         dc_err_dbg_log2(right, "could not parse right hand side");
 
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
-
-    res = dn_child_push_unwrapped(dc_unwrap(), right);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not push the value to expression");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(right)));
+        if (op) free(op);
     });
 
     dang_parser_dbg_log_tokens(p);
 
-    dc_ret();
+    dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_dva(string, op)), if (op) free(op));
+
+    dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_unwrap2(right)), if (op) free(op));
+
+    dc_ret_ok_dv(DNodeInfixExpression, dn_infix(op, left, pool_last_el(p)));
 }
 
-static DCRes parse_index_expression(DParser* p, DNodePtr left)
+static DCRes parse_index_expression(DParser* p, DCDynValPtr left)
 {
-    DC_TRY_DEF2(DCRes, dn_new(DN_INDEX_EXPRESSION, dc_dv_nullptr(), true));
+    DC_RES();
 
-    DCResVoid res = dn_child_push(dc_unwrap(), left);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not push the value to expression");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
-
-    res = next_token(p);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not move to the next token");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
+    dc_try_fail_temp(DCResVoid, next_token(p));
 
     dang_parser_location_preserve(p);
     DCRes expression = parse_expression(p, PREC_LOWEST);
     dang_parser_location_revert(p);
 
-    dc_ret_if_err2(expression, {
-        dc_err_dbg_log2(expression, "could not parse expression hand side");
+    dc_ret_if_err2(expression, { dc_err_dbg_log2(expression, "could not parse expression hand side"); });
 
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
+    dc_try_or_fail_with3(DCResVoid, res, move_if_peek_token_is(p, TOK_RBRACKET),
+                         { dc_err_dbg_log2(res, "index expression must have one expression and closed with ']'"); });
 
-    res = dn_child_push_unwrapped(dc_unwrap(), expression);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "could not push the value to expression");
+    dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_unwrap2(expression)), {});
 
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(expression)));
-    });
-
-    dc_try_or_fail_with2(res, move_if_peek_token_is(p, TOK_RBRACKET), {
-        dc_err_dbg_log2(res, "index expression must have one expression and closed with ']'");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
-
-    dc_ret();
+    dc_ret_ok_dv(DNodeIndexExpression, dn_index(left, pool_last_el(p)));
 }
 
 /**
@@ -788,69 +721,35 @@ static DCRes parse_let_statement(DParser* p)
     // Try to create a new identifier node
     dc_try_or_fail_with3(DCRes, temp_node, parse_identifier(p), { dc_err_dbg_log2(temp_node, "could not parse name"); });
 
-    // Try to create a new let statement node
-    // If successful it will be saved in the main result variable
-    dc_try_or_fail_with(dn_new(DN_LET_STATEMENT, dc_dv_nullptr(), true), {
-        dc_err_dbg_log("could not create let statement node");
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(temp_node)));
-    });
-
-    // Try to push the identifier to the let statement as the first child
-    dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), temp_node), {
-        dc_err_dbg_log2(res, "could not push the name to statement");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(temp_node)));
-    });
+    DNodeIdentifier ident = dc_dv_as(dc_unwrap2(temp_node), DNodeIdentifier);
 
     // If the let statement doesn't have initial value just return.
     if (token_is_end_of_the_statement(p, peek) || peek_token_is(p, TOK_EOF))
     {
-        dc_try_or_fail_with2(res, next_token(p), {
-            dc_err_dbg_log2(res, "could not move to the next token");
+        dc_try_or_fail_with2(res, next_token(p), { dc_err_dbg_log2(res, "could not move to the next token"); });
 
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        });
-
-        dc_ret(); // return successfully
+        dc_ret_ok_dv(DNodeLetStatement, dn_let(ident.value, NULL)); // return successfully
     }
 
     /* Parsing initial value */
 
     // Move to the next token
-    dc_try_or_fail_with2(res, next_token(p), {
-        dc_err_dbg_log2(res, "could not move to the next token");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
+    dc_try_or_fail_with2(res, next_token(p), { dc_err_dbg_log2(res, "could not move to the next token"); });
 
     // Try to parse expression as initial value
-    dc_try_or_fail_with2(temp_node, parse_expression(p, PREC_LOWEST), {
-        dc_err_dbg_log2(temp_node, "could not parse value");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
-
-    // Try to push the initial value expression
-    dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), temp_node), {
-        dc_err_dbg_log2(res, "could not push the value to statement");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(temp_node)));
-    });
+    dc_try_or_fail_with2(temp_node, parse_expression(p, PREC_LOWEST), { dc_err_dbg_log2(temp_node, "could not parse value"); });
 
     dang_parser_dbg_log_tokens(p);
 
     // Based on the current location a proper terminator must be seen
     if (token_is_end_of_the_statement(p, peek) || peek_token_is(p, TOK_EOF))
     {
-        dc_try_or_fail_with2(res, next_token(p), {
-            dc_err_dbg_log2(res, "could not move to the next token");
+        dc_try_or_fail_with2(res, next_token(p), { dc_err_dbg_log2(res, "could not move to the next token"); });
 
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        });
+        // push the temp_node that is the initial value to the pool
+        dc_try_fail_temp(DCResVoid, dc_da_push(p->pool, dc_unwrap2(temp_node)));
 
-        dc_ret(); // return successfully
+        dc_ret_ok_dv(DNodeLetStatement, dn_let(ident.value, pool_last_el(p))); // return successfully
     }
 
     dc_ret_ea(-1, "end of statement needed, got token of type %s.", tostr_DTokType(p->peek_token.type));
@@ -861,53 +760,33 @@ static DCRes parse_let_statement(DParser* p)
  */
 static DCRes parse_return_statement(DParser* p)
 {
-    DC_TRY_DEF2(DCRes, dn_new(DN_RETURN_STATEMENT, dc_dv_nullptr(), true));
+    DC_RES();
 
     // Check if it's a return without a value
     if (token_is_end_of_the_statement(p, peek) || peek_token_is(p, TOK_EOF))
     {
-        dc_try_or_fail_with3(DCResVoid, res, next_token(p), {
-            dc_err_dbg_log2(res, "could not move to the next token");
+        dc_try_or_fail_with3(DCResVoid, res, next_token(p), { dc_err_dbg_log2(res, "could not move to the next token"); });
 
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        });
-
-        dc_ret(); // return successfully
+        dc_ret_ok_dv(DNodeReturnStatement, dn_return(NULL)); // return successfully
     }
 
     /* Try to parse return value (expression) */
 
-    dc_try_or_fail_with3(DCResVoid, res, next_token(p), {
-        dc_err_dbg_log2(res, "could not move to the next token");
+    dc_try_or_fail_with3(DCResVoid, res, next_token(p), { dc_err_dbg_log2(res, "could not move to the next token"); });
 
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
-
-    dc_try_or_fail_with3(DCRes, value, parse_expression(p, PREC_LOWEST), {
-        dc_err_dbg_log2(res, "could not parse value");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-    });
+    dc_try_or_fail_with3(DCRes, value, parse_expression(p, PREC_LOWEST), { dc_err_dbg_log2(res, "could not parse value"); });
 
     dang_parser_dbg_log_tokens(p);
-
-    dc_try_or_fail_with2(res, dn_child_push_unwrapped(dc_unwrap(), value), {
-        dc_err_dbg_log2(res, "could not push the value to statement");
-
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(value)));
-    });
 
     // Based on the current location a proper terminator must be seen
     if (token_is_end_of_the_statement(p, peek) || peek_token_is(p, TOK_EOF))
     {
-        dc_try_or_fail_with2(res, next_token(p), {
-            dc_err_dbg_log2(res, "could not move to the next token");
+        dc_try_or_fail_with2(res, next_token(p), { dc_err_dbg_log2(res, "could not move to the next token"); });
 
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        });
+        // push the value that is the initial value to the pool
+        dc_try_fail_temp(DCResVoid, dc_da_push(p->pool, dc_unwrap2(value)));
 
-        dc_ret(); // return successfully
+        dc_ret_ok_dv(DNodeReturnStatement, dn_return(pool_last_el(p))); // return successfully
     }
 
     dc_ret_ea(-1, "end of statement needed, got token of type %s.", tostr_DTokType(p->peek_token.type));
@@ -920,50 +799,57 @@ static DCRes parse_block_statement(DParser* p)
     // Try to bypass the '{'
     dc_try_fail_temp(DCResVoid, next_token(p));
 
-    dc_try_fail(dn_new(DN_BLOCK_STATEMENT, dc_dv_nullptr(), true));
+    dc_try_or_fail_with3(DCResDa, statements_res, dc_da_new(NULL), {});
+
+    DCDynArrPtr statements = dc_unwrap2(statements_res);
 
     DCResVoid res;
 
     while (current_token_is_not(p, TOK_RBRACE) && current_token_is_not(p, TOK_EOF))
     {
         /* Bypassing all the meaningless newlines and semicolons */
-        try_bypassing_all_sc_and_nls_or_fail_with(p, {
-            dc_err_dbg_log2(res, "could move to the next token");
-
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        });
+        try_bypassing_all_sc_and_nls_or_fail_with(p, { dc_err_dbg_log2(res, "could move to the next token"); });
 
         // Enter the block
         dang_parser_location_set(p, LOC_BLOCK);
 
         DCRes stmt = parse_statement(p);
-        dc_ret_if_err2(stmt, {
-            dc_err_dbg_log2(stmt, "cannot parse block statement");
-
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-        });
+        dc_ret_if_err2(stmt, { dc_err_dbg_log2(stmt, "cannot parse block statement"); });
 
         dang_parser_dbg_log_tokens(p);
 
-        res = dn_child_push_unwrapped(dc_unwrap(), stmt);
+        res = dc_da_push(statements, dc_unwrap2(stmt));
         dc_ret_if_err2(res, {
             dc_err_dbg_log2(res, "could not push the statement to the block");
 
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(stmt)));
+            dc_try_fail_temp(DCResVoid, dc_da_free(statements));
+            free(statements);
         });
 
         /* Bypassing all the meaningless newlines and semicolons */
         try_bypassing_all_sc_and_nls_or_fail_with(p, {
             dc_err_dbg_log2(res, "could move to the next token");
 
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap()));
+            dc_try_fail_temp(DCResVoid, dc_da_free(statements));
+            free(statements);
         });
     }
 
-    if (current_token_is(p, TOK_EOF)) dc_ret_e(-1, "block ended with EOF, expected '}' instead");
+    if (current_token_is(p, TOK_EOF))
+    {
+        dc_try_fail_temp(DCResVoid, dc_da_free(statements));
+        free(statements);
 
-    dc_ret();
+        dc_ret_e(-1, "block ended with EOF, expected '}' instead");
+    }
+
+    // push the statements to the pool
+    dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_dva(DCDynArrPtr, statements)), {
+        dc_try_fail_temp(DCResVoid, dc_da_free(statements));
+        free(statements);
+    });
+
+    dc_ret_ok_dv(DNodeBlockStatement, dn_block(statements));
 }
 
 /**
@@ -999,14 +885,13 @@ static DCRes parse_expression(DParser* p, Precedence precedence)
         ParseInfixFn infix = parse_infix_fns[p->peek_token.type];
         if (!infix) return left_exp;
 
-        dc_try_or_fail_with3(DCResVoid, res, next_token(p), {
-            dc_err_dbg_log2(res, "could not move to the next token");
+        dc_try_or_fail_with3(DCResVoid, res, next_token(p), { dc_err_dbg_log2(res, "could not move to the next token"); });
 
-            dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap2(left_exp)));
-        });
+        // push the left to the pool
+        dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_unwrap2(left_exp)), {});
 
         dang_parser_location_preserve(p);
-        left_exp = infix(p, dc_unwrap2(left_exp));
+        left_exp = infix(p, pool_last_el(p));
         dang_parser_location_revert(p);
     }
 
@@ -1022,51 +907,44 @@ static DCRes parse_expression_statement(DParser* p)
 {
     DC_RES();
 
+    dang_parser_location_preserve(p);
+
     DCResVoid res;
 
-    dc_try_or_fail_with3(DCResDa, exp_list_res, dc_da_new(NULL), {});
-
-    DCDynArrPtr exp_list = dc_unwrap2(exp_list_res);
-
-    dang_parser_location_preserve(p);
-    res = parse_expression_list(p, exp_list);
+    DCRes callee = parse_expression(p, PREC_LOWEST);
     dang_parser_location_revert(p);
 
-    dc_ret_if_err2(res, {
-        dc_try_fail_temp(DCResVoid, dc_da_free(exp_list));
-        free(exp_list);
-    });
+    dc_ret_if_err2(callee, {});
 
-    // return the first child of expression list
-    DCDynVal first_child = dc_da_get2(*exp_list, 0);
+    // go to next token and bypass if comma is seen
+    dc_try_or_fail_with2(res, next_token(p), {});
+    if (current_token_is(p, TOK_COMMA)) dc_try_or_fail_with2(res, next_token(p), {});
 
-    // mark the first child as NULL so it won't get freed
-    res = dc_da_delete(exp_list, 0);
-    dc_ret_if_err2(res, {
-        dc_try_fail_temp(DCResVoid, dc_da_free(exp_list));
-        free(exp_list);
-    });
+    // if this is not a call just return the callee itself as a node
+    if ((token_is_end_of_the_statement(p, current) && current_token_is_not(p, TOK_SEMICOLON)) || current_token_is(p, TOK_EOF))
+        dc_ret_ok(dc_unwrap2(callee));
 
-    if (exp_list->count == 1 && current_token_is_not(p, TOK_SEMICOLON))
-    {
-        // free the expression list inner allocation and expression list itself
-        dc_try_or_fail_with2(res, dc_da_free(exp_list), {});
-        free(exp_list);
+    DCResDa params_res = parse_expression_list(p);
+    dang_parser_location_revert(p);
 
-        dc_ret_ok(first_child);
-    }
+    dc_ret_if_err2(res, {});
+
+    DCDynArrPtr params = dc_unwrap2(params_res);
 
     // check_quote(exp_list); // todo:: fix this
 
-    if (dc_is_err())
-    {
-        dc_try_or_fail_with2(res, dc_da_free(exp_list), {});
-        free(exp_list);
+    // if (dc_is_err())
+    // {
+    //     dc_try_or_fail_with2(res, dc_da_free(exp_list), {});
+    //     free(exp_list);
 
-        dc_ret();
-    }
+    //     dc_ret();
+    // }
 
-    dc_ret_ok(dc_dv(DNodeCallExpression, dn_call(first_child, exp_list)));
+    // push the callee to the pool
+    dc_try_fail_temp(DCResVoid, dc_da_push(p->pool, dc_unwrap2(callee)));
+
+    dc_ret_ok_dv(DNodeCallExpression, dn_call(pool_last_el(p), params));
 }
 
 /**
@@ -1112,16 +990,13 @@ static DCRes parse_statement(DParser* p)
  *
  * On each iteration the cursor must be at the end of the current statement (sentence terminator)
  */
-static ResDNodeProgram parser_parse_program(DParser* p)
+static DCResPtr parser_parse_program(DParser* p)
 {
-    DC_RES2(ResDNodeProgram);
+    DC_RES_dv();
 
     dc_try_or_fail_with3(DCResDa, statements_res, dc_da_new2(30, 3, NULL), {});
 
     DCDynArrPtr statements = dc_unwrap2(statements_res);
-
-    // push the program statements in the pool
-    dc_da_push(p->pool, dc_dva(DCDynArrPtr, statements));
 
     DCResVoid res = {0};
 
@@ -1158,8 +1033,6 @@ static ResDNodeProgram parser_parse_program(DParser* p)
                 dc_err_dbg_log2(res, "could not push the statement to program");
 
                 add_error(p, &dc_err2(res));
-
-                dn_free(dc_unwrap2(stmt));
             }
 
             continue;
@@ -1169,24 +1042,58 @@ static ResDNodeProgram parser_parse_program(DParser* p)
     }
 
     // all errors are saved in the parser's errors field
-    if (dang_parser_has_error(p)) dc_ret_e(-1, "parser has error");
+    if (dang_parser_has_error(p))
+    {
+        dc_try_fail_temp(DCResVoid, dc_da_free(statements));
+        free(statements);
 
-    dc_ret_ok(dn_program(statements));
+        dc_ret_e(-1, "parser has error");
+    }
+
+    // push the program statements in the pool
+    dc_da_push(p->pool, dc_dva(DCDynArrPtr, statements));
+
+    dc_da_push(p->pool, dc_dv(DNodeProgram, dn_program(statements)));
+
+    dc_ret_ok(pool_last_el(p));
 }
 
 // ***************************************************************************************
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-ResDNodeProgram dang_parser_parse(DParser* p, const string source)
+DCResPtr dang_parser_parse(DParser* p, const string source)
 {
-    DC_RES2(ResDNodeProgram);
+    DC_RES_dv();
 
     dc_try_fail_temp(DCResVoid, dang_scanner_init(&p->scanner, source));
 
+    // Starting from body
+    p->loc = LOC_BODY;
+
+    p->current_token.type = TOK_TYPE_MAX;
+    p->peek_token.type = TOK_TYPE_MAX;
+
     // Update current and peek tokens
-    dc_try_fail_temp(DCResVoid, next_token(p));
-    dc_try_fail_temp(DCResVoid, next_token(p));
+    DCResVoid res;
+
+    res = next_token(p);
+    if (dc_is_err2(res))
+    {
+        dc_err_dbg_log2(res, "could not push the statement to program");
+
+        add_error(p, &dc_err2(res));
+    }
+
+    res = next_token(p);
+    if (dc_is_err2(res))
+    {
+        dc_err_dbg_log2(res, "could not push the statement to program");
+
+        add_error(p, &dc_err2(res));
+    }
+
+    if (dang_parser_has_error(p)) dc_ret_e(-1, "parser has error");
 
     return parser_parse_program(p);
 }
@@ -1203,7 +1110,7 @@ DCResVoid dang_parser_init(DParser* p, DCDynArrPtr pool, DCDynArrPtr errors)
     }
 
     p->scanner = (DScanner){0};
-    if (pool->cap == 0) dc_try_fail(dc_da_init2(pool, 50, 3, dn_child_free));
+    if (pool->cap == 0) dc_try_fail(dc_da_init2(pool, 50, 3, NULL)); // todo:: add a free function for this
     if (errors->cap == 0) dc_try_fail(dc_da_init2(errors, 20, 2, NULL));
 
     p->pool = pool;

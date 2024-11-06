@@ -148,12 +148,12 @@ DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
 
             dc_sappend(result, "%s", " ");
 
-            dc_try_fail(array_inspector(if_exp.consequence, "{ ", " }", ";", false, result));
+            dc_try_fail(array_inspector(if_exp.consequence, "{ ", "}", "; ", false, result));
 
             if (if_exp.alternative)
             {
                 dc_sappend(result, "%s", " else ");
-                dc_try_fail(array_inspector(if_exp.alternative, "{ ", " }", "; ", false, result));
+                dc_try_fail(array_inspector(if_exp.alternative, "{ ", "}", "; ", false, result));
             }
 
             break;
@@ -163,7 +163,7 @@ DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
         {
             DCDynArrPtr statements = dc_dv_as(*dn, DNodeBlockStatement).statements;
 
-            dc_try_fail(array_inspector(statements, "{ ", " }", "; ", false, result));
+            dc_try_fail(array_inspector(statements, "{ ", "}", "; ", false, result));
 
             break;
         }
@@ -175,7 +175,7 @@ DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
             dc_try_fail(array_inspector(func_lit.parameters, "Fn (", ") ", ", ", true, result));
 
             // The Body
-            dc_try_fail(array_inspector(func_lit.body, "{ ", " }", "; ", false, result));
+            dc_try_fail(array_inspector(func_lit.body, "{ ", "}", "; ", false, result));
 
             break;
         }
