@@ -34,7 +34,7 @@ static DCRes test_eval(string input, DEnv* de)
     DParser p;
     dang_parser_init(&p, &s);
 
-    ResNode program_res = dang_parser_parse_program(&p);
+    ResNode program_res = dang_parse_program(&p);
 
     DNodePtr program = dc_unwrap2(program_res);
 

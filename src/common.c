@@ -83,6 +83,9 @@ string dv_type_tostr(DCDynValType type)
         case dc_dvt(DNodeIndexExpression):
             return "index expression node";
 
+        case dc_dvt(DEnvPtr):
+            return "environment pointer";
+
         default:
             break;
     };

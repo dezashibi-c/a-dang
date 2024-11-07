@@ -50,7 +50,7 @@ static b1 perform_test_batch(string tests[], usize tests_count)
         string input = tests[i * 2];
         string expected = tests[(i * 2) + 1];
 
-        ResDNodeProgram program_res = dang_parser_parse(&parser, input);
+        ResDNodeProgram program_res = dang_parse(&parser, input);
 
         if (!dang_parser_has_no_error(&parser))
         {

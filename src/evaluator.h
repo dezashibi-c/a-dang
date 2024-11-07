@@ -18,6 +18,7 @@
 #define DANG_EVAL_H
 
 #include "ast.h"
+#include "parser.h"
 
 // ***************************************************************************************
 // * TYPES
@@ -43,17 +44,41 @@ struct DEnv
 {
     DCHashTable memory;
     struct DEnv* outer;
-
-    DCDynArr cleanups;
 };
 
 DCResType(DEnv*, ResEnv);
 
-typedef DCRes (*DNodeModifierFn)(DCRes dn, DEnv* de, DEnv* main_de);
+typedef struct
+{
+    DEnv main_env;
+
+    DParser parser;
+
+    DCDynArr pool;
+    DCDynArr errors;
+} DEvaluator;
+
+typedef struct
+{
+    DCDynVal result;
+    string inspect;
+} Evaluated;
+
+DCResType(Evaluated, ResEvaluated);
+
+typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCRes dn, DEnv* env);
 
 // ***************************************************************************************
 // * MACROS
 // ***************************************************************************************
+
+#define dang_evaluated(RES, INSPECT)                                                                                           \
+    (Evaluated)                                                                                                                \
+    {                                                                                                                          \
+        .result = (RES), .inspect = (INSPECT)                                                                                  \
+    }
+
+
 // todo:: take care of these
 #if 0
 #define dobj_def(TYPE, VALUE, ENV)                                                                                             \
@@ -119,18 +144,21 @@ typedef DCRes (*DNodeModifierFn)(DCRes dn, DEnv* de, DEnv* main_de);
 
 #define DECL_DNODE_MODIFIER_FN(NAME) ResNode NAME(DNodePtr dn, DEnv* de, DEnv* main_de)
 #endif
+
 // ***************************************************************************************
 // * FUNCTION DECLARATIONS
 // ***************************************************************************************
 
-DCRes dang_eval(DNodeProgram* program, DEnv* main_de);
+DCResVoid de_init(DEvaluator* de);
+DCResVoid de_free(DEvaluator* de);
 
-DCResVoid dang_obj_free(DCDynValPtr dobj);
+ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect);
 
 DObjType dobj_get_type(DCDynValPtr dobj);
 DCResString dobj_tostr(DCDynValPtr dobj);
 void dobj_print(DCDynValPtr obj);
 
+DCResVoid dang_env_init(DEnvPtr env);
 ResEnv dang_env_new();
 DCResVoid dang_env_free(DEnv* de);
 DCRes dang_env_get(DEnv* de, string name);

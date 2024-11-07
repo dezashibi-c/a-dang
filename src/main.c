@@ -69,7 +69,7 @@ static void repl()
             continue;
         }
 
-        ResNode program_res = dang_parser_parse_program(&p);
+        ResNode program_res = dang_parse_program(&p);
         if (dc_is_err2(program_res))
         {
             dc_log("parser could not finish the job properly: (code %d) %s", dc_err_code2(program_res),

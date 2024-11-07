@@ -1060,7 +1060,7 @@ static ResDNodeProgram parser_parse_program(DParser* p)
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-ResDNodeProgram dang_parser_parse(DParser* p, const string source)
+ResDNodeProgram dang_parse(DParser* p, const string source)
 {
     DC_RES2(ResDNodeProgram);
 

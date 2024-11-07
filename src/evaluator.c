@@ -16,7 +16,7 @@
 
 #include "evaluator.h"
 
-static DCRes perform_evaluation_process(DCDynValPtr dn, DEnv* de, DEnv* main_de);
+static DCRes perform_evaluation_process(DEvaluator* de, DCDynValPtr dn, DEnv* env);
 
 // ***************************************************************************************
 // * PRIVATE HELPER FUNCTIONS
@@ -721,7 +721,7 @@ static DCRes find_builtin(string name)
 // * MAIN EVALUATION PROCESS
 // ***************************************************************************************
 
-static DCRes perform_evaluation_process(DCDynValPtr dn, DEnv* de, DEnv* main_de)
+static DCRes perform_evaluation_process(DEvaluator* de, DCDynValPtr dn, DEnv* env)
 {
     DC_RES();
 
@@ -938,46 +938,49 @@ static DCRes perform_evaluation_process(DCDynValPtr dn, DEnv* de, DEnv* main_de)
 // * PUBLIC FUNCTIONS
 // ***************************************************************************************
 
-DCRes dang_eval(DNodePtr program, DEnv* main_de)
-{
-    DC_RES();
-
-    if (!program) dc_ret_e(dc_e_code(NV), "cannot evaluate NULL node");
-    if (!main_de) dc_ret_e(dc_e_code(NV), "cannot run evaluation on NULL environment");
-
-    REGISTER_CLEANUP(DNodePtr, program, dn_full_free(program));
-
-    return perform_evaluation_process(program, main_de, main_de);
-}
-
-DCResVoid dang_obj_free(DCDynValPtr dobj)
+DCResVoid de_init(DEvaluator* de)
 {
     DC_RES_void();
 
-    // only those envs which are not the main environment
-    // in other words enclosed environments only
-    if (dobj->env && dobj->env->outer)
-    {
-        dc_dbg_log("dobj's environment is being cleaned");
+    dc_try_fail(dang_env_init(&de->main_env));
 
-        dc_try_fail(dang_env_free(dobj->env));
-        dobj->env = NULL;
+    dc_try_or_fail_with(dang_parser_init(&de->parser, &de->pool, &de->errors),
+                        dc_try_fail_temp(DCResVoid, dang_env_free(&de->main_env)));
+
+    dc_ret();
+}
+
+DCResVoid de_free(DEvaluator* de)
+{
+    //
+}
+
+ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect)
+{
+    DC_RES2(ResEvaluated);
+
+    if (!de) dc_ret_e(dc_e_code(NV), "cannot evaluate using NULL evaluator");
+    if (!source) dc_ret_e(dc_e_code(NV), "cannot run evaluation on NULL source");
+
+    dc_try_or_fail_with3(ResDNodeProgram, program_res, dang_parse(&de->parser, source), {});
+
+    DNodeProgram program = dc_unwrap2(program_res);
+
+    dc_try_or_fail_with3(DCRes, result, perform_evaluation_process(de, &dc_dv(DNodeProgram, program), &de->main_env), {});
+
+    string inspect_str = NULL;
+
+    if (inspect)
+    {
+        dc_try_fail_temp(DCResVoid, dang_program_inspect(&program, &inspect_str));
+
+        if (inspect_str)
+        {
+            dc_try_or_fail_with3(DCResVoid, res, dc_da_push(&de->pool, dc_dva(string, inspect_str)), free(inspect_str));
+        }
     }
 
-    if (dobj->type == dc_dvt(DNodePtr))
-    {
-        dc_dbg_log("node pointer is being cleaned");
-
-        dc_try_fail(dn_full_free(dc_dv_as(*dobj, DNodePtr)));
-
-        dc_dv_set(*dobj, DNodePtr, NULL);
-
-        dc_ret();
-    }
-
-    dc_dbg_log("dobj of type %s is being cleaned", tostr_DObjType(dobj));
-
-    return dc_dv_free(dobj, NULL);
+    dc_ret_ok(dang_evaluated(dc_unwrap2(result), inspect_str));
 }
 
 DObjType dobj_get_type(DCDynValPtr dobj)
@@ -993,26 +996,27 @@ DObjType dobj_get_type(DCDynValPtr dobj)
         case dc_dvt(string):
             return DOBJ_STRING;
 
-        case dc_dvt(DNodePtr):
-        {
-            DNodePtr dn = dc_dv_as(*dobj, DNodePtr);
+            // todo:: fix these
+            // case dc_dvt(DNodePtr):
+            // {
+            //     DNodePtr dn = dc_dv_as(*dobj, DNodePtr);
 
-            if (dn->quoted) return DOBJ_QUOTE;
+            //     if (dn->quoted) return DOBJ_QUOTE;
 
-            switch (dn->type)
-            {
-                case DN_FUNCTION_LITERAL:
-                    return DOBJ_FUNCTION;
+            //     switch (dn->type)
+            //     {
+            //         case DN_FUNCTION_LITERAL:
+            //             return DOBJ_FUNCTION;
 
-                case DN_MACRO_LITERAL:
-                    return DOBJ_MACRO;
+            //         case DN_MACRO_LITERAL:
+            //             return DOBJ_MACRO;
 
-                default:
-                    break;
-            }
+            //         default:
+            //             break;
+            //     }
 
-            break;
-        }
+            //     break;
+            // }
 
         case dc_dvt(DBuiltinFunction):
             return DOBJ_BUILTIN_FUNCTION;

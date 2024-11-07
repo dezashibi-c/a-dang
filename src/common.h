@@ -211,6 +211,7 @@ DCResType(DNodeProgram, ResDNodeProgram);
 // * FORWARD DECLARATIONS
 // ***************************************************************************************
 typedef struct DEnv DEnv;
+typedef DEnv* DEnvPtr;
 
 /**
  * Function pointer type for all dang builtin functions
@@ -223,12 +224,13 @@ typedef struct DEnv DEnv;
 typedef DCDynVal (*DBuiltinFunction)(DCDynValPtr call_obj, DCError* error);
 
 #define DC_DV_EXTRA_TYPES                                                                                                      \
-    dc_dvt(DBuiltinFunction), dc_dvt(DNodeProgram), dc_dvt(DNodeLetStatement), dc_dvt(DNodeReturnStatement),                   \
+    dc_dvt(DEnvPtr), dc_dvt(DBuiltinFunction), dc_dvt(DNodeProgram), dc_dvt(DNodeLetStatement), dc_dvt(DNodeReturnStatement),  \
         dc_dvt(DNodeBlockStatement), dc_dvt(DNodeIdentifier), dc_dvt(DNodePrefixExpression), dc_dvt(DNodeInfixExpression),     \
         dc_dvt(DNodeIfExpression), dc_dvt(DNodeArrayLiteral), dc_dvt(DNodeHashTableLiteral), dc_dvt(DNodeFunctionLiteral),     \
         dc_dvt(DNodeCallExpression), dc_dvt(DNodeIndexExpression),
 
 #define DC_DV_EXTRA_UNION_FIELDS                                                                                               \
+    dc_dvf_decl(DEnvPtr);                                                                                                      \
     dc_dvf_decl(DBuiltinFunction);                                                                                             \
     dc_dvf_decl(DNodeProgram);                                                                                                 \
     dc_dvf_decl(DNodeLetStatement);                                                                                            \
