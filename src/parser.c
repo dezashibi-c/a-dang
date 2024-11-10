@@ -1024,7 +1024,6 @@ static ResDNodeProgram parser_parse_program(DParser* p)
 
         if (dc_is_ok2(stmt))
         {
-            // todo:: review these afterwards
             // stmt is a DCDynValPtr to the actual dynamic value in the pool
             // or it might be actual value if the value doesn't worth to be saved
             res = dc_da_push(statements, dc_unwrap2(stmt));

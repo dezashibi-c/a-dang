@@ -121,33 +121,7 @@ typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCRes dn, DEnv* env);
         return dc_dv_nullptr();                                                                                                \
     }
 
-// todo:: take care of these
-#if 0
-
-#define do_mark_returned(DO) (DO).is_returned = true
-
-#define do_resolve_if_ref(NEW_DO, DO)                                                                                          \
-    NEW_DO = ((DO).type == dc_dvt(DCDynValPtr) ? dc_dv_as((DO), DCDynValPtr) : &(DO));                                         \
-    do                                                                                                                         \
-    {                                                                                                                          \
-        NEW_DO->is_returned = (DO).is_returned;                                                                                \
-        NEW_DO->env = (DO).env;                                                                                                \
-    } while (0)
-
-#define REGISTER_CLEANUP2(DO, FAILURE_ACTIONS)                                                                                 \
-    do                                                                                                                         \
-    {                                                                                                                          \
-        dc_try_or_fail_with3(DCResVoid, res, dc_da_push(&main_de->cleanups, DO), FAILURE_ACTIONS);                             \
-    } while (0)
-
-#define REGISTER_CLEANUP(TYPE, VALUE, FAILURE_ACTIONS)                                                                         \
-    do                                                                                                                         \
-    {                                                                                                                          \
-        dc_try_or_fail_with3(DCResVoid, res, dc_da_push(&main_de->cleanups, dc_dva(TYPE, VALUE)), FAILURE_ACTIONS);            \
-    } while (0)
-
 #define DECL_DNODE_MODIFIER_FN(NAME) ResNode NAME(DNodePtr dn, DEnv* de, DEnv* main_de)
-#endif
 
 // ***************************************************************************************
 // * FUNCTION DECLARATIONS
