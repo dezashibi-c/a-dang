@@ -50,17 +50,16 @@ static DCRes parse_statement(DParser* p);
 #define dang_parser_location_revert(P) (P)->loc = __dang_parser_loc_snapshot
 #define dang_parser_location_set(P, LOC) (P)->loc = LOC
 
-#define check_quote(NODE)                                                                                                      \
+#define check_quote(CALLEE, PARAMS)                                                                                            \
     do                                                                                                                         \
     {                                                                                                                          \
-        if (dn_child((NODE), 0)->type == DN_IDENTIFIER && (strcmp(dn_child_data_as((NODE), 0, string), MACRO_PACK) == 0 ||     \
-                                                           strcmp(dn_child_data_as((NODE), 0, string), MACRO_UNPACK) == 0))    \
+        if (dc_unwrap2(CALLEE).type == dc_dvt(DNodeIdentifier) &&                                                              \
+            (strcmp(dc_dv_as(dc_unwrap2(CALLEE), DNodeIdentifier).value, "quote") == 0 ||                                      \
+             strcmp(dc_dv_as(dc_unwrap2(CALLEE), DNodeIdentifier).value, "unquote") == 0))                                     \
         {                                                                                                                      \
-            if (dn_child_count((NODE)) > 2)                                                                                    \
-                dc_ea(-1, "'%s' accept only and only one argument, got=" dc_fmt(usize), dn_child_data_as((NODE), 0, string),   \
-                      dn_child_count((NODE)) - 1);                                                                             \
-            else if (strcmp(dn_child_data_as((NODE), 0, string), MACRO_PACK) == 0)                                             \
-                (NODE)->quoted = true;                                                                                         \
+            if (dc_unwrap2(PARAMS)->count != 2)                                                                                \
+                dc_ea(-1, "'%s' accept only and only one argument, got=" dc_fmt(usize),                                        \
+                      dc_dv_as(dc_unwrap2(CALLEE), DNodeIdentifier).value, dc_unwrap2(PARAMS)->count);                         \
         }                                                                                                                      \
     } while (0)
 
@@ -421,10 +420,8 @@ static DCRes parse_call_expression(DParser* p)
 
         dc_ret_if_err2(res, {});
 
-        // check_quote(dc_unwrap()); // todo:: fix this later
-
-        // dc_ret_if_err2(res, { dc_try_fail_temp(DCResVoid, dn_free(dc_unwrap())); }); // todo:: if check_quote works I think
-        // this must be available or what?
+        check_quote(callee, params_res);
+        dc_ret_if_err({});
 
         params = dc_unwrap2(params_res);
     }
@@ -931,15 +928,8 @@ static DCRes parse_expression_statement(DParser* p)
 
     DCDynArrPtr params = dc_unwrap2(params_res);
 
-    // check_quote(exp_list); // todo:: fix this
-
-    // if (dc_is_err())
-    // {
-    //     dc_try_or_fail_with2(res, dc_da_free(exp_list), {});
-    //     free(exp_list);
-
-    //     dc_ret();
-    // }
+    check_quote(callee, params_res);
+    dc_ret_if_err({});
 
     // push the callee to the pool
     dc_try_fail_temp(DCResVoid, dc_da_push(p->pool, dc_unwrap2(callee)));

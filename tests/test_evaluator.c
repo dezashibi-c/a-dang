@@ -637,9 +637,9 @@ CLOVE_TEST(error_handling)
 
         "{'name': 'Monkey'}[fn(x) { x }]", // function cannot be used as key
 
-        // "quote 1 2 3", // todo:: uncomment this and the next
+        "quote 1 2 3",
 
-        // "unquote 1 2 3",
+        "unquote 1 2 3",
 
         NULL,
     };

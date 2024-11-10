@@ -32,6 +32,24 @@ static DCRes perform_evaluation_process(DEvaluator* de, DCDynValPtr dn, DEnv* en
 // * PRIVATE HELPER FUNCTIONS
 // ***************************************************************************************
 
+static DC_DV_FREE_FN_DECL(evaluator_pool_cleanup)
+{
+    DC_RES_void();
+
+    if (_value->type == dc_dvt(DEnvPtr))
+    {
+        DEnvPtr env = dc_dv_as(*_value, DEnvPtr);
+
+        dc_try_fail(dang_env_free(env));
+
+        free(env);
+
+        dc_dv_set(*_value, DEnvPtr, NULL);
+    }
+
+    dc_ret();
+}
+
 static u32 string_hash(string key)
 {
     u32 hash = 5381;
@@ -962,7 +980,7 @@ DCResVoid de_init(DEvaluator* de)
 
     dc_try_fail(dang_env_init(&de->main_env));
 
-    dc_try_fail(dc_da_init2(&de->pool, 50, 3, NULL));
+    dc_try_fail(dc_da_init2(&de->pool, 50, 3, evaluator_pool_cleanup));
     dc_try_fail(dc_da_init2(&de->errors, 20, 2, NULL));
 
     dc_try_or_fail_with(dang_parser_init(&de->parser, &de->pool, &de->errors),
