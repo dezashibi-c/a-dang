@@ -110,6 +110,10 @@ static DCRes parse_statement(DParser* p);
 
 #define unexpected_token_err_fmt(TYPE) "unexpected token '%s'.", tostr_DTokType(TYPE)
 
+#define pool_last_el(P) &dc_da_get2(*(P)->pool, (P)->pool->count - 1)
+
+#define return_pool_last_el(P) dc_res_ok(dc_dv(DCDynValPtr, pool_last_el(P)))
+
 static DCResVoid next_token(DParser* p)
 {
     DC_RES_void();
@@ -184,10 +188,6 @@ static DCRes parse_illegal(DParser* p)
     dc_ret_ea(-1, "got illegal token of type: %s", tostr_DTokType(p->current_token.type));
 }
 
-#define pool_last_el(P) &dc_da_get2(*(P)->pool, (P)->pool->count - 1)
-
-#define return_pool_last_el(P) dc_res_ok(dc_dv(DCDynValPtr, pool_last_el(P)))
-
 static DCRes parse_identifier(DParser* p)
 {
     DC_RES();
@@ -196,7 +196,7 @@ static DCRes parse_identifier(DParser* p)
 
     dc_try_or_fail_with3(DCResVoid, res, dc_da_push(p->pool, dc_dva(string, data)), { free(data); });
 
-    dc_ret_ok(dc_dv(DNodeIdentifier, dn_identifier(data)));
+    dc_ret_ok_dv(DNodeIdentifier, dn_identifier(data));
 }
 
 static DCRes parse_string_literal(DParser* p)
@@ -686,7 +686,7 @@ static DCRes parse_infix_expression(DParser* p, DCDynValPtr left)
     dc_ret_ok_dv(DNodeInfixExpression, dn_infix(op, left, pool_last_el(p)));
 }
 
-static DCRes parse_index_expression(DParser* p, DCDynValPtr left)
+static DCRes parse_index_expression(DParser* p, DCDynValPtr operand)
 {
     DC_RES();
 
@@ -703,7 +703,7 @@ static DCRes parse_index_expression(DParser* p, DCDynValPtr left)
 
     dc_try_or_fail_with2(res, dc_da_push(p->pool, dc_unwrap2(expression)), {});
 
-    dc_ret_ok_dv(DNodeIndexExpression, dn_index(left, pool_last_el(p)));
+    dc_ret_ok_dv(DNodeIndexExpression, dn_index(operand, pool_last_el(p)));
 }
 
 /**
@@ -1108,7 +1108,7 @@ DCResVoid dang_parser_init(DParser* p, DCDynArrPtr pool, DCDynArrPtr errors)
     }
 
     p->scanner = (DScanner){0};
-    if (pool->cap == 0) dc_try_fail(dc_da_init2(pool, 50, 3, NULL)); // todo:: add a free function for this
+    if (pool->cap == 0) dc_try_fail(dc_da_init2(pool, 50, 3, NULL));
     if (errors->cap == 0) dc_try_fail(dc_da_init2(errors, 20, 2, NULL));
 
     p->pool = pool;

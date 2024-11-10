@@ -75,8 +75,6 @@ DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
 
     dc_dbg_log("inspecting node type: %s", tostr_DNType(dn->type));
 
-    if (dn->quoted) dc_sappend(result, "%s", "QUOTE(");
-
     switch (dn->type)
     {
         case dc_dvt(DCDynValPtr):
@@ -193,7 +191,7 @@ DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
         {
             DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
 
-            dc_try_fail(dang_node_inspect(call_exp.expression, result));
+            dc_try_fail(dang_node_inspect(call_exp.function, result));
             dc_try_fail(array_inspector(call_exp.arguments, "(", ")", ", ", true, result));
 
             break;
@@ -252,8 +250,6 @@ DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
             // DN_WHILE_EXPRESSION,
             // DN_MACRO_LITERAL,
     };
-
-    if (dn->quoted) dc_sappend(result, "%s", ")");
 
     dc_ret();
 

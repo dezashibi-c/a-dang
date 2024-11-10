@@ -168,14 +168,14 @@ DCResType(DNodeFunctionLiteral, ResDNodeFunctionLiteral);
 
 typedef struct
 {
-    DCDynValPtr expression;
+    DCDynValPtr function;
     DCDynArrPtr arguments;
 } DNodeCallExpression;
 
-#define dn_call(E, A)                                                                                                          \
+#define dn_call(F, A)                                                                                                          \
     (DNodeCallExpression)                                                                                                      \
     {                                                                                                                          \
-        .expression = (E), .arguments = (A)                                                                                    \
+        .function = (F), .arguments = (A)                                                                                      \
     }
 
 DCResType(DNodeCallExpression, ResDNodeCallExpression);
@@ -208,8 +208,26 @@ typedef struct
 DCResType(DNodeProgram, ResDNodeProgram);
 
 // ***************************************************************************************
+// * OBJECTS
+// *    Objects are returned from evaluator, they are some extended types for dynamic value
+// *    which will be needed from evaluator state.
+// ***************************************************************************************
+
+typedef struct
+{
+    DCDynValPtr ret_val;
+} DoReturn;
+
+#define do_return(V)                                                                                                           \
+    (DoReturn)                                                                                                                 \
+    {                                                                                                                          \
+        .ret_val = (V)                                                                                                         \
+    }
+
+// ***************************************************************************************
 // * FORWARD DECLARATIONS
 // ***************************************************************************************
+typedef struct DEvaluator DEvaluator;
 typedef struct DEnv DEnv;
 typedef DEnv* DEnvPtr;
 
@@ -221,17 +239,18 @@ typedef DEnv* DEnvPtr;
  *       Now if it returns an error (error is not null), I can continue the flow
  *       The normal way with redirecting the error
  */
-typedef DCDynVal (*DBuiltinFunction)(DCDynValPtr call_obj, DCError* error);
+typedef DCDynVal (*DBuiltinFunction)(DEvaluator* de, DCDynValPtr call_obj, DCError* error);
 
 #define DC_DV_EXTRA_TYPES                                                                                                      \
     dc_dvt(DEnvPtr), dc_dvt(DBuiltinFunction), dc_dvt(DNodeProgram), dc_dvt(DNodeLetStatement), dc_dvt(DNodeReturnStatement),  \
         dc_dvt(DNodeBlockStatement), dc_dvt(DNodeIdentifier), dc_dvt(DNodePrefixExpression), dc_dvt(DNodeInfixExpression),     \
         dc_dvt(DNodeIfExpression), dc_dvt(DNodeArrayLiteral), dc_dvt(DNodeHashTableLiteral), dc_dvt(DNodeFunctionLiteral),     \
-        dc_dvt(DNodeCallExpression), dc_dvt(DNodeIndexExpression),
+        dc_dvt(DNodeCallExpression), dc_dvt(DNodeIndexExpression), dc_dvt(DoReturn),
 
 #define DC_DV_EXTRA_UNION_FIELDS                                                                                               \
     dc_dvf_decl(DEnvPtr);                                                                                                      \
     dc_dvf_decl(DBuiltinFunction);                                                                                             \
+    /* DNodeProgram is the first node type*/                                                                                   \
     dc_dvf_decl(DNodeProgram);                                                                                                 \
     dc_dvf_decl(DNodeLetStatement);                                                                                            \
     dc_dvf_decl(DNodeReturnStatement);                                                                                         \
@@ -245,12 +264,11 @@ typedef DCDynVal (*DBuiltinFunction)(DCDynValPtr call_obj, DCError* error);
     dc_dvf_decl(DNodeHashTableLiteral);                                                                                        \
     dc_dvf_decl(DNodeFunctionLiteral);                                                                                         \
     dc_dvf_decl(DNodeCallExpression);                                                                                          \
-    dc_dvf_decl(DNodeIndexExpression);
+    dc_dvf_decl(DNodeIndexExpression);                                                                                         \
+    /* DNodeIndexExpression is the last node type */                                                                           \
+    dc_dvf_decl(DoReturn);
 
-#define DC_DV_EXTRA_FIELDS                                                                                                     \
-    b1 quoted;                                                                                                                 \
-    b1 is_returned;                                                                                                            \
-    DEnv* env;
+#define DC_DV_EXTRA_FIELDS DEnv* env;
 
 #include "dcommon/dcommon.h"
 
@@ -275,6 +293,6 @@ typedef enum
 
 void configure(b1 init_pool, string log_file, b1 append_logs);
 
-string dv_type_tostr(DCDynValType type);
+string dv_type_tostr(DCDynValPtr dv);
 
 #endif // DANG_COMMON_H

@@ -107,7 +107,7 @@ static void repl()
                 {
                     printf("%s", "Result: " DC_FG_LGREEN);
 
-                    dobj_print(&dc_unwrap2(evaluated));
+                    do_print(&dc_unwrap2(evaluated));
 
                     printf("\n%s", DC_COLOR_RESET);
                 }

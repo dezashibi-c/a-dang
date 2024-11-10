@@ -25,9 +25,9 @@ void configure(b1 init_pool, string log_file, b1 append_logs)
     if (init_pool) dc_cleanup_pool_init2(DANG_MAX_BATCH, 10);
 }
 
-string dv_type_tostr(DCDynValType type)
+string dv_type_tostr(DCDynValPtr dv)
 {
-    switch (type)
+    switch (dv->type)
     {
         case dc_dvt(i64):
             return "integer";
@@ -85,6 +85,10 @@ string dv_type_tostr(DCDynValType type)
 
         case dc_dvt(DEnvPtr):
             return "environment pointer";
+
+        case dc_dvt(voidptr):
+            if (dc_dv_as(*dv, voidptr) == NULL) return "(null)";
+            break;
 
         default:
             break;

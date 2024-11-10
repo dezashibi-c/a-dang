@@ -24,22 +24,6 @@
 // * TYPES
 // ***************************************************************************************
 
-typedef enum
-{
-    DOBJ_INTEGER,
-    DOBJ_STRING,
-    DOBJ_BOOLEAN,
-    DOBJ_QUOTE,
-    DOBJ_MACRO,
-    DOBJ_FUNCTION,
-    DOBJ_BUILTIN_FUNCTION,
-    DOBJ_ARRAY,
-    DOBJ_HASH_TABLE,
-    DOBJ_NULL,
-
-    DOBJ_UNKNOWN,
-} DObjType;
-
 struct DEnv
 {
     DCHashTable memory;
@@ -48,7 +32,7 @@ struct DEnv
 
 DCResType(DEnv*, ResEnv);
 
-typedef struct
+struct DEvaluator
 {
     DEnv main_env;
 
@@ -56,7 +40,11 @@ typedef struct
 
     DCDynArr pool;
     DCDynArr errors;
-} DEvaluator;
+
+    DCDynVal nullptr;
+    DCDynVal bool_true;
+    DCDynVal bool_false;
+};
 
 typedef struct
 {
@@ -72,41 +60,52 @@ typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCRes dn, DEnv* env);
 // * MACROS
 // ***************************************************************************************
 
+#define DO_STRING dc_dvt(string)
+#define DO_INTEGER dc_dvt(i64)
+#define DO_BOOLEAN dc_dvt(b1)
+#define DO_ARRAY dc_dvt(DCDynArrPtr)
+#define DO_HASH_TABLE dc_dvt(DCHashTablePtr)
+#define DO_FUNCTION dc_dvt(DNodeFunctionLiteral)
+#define DO_BUILTIN_FUNCTION dc_dvt(DBuiltinFunction)
+#define DO_RETURN dc_dvt(DoReturn)
+
 #define dang_evaluated(RES, INSPECT)                                                                                           \
     (Evaluated)                                                                                                                \
     {                                                                                                                          \
         .result = (RES), .inspect = (INSPECT)                                                                                  \
     }
 
-
-// todo:: take care of these
-#if 0
-#define dobj_def(TYPE, VALUE, ENV)                                                                                             \
+#define do_def(TYPE, VALUE, ENV)                                                                                               \
     (DCDynVal)                                                                                                                 \
     {                                                                                                                          \
-        .type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = false, .env = ENV, .is_returned = false,               \
+        .type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = false, .env = ENV                                      \
     }
 
-#define dobj_defa(TYPE, VALUE, ENV)                                                                                            \
+#define do_defa(TYPE, VALUE, ENV)                                                                                              \
     (DCDynVal)                                                                                                                 \
     {                                                                                                                          \
-        .type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = true, .env = ENV, .is_returned = false,                \
+        .type = dc_dvt(TYPE), .value.dc_dvf(TYPE) = VALUE, .allocated = true, .env = ENV                                       \
     }
 
-#define dobj_int(NUM) dobj_def(i64, (NUM), NULL)
-#define dobj_string(STR) dobj_def(string, (STR), NULL)
+#define do_int(NUM) do_def(i64, (NUM), NULL)
+#define do_string(STR) do_def(string, (STR), NULL)
 
-#define dobj_as_arr(DOBJ) (*dc_dv_as((DOBJ), DCDynArrPtr))
-#define dobj_as_int(DOBJ) dc_dv_as((DOBJ), i64)
+#define do_as_arr(DO) (*dc_dv_as((DO), DCDynArrPtr))
+#define do_as_int(DO) dc_dv_as((DO), i64)
+#define do_as_string(DO) dc_dv_as((DO), string)
 
-#define dobj_mark_returned(DOBJ) (DOBJ).is_returned = true
+#define do_is_int(DO) (dc_dv_is((DO), i64))
+#define do_is_string(DO) (dc_dv_is((DO), string))
 
-#define DECL_DBUILTIN_FUNCTION(NAME) DCDynVal NAME(DCDynValPtr call_obj, DCError* error)
+#define if_dv_is_DoReturn_return_unwrapped()                                                                                   \
+    if (dc_unwrap().type == dc_dvt(DoReturn)) dc_ret_ok(*(dc_dv_as(dc_unwrap(), DoReturn).ret_val))
 
-#define BUILTIN_FN_GET_ARGS DCDynArr _args = dobj_as_arr(*call_obj);
+#define DECL_DBUILTIN_FUNCTION(NAME) DCDynVal NAME(DEvaluator* de, DCDynValPtr call_obj, DCError* error)
+
+#define BUILTIN_FN_GET_ARGS DCDynArr _args = do_as_arr(*call_obj);
 
 #define BUILTIN_FN_GET_ARGS_VALIDATE(FN_NAME, NUM)                                                                             \
-    DCDynArr _args = dobj_as_arr(*call_obj);                                                                                   \
+    DCDynArr _args = do_as_arr(*call_obj);                                                                                     \
     if (_args.count != (NUM))                                                                                                  \
     {                                                                                                                          \
         dc_error_inita(*error, -1, "invalid number of argument passed to '" FN_NAME "', expected=%d, got=" dc_fmt(usize),      \
@@ -116,24 +115,29 @@ typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCRes dn, DEnv* env);
 
 #define BUILTIN_FN_GET_ARG_NO(NUM, TYPE, ERR_MSG)                                                                              \
     DCDynVal arg##NUM = dc_da_get2(_args, NUM);                                                                                \
-    if (dobj_get_type(&arg0) != TYPE)                                                                                          \
+    if (arg0.type != TYPE)                                                                                                     \
     {                                                                                                                          \
-        dc_error_inita(*error, -1, ERR_MSG ", got arg of type '%s'", tostr_DObjType(&arg##NUM));                               \
+        dc_error_inita(*error, -1, ERR_MSG ", got arg of type '%s'", dv_type_tostr(&arg##NUM));                                \
         return dc_dv_nullptr();                                                                                                \
     }
 
-#define dobj_resolve_if_ref(NEW_DOBJ, DOBJ)                                                                                    \
-    NEW_DOBJ = ((DOBJ).type == dc_dvt(DCDynValPtr) ? dc_dv_as((DOBJ), DCDynValPtr) : &(DOBJ));                                 \
+// todo:: take care of these
+#if 0
+
+#define do_mark_returned(DO) (DO).is_returned = true
+
+#define do_resolve_if_ref(NEW_DO, DO)                                                                                          \
+    NEW_DO = ((DO).type == dc_dvt(DCDynValPtr) ? dc_dv_as((DO), DCDynValPtr) : &(DO));                                         \
     do                                                                                                                         \
     {                                                                                                                          \
-        NEW_DOBJ->is_returned = (DOBJ).is_returned;                                                                            \
-        NEW_DOBJ->env = (DOBJ).env;                                                                                            \
+        NEW_DO->is_returned = (DO).is_returned;                                                                                \
+        NEW_DO->env = (DO).env;                                                                                                \
     } while (0)
 
-#define REGISTER_CLEANUP2(DOBJ, FAILURE_ACTIONS)                                                                               \
+#define REGISTER_CLEANUP2(DO, FAILURE_ACTIONS)                                                                                 \
     do                                                                                                                         \
     {                                                                                                                          \
-        dc_try_or_fail_with3(DCResVoid, res, dc_da_push(&main_de->cleanups, DOBJ), FAILURE_ACTIONS);                           \
+        dc_try_or_fail_with3(DCResVoid, res, dc_da_push(&main_de->cleanups, DO), FAILURE_ACTIONS);                             \
     } while (0)
 
 #define REGISTER_CLEANUP(TYPE, VALUE, FAILURE_ACTIONS)                                                                         \
@@ -154,17 +158,16 @@ DCResVoid de_free(DEvaluator* de);
 
 ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect);
 
-DObjType dobj_get_type(DCDynValPtr dobj);
-DCResString dobj_tostr(DCDynValPtr dobj);
-void dobj_print(DCDynValPtr obj);
+DCResString do_tostr(DCDynValPtr obj);
+void do_print(DCDynValPtr obj);
 
 DCResVoid dang_env_init(DEnvPtr env);
 ResEnv dang_env_new();
 DCResVoid dang_env_free(DEnv* de);
-DCRes dang_env_get(DEnv* de, string name);
-DCRes dang_env_set(DEnv* de, string name, DCDynValPtr value, b1 update_only);
+DCRes dang_env_get(DEnv* env, string name);
+DCRes dang_env_set(DEnv* env, string name, DCDynValPtr value, b1 update_only);
 
-string tostr_DObjType(DCDynValPtr dobj);
+string tostr_DoType(DCDynValPtr obj);
 
 DCRes dn_modify(DCDynValPtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier);
 

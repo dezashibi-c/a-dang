@@ -55,7 +55,7 @@ static ResTok extract_identifier(DScanner* s)
 
     usize start = s->pos;
 
-    while (is_letter(s->c)) read_char(s);
+    while (is_letter(s->c) || is_digit(s->c)) read_char(s);
 
     usize len = s->pos - start;
 
