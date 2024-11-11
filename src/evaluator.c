@@ -980,12 +980,11 @@ ResDNodeProgram dang_define_macros(DEvaluator* de, const string source)
         if (_it->type != dc_dvt(DNodeLetStatement)) continue;
 
         DNodeLetStatement let_node = dc_dv_as(*_it, DNodeLetStatement);
-
-        if (let_node.value && let_node.value->type != dc_dvt(DNodeMacro)) continue;
+        if (let_node.value == NULL || let_node.value->type != dc_dvt(DNodeMacro)) continue;
 
         // add env to macro_node
         DCDynValPtr macro_node = let_node.value;
-        // macro_node->env = &de->main_env; // todo:: fix this
+        macro_node->env = &de->main_env;
 
         // add the macro
         dc_try_or_fail_with3(DCRes, macro_add_res, dang_env_set(&de->main_env, let_node.name, macro_node, false),

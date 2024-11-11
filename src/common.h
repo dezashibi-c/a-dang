@@ -295,7 +295,7 @@ typedef DCDynVal (*DBuiltinFunction)(DEvaluator* de, DCDynValPtr call_obj, DCErr
     dc_dvf_decl(DoReturn);                                                                                                     \
     dc_dvf_decl(DoQuote);
 
-#define DC_DV_EXTRA_FIELDS DEnv* env;
+#define DC_DV_EXTRA_FIELDS DEnvPtr env;
 
 #include "dcommon/dcommon.h"
 
