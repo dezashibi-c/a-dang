@@ -799,7 +799,7 @@ CLOVE_TEST(quote_unquote)
     }
 }
 
-CLOVE_TEST(define_macros)
+CLOVE_TEST(macro_definition)
 {
     string input = "let number 1; let function fn (x y) { x + y }; let my_macro macro (x y) { x + y }";
 
@@ -817,7 +817,7 @@ CLOVE_TEST(define_macros)
     ResDNodeProgram res = dang_define_macros(&de, input);
     if (dc_is_err2(res))
     {
-        dc_err_log2(res, "program is not evaluated");
+        dc_err_log2(res, "macro definition failed");
 
         dang_parser_log_errors(&de.parser);
 
@@ -832,7 +832,7 @@ CLOVE_TEST(define_macros)
     CLOVE_IS_TRUE(dc_is_err2(env_res));
     CLOVE_IS_TRUE(dc_err_code2(env_res) == dc_e_code(NF));
 
-    env_res = dang_env_get(&de.main_env, "my_macro");
+    env_res = dang_env_get(&de.macro_env, "my_macro");
     CLOVE_IS_TRUE(dc_is_ok2(env_res));
     CLOVE_IS_TRUE(dc_unwrap2(env_res).type == dc_dvt(DNodeMacro));
 
@@ -847,6 +847,91 @@ CLOVE_TEST(define_macros)
     CLOVE_IS_TRUE(strcmp(dc_dv_as(dc_da_get2(*macro.parameters, 1), DNodeIdentifier).value, "y") == 0);
 
     dang_evaluator_free(&de);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(macro_expansion)
+{
+    dc_foreach2(
+        test_loop, string,
+        {
+            if (_idx % 2 != 0) continue;
+
+            string input = *_it;
+            string expected = *(_it + 1);
+
+            DEvaluator de;
+            DCResVoid init_res = dang_evaluator_init(&de);
+            if (dc_is_err2(init_res))
+            {
+                dc_log("Evaluator initialization error on input");
+
+                dc_err_log2(init_res, "error");
+
+                CLOVE_FAIL();
+            }
+
+            ResDNodeProgram res = dang_define_macros(&de, input);
+            if (dc_is_err2(res))
+            {
+                dc_err_log2(res, "macro definition failed");
+
+                dang_parser_log_errors(&de.parser);
+
+                CLOVE_FAIL();
+            }
+
+            DNodeProgram program = dc_unwrap2(res);
+
+            DCResVoid res2 = dang_expand_macros(&de, program.statements);
+            if (dc_is_err2(res2))
+            {
+                dc_err_log2(res2, "macro expansion failed");
+
+                dang_parser_log_errors(&de.parser);
+
+                CLOVE_FAIL();
+            }
+
+            string inspect = NULL;
+            DCResVoid inspect_res = dang_program_inspect(&program, &inspect);
+            if (dc_is_err2(inspect_res))
+            {
+                dc_err_log2(inspect_res, "result inspection failed");
+
+                dang_parser_log_errors(&de.parser);
+
+                CLOVE_FAIL();
+            }
+
+            if (strcmp(inspect, expected) != 0)
+            {
+                dc_log("macro expansion failed on input %s, expected=%s got=%s", input, expected, inspect);
+
+                if (inspect)
+                {
+                    free(inspect);
+                    inspect = NULL;
+                }
+
+                CLOVE_FAIL();
+            }
+
+            if (inspect) free(inspect);
+
+            dang_evaluator_free(&de);
+        },
+
+        "let infix_expr macro () { quote 1 + 2 }; infix_expr;",
+
+        "(1 + 2)\n",
+
+        "let reverse macro (a b) { quote ${unquote b} - ${unquote a} }; reverse 2 + 2 10 - 5",
+
+        "((10 - 5) - (2 + 2))\n",
+
+        NULL, NULL);
 
     CLOVE_PASS();
 }

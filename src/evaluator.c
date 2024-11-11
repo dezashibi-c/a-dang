@@ -556,6 +556,85 @@ static DCRes eval_quote(DEvaluator* de, DCDynValPtr dn, DEnvPtr env)
     dc_ret_ok_dv(DoQuote, do_quote(dn));
 }
 
+static DECL_DNODE_MODIFIER_FN(expansion_modifier)
+{
+    DC_RES();
+
+    /* First the node must be a call expression, with identifier as its function field */
+
+    if (dn->type != dc_dvt(DNodeCallExpression)) dc_ret_ok(*dn);
+    DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
+
+    if (call_exp.function->type != dc_dvt(DNodeIdentifier)) dc_ret_ok(*dn);
+    string macro_name = dc_dv_as(*call_exp.function, DNodeIdentifier).value;
+
+    /* Second the call expression's function field's value must be defined as macro in the env */
+
+    DCRes macro_res = dang_env_get(env, macro_name);
+
+    dc_err_cpy(macro_res);
+    if (dc_is_err())
+    {
+        if (dc_err_code() == dc_e_code(NF)) dc_ret_ok(*dn); // if it is not found
+
+        dc_ret(); // in case there are other errors
+    }
+
+    if (dc_unwrap2(macro_res).type != dc_dvt(DNodeMacro)) dc_ret_ok(*dn);
+
+    DCDynVal macro = dc_unwrap2(macro_res);
+
+    /* quoting arguments */
+
+    DCDynArr quoted_args = {0};
+    dc_try_fail_temp(DCResVoid, dc_da_init(&quoted_args, NULL));
+
+    dc_da_for(quoting_args_loop, *call_exp.arguments, {
+        // trying to push the quoted arg to the quoted_arg array
+        dc_try_or_fail_with3(DCResVoid, push_res, dc_da_push(&quoted_args, dc_dv(DoQuote, do_quote(_it))), {
+            // in case of failure
+            dc_try_fail_temp(DCResVoid, dc_da_free(&quoted_args));
+        });
+    });
+
+    /* extending macros */
+
+    dc_try_or_fail_with3(ResEnv, env_res, _env_new_enclosed(de, macro.env), {
+        // in case of failure
+        dc_try_fail_temp(DCResVoid, dc_da_free(&quoted_args));
+    });
+
+    DCDynArrPtr macro_node_args = dc_dv_as(macro, DNodeMacro).parameters;
+    DCDynArrPtr macro_node_body = dc_dv_as(macro, DNodeMacro).body;
+
+    DEnvPtr extended_env = dc_unwrap2(env_res);
+
+    dc_da_for(env_extension_loop, *macro_node_args, {
+        // setting values from quoted args to env
+        string param_name = dc_dv_as(*_it, DNodeIdentifier).value;
+
+        dc_try_or_fail_with3(DCRes, temp_res, dang_env_set(extended_env, param_name, &dc_da_get2(quoted_args, _idx), false), {
+            // in case of failure
+            dc_try_fail_temp(DCResVoid, dc_da_free(&quoted_args));
+        });
+    });
+
+    // no longer needed
+    dc_try_fail_temp(DCResVoid, dc_da_free(&quoted_args));
+
+    /* running evaluation on macro body */
+
+    dc_try_or_fail_with3(DCRes, evaluated_res,
+                         perform_evaluation_process(de, &dc_dv(DNodeBlockStatement, dn_block(macro_node_body)), extended_env),
+                         {});
+
+    /* Only quote objects are accepted */
+    if (dc_unwrap2(evaluated_res).type != DO_QUOTE) dc_ret_e(-1, "only quoted nodes must be returned from the macros");
+
+    DoQuote quoted = dc_dv_as(dc_unwrap2(evaluated_res), DoQuote);
+    dc_ret_ok(*quoted.node);
+}
+
 // ***************************************************************************************
 // * BUILTIN FUNCTIONS
 // ***************************************************************************************
@@ -934,12 +1013,14 @@ DCResVoid dang_evaluator_init(DEvaluator* de)
     DC_RES_void();
 
     dc_try_fail(dang_env_init(&de->main_env));
+    dc_try_fail(dang_env_init(&de->macro_env));
 
     dc_try_fail(dc_da_init2(&de->pool, 50, 3, evaluator_pool_cleanup));
     dc_try_fail(dc_da_init2(&de->errors, 20, 2, NULL));
 
     dc_try_or_fail_with(dang_parser_init(&de->parser, &de->pool, &de->errors), {
         dc_try_fail_temp(DCResVoid, dang_env_free(&de->main_env));
+        dc_try_fail_temp(DCResVoid, dang_env_free(&de->macro_env));
         dc_try_fail_temp(DCResVoid, dc_da_free(&de->pool));
         dc_try_fail_temp(DCResVoid, dc_da_free(&de->errors));
     });
@@ -954,6 +1035,8 @@ DCResVoid dang_evaluator_free(DEvaluator* de)
     DC_RES_void();
 
     dc_try_fail(dang_env_free(&de->main_env));
+
+    dc_try_fail(dang_env_free(&de->macro_env));
 
     dc_try_fail(dc_da_free(&de->pool));
 
@@ -984,10 +1067,10 @@ ResDNodeProgram dang_define_macros(DEvaluator* de, const string source)
 
         // add env to macro_node
         DCDynValPtr macro_node = let_node.value;
-        macro_node->env = &de->main_env;
+        macro_node->env = &de->macro_env;
 
         // add the macro
-        dc_try_or_fail_with3(DCRes, macro_add_res, dang_env_set(&de->main_env, let_node.name, macro_node, false),
+        dc_try_or_fail_with3(DCRes, macro_add_res, dang_env_set(&de->macro_env, let_node.name, macro_node, false),
                              dc_try_fail_temp(DCResVoid, dc_da_free(&definitions)));
 
         // keep record of the statement index
@@ -1003,6 +1086,21 @@ ResDNodeProgram dang_define_macros(DEvaluator* de, const string source)
     });
 
     dc_try_fail_temp(DCResVoid, dc_da_free(&definitions));
+
+    dc_ret();
+}
+
+DCResVoid dang_expand_macros(DEvaluator* de, DCDynArrPtr program_statements)
+{
+    DC_RES_void();
+
+    if (!program_statements) dc_ret_e(dc_e_code(NV), "program statements must not be NULL");
+
+    dc_da_for(statements_macro_expansion_loop, *program_statements, {
+        dc_try_or_fail_with3(DCRes, temp_modified_res, dn_modify(de, _it, &de->macro_env, expansion_modifier), {});
+
+        *_it = dc_unwrap2(temp_modified_res);
+    });
 
     dc_ret();
 }
@@ -1024,6 +1122,8 @@ ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect)
     dc_try_or_fail_with3(ResDNodeProgram, program_res, dang_define_macros(de, source), {});
 
     DNodeProgram program = dc_unwrap2(program_res);
+
+    dc_try_fail_temp(DCResVoid, dang_expand_macros(de, program.statements));
 
     dc_try_or_fail_with3(DCRes, result, perform_evaluation_process(de, &dc_dv(DNodeProgram, program), &de->main_env), {});
 
@@ -1250,15 +1350,21 @@ DCRes dn_modify(DEvaluator* de, DCDynValPtr dn, DEnv* env, DNodeModifierFn modif
         });
 
         modify_case(DNodeReturnStatement, {
-            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.ret_val, env, modifier), {});
+            if (node.ret_val)
+            {
+                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.ret_val, env, modifier), {});
 
-            *node.ret_val = dc_unwrap2(temp_modified_res);
+                *node.ret_val = dc_unwrap2(temp_modified_res);
+            }
         });
 
         modify_case(DNodeLetStatement, {
-            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.value, env, modifier), {});
+            if (node.value)
+            {
+                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.value, env, modifier), {});
 
-            *node.value = dc_unwrap2(temp_modified_res);
+                *node.value = dc_unwrap2(temp_modified_res);
+            }
         });
 
         modify_case(DNodeFunctionLiteral, {

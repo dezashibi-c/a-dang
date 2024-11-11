@@ -35,6 +35,7 @@ DCResType(DEnv*, ResEnv);
 struct DEvaluator
 {
     DEnv main_env;
+    DEnv macro_env;
 
     DParser parser;
 
@@ -132,6 +133,7 @@ DCResVoid dang_evaluator_init(DEvaluator* de);
 DCResVoid dang_evaluator_free(DEvaluator* de);
 
 ResDNodeProgram dang_define_macros(DEvaluator* de, const string source);
+DCResVoid dang_expand_macros(DEvaluator* de, DCDynArrPtr program_statements);
 ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect);
 
 DCResString do_tostr(DCDynValPtr obj);
