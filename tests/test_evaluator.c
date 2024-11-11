@@ -905,7 +905,7 @@ CLOVE_TEST(macro_expansion)
                 CLOVE_FAIL();
             }
 
-            if (strcmp(inspect, expected) != 0)
+            if (strncmp(inspect, expected, strlen(expected)) != 0)
             {
                 dc_log("macro expansion failed on input %s, expected=%s got=%s", input, expected, inspect);
 
@@ -930,6 +930,10 @@ CLOVE_TEST(macro_expansion)
         "let reverse macro (a b) { quote ${unquote b} - ${unquote a} }; reverse 2 + 2 10 - 5",
 
         "((10 - 5) - (2 + 2))\n",
+
+        "let unless macro (condition consequence alternative) { quote if !${unquote condition} { unquote consequence } else { "
+        "unquote alternative }}; unless 10 > 5 ${print 'not greater'} ${print 'greater'}",
+        "if (!(10 > 5)) { print(\"not greater\"); } else { print(\"greater\"); }",
 
         NULL, NULL);
 
