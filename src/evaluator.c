@@ -1164,10 +1164,6 @@ DCResString do_tostr(DCDynValPtr obj)
             dc_sappend(&result, "%s", ")");
             break;
 
-            // case DO_MACRO:
-            //     dc_sprintf(&result, "%s", "(macro)");
-            //     break;
-
         case DO_FUNCTION:
             dc_sprintf(&result, "%s", "(function)");
             break;
