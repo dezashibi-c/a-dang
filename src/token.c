@@ -48,6 +48,7 @@ string tostr_DTokType(DTokType dtt)
         dc_str_case(TOK_LBRACKET);
         dc_str_case(TOK_RBRACKET);
         dc_str_case(TOK_FUNCTION);
+        dc_str_case(TOK_MACRO);
         dc_str_case(TOK_LET);
         dc_str_case(TOK_TRUE);
         dc_str_case(TOK_FALSE);
@@ -81,6 +82,9 @@ DTokType is_keyword(DCStringView* text)
 
     else if (dc_sv_str_eq((*text), "else"))
         return TOK_ELSE;
+
+    else if (dc_sv_str_eq((*text), "macro"))
+        return TOK_MACRO;
 
     else if (dc_sv_str_eq((*text), "return"))
         return TOK_RET;

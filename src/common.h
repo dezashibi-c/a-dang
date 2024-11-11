@@ -168,6 +168,20 @@ DCResType(DNodeFunctionLiteral, ResDNodeFunctionLiteral);
 
 typedef struct
 {
+    DCDynArrPtr parameters;
+    DCDynArrPtr body;
+} DNodeMacro;
+
+#define dn_macro(P, B)                                                                                                         \
+    (DNodeMacro)                                                                                                               \
+    {                                                                                                                          \
+        .parameters = (P), .body = (B)                                                                                         \
+    }
+
+DCResType(DNodeMacro, ResDNodeMacro);
+
+typedef struct
+{
     DCDynValPtr function;
     DCDynArrPtr arguments;
 } DNodeCallExpression;
@@ -256,7 +270,7 @@ typedef DCDynVal (*DBuiltinFunction)(DEvaluator* de, DCDynValPtr call_obj, DCErr
     dc_dvt(DEnvPtr), dc_dvt(DBuiltinFunction), dc_dvt(DNodeProgram), dc_dvt(DNodeLetStatement), dc_dvt(DNodeReturnStatement),  \
         dc_dvt(DNodeBlockStatement), dc_dvt(DNodeIdentifier), dc_dvt(DNodePrefixExpression), dc_dvt(DNodeInfixExpression),     \
         dc_dvt(DNodeIfExpression), dc_dvt(DNodeArrayLiteral), dc_dvt(DNodeHashTableLiteral), dc_dvt(DNodeFunctionLiteral),     \
-        dc_dvt(DNodeCallExpression), dc_dvt(DNodeIndexExpression), dc_dvt(DoReturn), dc_dvt(DoQuote),
+        dc_dvt(DNodeMacro), dc_dvt(DNodeCallExpression), dc_dvt(DNodeIndexExpression), dc_dvt(DoReturn), dc_dvt(DoQuote),
 
 #define DC_DV_EXTRA_UNION_FIELDS                                                                                               \
     dc_dvf_decl(DEnvPtr);                                                                                                      \
@@ -274,6 +288,7 @@ typedef DCDynVal (*DBuiltinFunction)(DEvaluator* de, DCDynValPtr call_obj, DCErr
     dc_dvf_decl(DNodeArrayLiteral);                                                                                            \
     dc_dvf_decl(DNodeHashTableLiteral);                                                                                        \
     dc_dvf_decl(DNodeFunctionLiteral);                                                                                         \
+    dc_dvf_decl(DNodeMacro);                                                                                                   \
     dc_dvf_decl(DNodeCallExpression);                                                                                          \
     dc_dvf_decl(DNodeIndexExpression);                                                                                         \
     /* DNodeIndexExpression is the last node type */                                                                           \

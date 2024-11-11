@@ -55,6 +55,7 @@ typedef enum
     TOK_RBRACKET,
 
     TOK_FUNCTION,
+    TOK_MACRO,
     TOK_LET,
     TOK_TRUE,
     TOK_FALSE,

@@ -113,6 +113,9 @@ CLOVE_TEST(literals)
         "fn (x y z) {}",
         "Fn (x, y, z) { }\n",
 
+        "macro (x y z) {}",
+        "MACRO (x, y, z) { }\n",
+
         "if x < y { x }",
         "if (x < y) { x; }\n",
 

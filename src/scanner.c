@@ -70,6 +70,7 @@ static ResTok extract_identifier(DScanner* s)
         case 't':
         case 'i':
         case 'e':
+        case 'm':
         case 'r':
             t->type = is_keyword(&t->text);
             break;

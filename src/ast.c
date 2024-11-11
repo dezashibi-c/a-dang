@@ -187,6 +187,18 @@ DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
             break;
         }
 
+        case dc_dvt(DNodeMacro):
+        {
+            DNodeMacro macro = dc_dv_as(*dn, DNodeMacro);
+
+            dc_try_fail(array_inspector(macro.parameters, "MACRO (", ") ", ", ", true, result));
+
+            // The Body
+            dc_try_fail(array_inspector(macro.body, "{ ", "}", "; ", false, result));
+
+            break;
+        }
+
         case dc_dvt(DNodeCallExpression):
         {
             DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
