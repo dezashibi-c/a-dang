@@ -80,6 +80,9 @@ string dv_type_tostr(DCDynValPtr dv)
         case dc_dvt(DNodeCallExpression):
             return "call expression node";
 
+        case dc_dvt(DNodeMacro):
+            return "macro node";
+
         case dc_dvt(DNodeIndexExpression):
             return "index expression node";
 
