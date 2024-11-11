@@ -18,11 +18,12 @@ add_subdirectory(tests)
 ###############################################################################
 add_executable(dang 
     src/main.c
-    # src/token.c
-    # src/scanner.c
-    # src/parser.c
-    # src/ast.c
-    # src/evaluator.c
+    src/common.c
+    src/scanner.c
+    src/token.c
+    src/ast.c
+    src/parser.c
+    src/evaluator.c
 )
 
 # define_macro_option(dang PRINT_GREETINGS ON)

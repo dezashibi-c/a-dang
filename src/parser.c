@@ -57,7 +57,7 @@ static DCRes parse_statement(DParser* p);
             (strcmp(dc_dv_as(dc_unwrap2(CALLEE), DNodeIdentifier).value, "quote") == 0 ||                                      \
              strcmp(dc_dv_as(dc_unwrap2(CALLEE), DNodeIdentifier).value, "unquote") == 0))                                     \
         {                                                                                                                      \
-            if (dc_unwrap2(PARAMS)->count != 2)                                                                                \
+            if (dc_unwrap2(PARAMS)->count != 1)                                                                                \
                 dc_ea(-1, "'%s' accept only and only one argument, got=" dc_fmt(usize),                                        \
                       dc_dv_as(dc_unwrap2(CALLEE), DNodeIdentifier).value, dc_unwrap2(PARAMS)->count);                         \
         }                                                                                                                      \

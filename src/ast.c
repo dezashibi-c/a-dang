@@ -191,7 +191,12 @@ DCResVoid dang_node_inspect(DCDynValPtr dn, string* result)
         {
             DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
 
-            dc_try_fail(dang_node_inspect(call_exp.function, result));
+            if (call_exp.function->type == dc_dvt(DNodeIdentifier) &&
+                strcmp(dc_dv_as(*call_exp.function, DNodeIdentifier).value, QUOTE) == 0)
+                dc_sappend(result, "%s", "QUOTE");
+            else
+                dc_try_fail(dang_node_inspect(call_exp.function, result));
+
             dc_try_fail(array_inspector(call_exp.arguments, "(", ")", ", ", true, result));
 
             break;

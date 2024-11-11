@@ -513,88 +513,48 @@ static DCRes apply_function(DEvaluator* de, DCDynValPtr call_obj, DNodeFunctionL
     dc_ret();
 }
 
-#if 0
-static b1 is_unquote_call(DNodePtr dn)
-{
-    if (dn->type != DN_CALL_EXPRESSION) return false;
-
-    DNodePtr fn = dn_child(dn, 0);
-
-    return (fn->type == DN_IDENTIFIER) && strcmp(dn_data_as(fn, string), MACRO_UNPACK) == 0;
-}
-
-ResNode convert_do_to_nodeptr(DCDynValPtr obj)
-{
-    DC_RES2(ResNode);
-
-    // DNodePtr result = NULL;
-
-    switch (do_get_type(obj))
-    {
-        case DO_INTEGER:
-            return dn_new(DN_INTEGER_LITERAL, *obj, false);
-
-        case DO_BOOLEAN:
-            return dn_new(DN_BOOLEAN_LITERAL, *obj, false);
-
-        case DO_QUOTE:
-        {
-            DNodePtr node = dc_dv_as(*obj, DNodePtr);
-            node->quoted = false; // todo:: check this afterward
-            dc_ret_ok(node);
-        }
-
-        default:
-            break;
-    };
-
-    dc_ret_ok(NULL);
-}
-
 static DECL_DNODE_MODIFIER_FN(default_modifier)
-{
-    DC_RES2(ResNode);
-
-    if (!is_unquote_call(dn)) dc_ret_ok(NULL);
-
-    /* If the node is unquote call it must be evaluated and replaced by a node representing the result */
-
-    // hold the first arg
-    DNodePtr arg = dn_child(dn, 1);
-
-    // eval the first arg
-    dc_try_or_fail_with3(DCRes, unquoted_res, perform_evaluation_process(arg, de, main_de), { dn_full_free(arg); });
-
-    // convert the obj to node
-    dc_try_or_fail_with3(ResNode, new_node_res, convert_do_to_nodeptr(&dc_unwrap2(unquoted_res)), {});
-    DNodePtr new_node = dc_unwrap2(new_node_res);
-
-    dc_ret_ok(new_node);
-}
-
-static ResNode eval_unquote_calls(DNodePtr dn, DEnv* de, DEnv* main_de)
-{
-    return dn_modify(dn, de, main_de, default_modifier);
-}
-
-static DCRes process_quoted(DNodePtr dn, DEnv* de, DEnv* main_de)
 {
     DC_RES();
 
-    dc_try_or_fail_with3(ResNode, unquote_res, eval_unquote_calls(dn, de, main_de), {});
+    if (!node_is_unquote(*dn)) dc_ret_ok(*dn);
 
-    // DNodePtr processed_node = dc_unwrap2(unquote_res) ? dc_unwrap2(unquote_res) : dn;
+    /* The node is unquote call it must be evaluated and replaced by a node representing the result */
 
-    // if (dc_unwrap2(unquote_res))
-    // {
-    //     // add the newly created node to to the cleanups
-    //     // REGISTER_CLEANUP(DNodePtr, processed_node, dn_full_free(processed_node));
-    // }
+    DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
 
-    dc_ret_ok(do_def(DNodePtr, dc_unwrap2(unquote_res), NULL));
+    // hold the first arg
+    DCDynVal arg = dc_da_get2(*call_exp.arguments, 0);
+
+    // eval the first arg
+    dc_try_fail(perform_evaluation_process(de, &arg, env));
+
+    // if the unquoted node is a quote it must be ignored
+    if (dc_unwrap().type == DO_QUOTE)
+    {
+        DoQuote quoted = dc_dv_as(dc_unwrap(), DoQuote);
+
+        dc_ret_ok(*quoted.node);
+    }
+
+    dc_ret();
 }
 
-#endif
+static DCRes eval_unquote_calls(DEvaluator* de, DCDynValPtr dn, DEnv* env)
+{
+    return dn_modify(de, dn, env, default_modifier);
+}
+
+static DCRes eval_quote(DEvaluator* de, DCDynValPtr dn, DEnvPtr env)
+{
+    DC_RES();
+
+    dc_try_fail(eval_unquote_calls(de, dn, env));
+
+    *dn = dc_unwrap();
+
+    dc_ret_ok_dv(DoQuote, do_quote(dn));
+}
 
 // ***************************************************************************************
 // * BUILTIN FUNCTIONS
@@ -901,12 +861,7 @@ static DCRes perform_evaluation_process(DEvaluator* de, DCDynValPtr dn, DEnv* en
         {
             DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
 
-            if (call_exp.function->type == dc_dvt(DNodeIdentifier) &&
-                strcmp(dc_dv_as(*call_exp.function, DNodeIdentifier).value, "quote") == 0)
-            {
-                // todo:: finish this
-                // return process_quoted(dn, de, main_de);
-            }
+            if (node_is_quote(*dn)) return eval_quote(de, &dc_da_get2(*call_exp.arguments, 0), env);
 
             // evaluating it must return a function object
             // that is in fact the function literal node saved in the environment before
@@ -974,7 +929,7 @@ DCResVoid dang_env_init(DEnvPtr env)
     dc_ret();
 }
 
-DCResVoid de_init(DEvaluator* de)
+DCResVoid dang_evaluator_init(DEvaluator* de)
 {
     DC_RES_void();
 
@@ -983,15 +938,18 @@ DCResVoid de_init(DEvaluator* de)
     dc_try_fail(dc_da_init2(&de->pool, 50, 3, evaluator_pool_cleanup));
     dc_try_fail(dc_da_init2(&de->errors, 20, 2, NULL));
 
-    dc_try_or_fail_with(dang_parser_init(&de->parser, &de->pool, &de->errors),
-                        dc_try_fail_temp(DCResVoid, dang_env_free(&de->main_env)));
+    dc_try_or_fail_with(dang_parser_init(&de->parser, &de->pool, &de->errors), {
+        dc_try_fail_temp(DCResVoid, dang_env_free(&de->main_env));
+        dc_try_fail_temp(DCResVoid, dc_da_free(&de->pool));
+        dc_try_fail_temp(DCResVoid, dc_da_free(&de->errors));
+    });
 
     de->nullptr = dc_dv_nullptr();
 
     dc_ret();
 }
 
-DCResVoid de_free(DEvaluator* de)
+DCResVoid dang_evaluator_free(DEvaluator* de)
 {
     DC_RES_void();
 
@@ -1004,6 +962,13 @@ DCResVoid de_free(DEvaluator* de)
     dc_ret();
 }
 
+/**
+ * Evaluate input code and return a result containing the evaluated object
+ * And the inspected source code if asked for
+ *
+ * NOTE: in case the inspection is being asked it is saved in the pool
+ * No need to free it manually it will be taken care of when the evaluator is freed
+ */
 ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect)
 {
     DC_RES2(ResEvaluated);
@@ -1048,10 +1013,11 @@ DCResString do_tostr(DCDynValPtr obj)
             return dc_tostr_dv(obj);
             break;
 
-            // case DO_QUOTE:
-            //     // todo:: it must inspect the 'node' of the object
-            //     // dang_node_inspect(dc_dv_as(*obj, DNodePtr), &result);
-            //     break;
+        case DO_QUOTE:
+            dc_sappend(&result, "%s", "QUOTE(");
+            dang_node_inspect(dc_dv_as(*obj, DoQuote).node, &result);
+            dc_sappend(&result, "%s", ")");
+            break;
 
             // case DO_MACRO:
             //     dc_sprintf(&result, "%s", "(macro)");
@@ -1148,31 +1114,143 @@ DCRes dang_env_set(DEnv* env, string name, DCDynValPtr value, b1 update_only)
     dc_ret_ok(val_to_save);
 }
 
-#if 0
-ResNode dn_modify(DNodePtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier)
+/**
+ * The function dn_modify is based on DCDynValPtr that is a pointer to a dynamic value
+ * This value can be in the pool or from another node's field (recursive call).
+ *
+ * As I've already have the pool implemented to hold track of every single "allocated" nodes
+ * And "every single" DCDynValPtr in any node is in fact placed in the pool.
+ *
+ * We can indeed replace them without any problem as:
+ *  1. any new allocation will be also pushed back to the pool
+ *  2. the previous value will be replaced without making it dangled (if allocated)
+ */
+DCRes dn_modify(DEvaluator* de, DCDynValPtr dn, DEnv* env, DNodeModifierFn modifier)
 {
-    DC_RES2(ResNode);
+    DC_RES();
 
-    if (!modifier) dc_ret_e(dc_e_code(NV), "modifier function cannot be null");
+#define modify_case(T, ACTIONS)                                                                                                \
+    case dc_dvt(T):                                                                                                            \
+    {                                                                                                                          \
+        T node = dc_dv_as(*dn, T);                                                                                             \
+        ACTIONS;                                                                                                               \
+        dc_dv_set(*dn, T, node);                                                                                               \
+        break;                                                                                                                 \
+    }
 
-    dc_da_for(statement_modification_loop, dn->children, {
-        // get pointer to the first child
-        DNodePtr child = dn_child(dn, _idx);
+    DCRes temp_modified_res;
 
-        // modify the child
-        dc_try_or_fail_with3(ResNode, modified_res, dn_modify(child, de, main_de, modifier), {});
+    switch (dn->type)
+    {
+        modify_case(DNodeProgram, {
+            dc_da_for(program_node_modify_loop, *node.statements, {
+                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
 
-        if (!dc_unwrap2(modified_res)) continue;
+                *_it = dc_unwrap2(temp_modified_res);
+            });
+        });
 
-        // register the node
-        // REGISTER_CLEANUP(DNodePtr, child, dn_full_free(child));
 
-        // replace the node
-        dn_child(dn, _idx) = dc_unwrap2(modified_res);
-    });
+        modify_case(DNodeInfixExpression, {
+            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.left, env, modifier), {});
 
-    dc_try(modifier(dn, de, main_de));
+            *node.left = dc_unwrap2(temp_modified_res);
 
-    dc_ret_ok(dc_unwrap() ? dc_unwrap() : dn);
+            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.right, env, modifier), {});
+
+            *node.right = dc_unwrap2(temp_modified_res);
+        });
+
+        modify_case(DNodePrefixExpression, {
+            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.operand, env, modifier), {});
+
+            *node.operand = dc_unwrap2(temp_modified_res);
+        });
+
+        modify_case(DNodeIndexExpression, {
+            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.operand, env, modifier), {});
+
+            *node.operand = dc_unwrap2(temp_modified_res);
+
+            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.index, env, modifier), {});
+
+            *node.index = dc_unwrap2(temp_modified_res);
+        });
+
+        modify_case(DNodeBlockStatement, {
+            dc_da_for(block_node_modify_loop, *node.statements, {
+                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
+
+                *_it = dc_unwrap2(temp_modified_res);
+            });
+        });
+
+        modify_case(DNodeIfExpression, {
+            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.condition, env, modifier), {});
+
+            *node.condition = dc_unwrap2(temp_modified_res);
+
+            dc_da_for(if_cons_mod_loop, *node.consequence, {
+                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
+
+                *_it = dc_unwrap2(temp_modified_res);
+            });
+
+            if (node.alternative)
+                dc_da_for(if_alt_mod_loop, *node.alternative, {
+                    dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
+
+                    *_it = dc_unwrap2(temp_modified_res);
+                });
+        });
+
+        modify_case(DNodeReturnStatement, {
+            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.ret_val, env, modifier), {});
+
+            *node.ret_val = dc_unwrap2(temp_modified_res);
+        });
+
+        modify_case(DNodeLetStatement, {
+            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.value, env, modifier), {});
+
+            *node.value = dc_unwrap2(temp_modified_res);
+        });
+
+        modify_case(DNodeFunctionLiteral, {
+            dc_da_for(fn_lit_param_mod_loop, *node.parameters, {
+                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
+
+                *_it = dc_unwrap2(temp_modified_res);
+            });
+
+            dc_da_for(fn_lit_body_mod_loop, *node.body, {
+                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
+
+                *_it = dc_unwrap2(temp_modified_res);
+            });
+        });
+
+        modify_case(DNodeArrayLiteral, {
+            dc_da_for(array_lit_mod_loop, *node.array, {
+                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
+
+                *_it = dc_unwrap2(temp_modified_res);
+            });
+        });
+
+        modify_case(DNodeHashTableLiteral, {
+            dc_da_for(hash_table_lit_mod_loop, *node.key_values, {
+                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
+
+                *_it = dc_unwrap2(temp_modified_res);
+            });
+        });
+
+        default:
+            break;
+    };
+
+    return modifier(de, dn, env);
+
+#undef modify_case
 }
-#endif

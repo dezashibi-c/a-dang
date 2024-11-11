@@ -54,7 +54,7 @@ typedef struct
 
 DCResType(Evaluated, ResEvaluated);
 
-typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCRes dn, DEnv* env);
+typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCDynValPtr dn, DEnv* env);
 
 // ***************************************************************************************
 // * MACROS
@@ -68,6 +68,7 @@ typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCRes dn, DEnv* env);
 #define DO_FUNCTION dc_dvt(DNodeFunctionLiteral)
 #define DO_BUILTIN_FUNCTION dc_dvt(DBuiltinFunction)
 #define DO_RETURN dc_dvt(DoReturn)
+#define DO_QUOTE dc_dvt(DoQuote)
 
 #define dang_evaluated(RES, INSPECT)                                                                                           \
     (Evaluated)                                                                                                                \
@@ -121,14 +122,14 @@ typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCRes dn, DEnv* env);
         return dc_dv_nullptr();                                                                                                \
     }
 
-#define DECL_DNODE_MODIFIER_FN(NAME) ResNode NAME(DNodePtr dn, DEnv* de, DEnv* main_de)
+#define DECL_DNODE_MODIFIER_FN(NAME) DCRes NAME(DEvaluator* de, DCDynValPtr dn, DEnv* env)
 
 // ***************************************************************************************
 // * FUNCTION DECLARATIONS
 // ***************************************************************************************
 
-DCResVoid de_init(DEvaluator* de);
-DCResVoid de_free(DEvaluator* de);
+DCResVoid dang_evaluator_init(DEvaluator* de);
+DCResVoid dang_evaluator_free(DEvaluator* de);
 
 ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect);
 
@@ -143,6 +144,6 @@ DCRes dang_env_set(DEnv* env, string name, DCDynValPtr value, b1 update_only);
 
 string tostr_DoType(DCDynValPtr obj);
 
-DCRes dn_modify(DCDynValPtr dn, DEnv* de, DEnv* main_de, DNodeModifierFn modifier);
+DCRes dn_modify(DEvaluator* de, DCDynValPtr dn, DEnv* env, DNodeModifierFn modifier);
 
 #endif // DANG_EVAL_H

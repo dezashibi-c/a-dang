@@ -202,6 +202,9 @@ CLOVE_TEST(statements)
 
         "let arr3 [1 2 3]; let i arr3[0]; arr3[i]",
         "let arr3 [1, 2, 3]\nlet i (arr3[0])\n(arr3[i])\n",
+
+        "quote 5",
+        "QUOTE(5)\n",
     };
 
     if (!perform_test_batch(tests, dc_count(tests)))

@@ -18,80 +18,17 @@
 #define DANG_AST_H
 
 #include "common.h"
-
 #include "token.h"
-#if 0
-typedef enum
-{
-    DN__UNKNOWN,
 
-    DN_PROGRAM,
+#define node_is_quote(NODE)                                                                                                    \
+    ((NODE).type == dc_dvt(DNodeCallExpression) &&                                                                             \
+     dc_dv_as((NODE), DNodeCallExpression).function->type == dc_dvt(DNodeIdentifier) &&                                        \
+     strcmp(dc_dv_as(*dc_dv_as((NODE), DNodeCallExpression).function, DNodeIdentifier).value, QUOTE) == 0)
 
-    DN__START_STATEMENT,
-    DN_LET_STATEMENT,
-    DN_RETURN_STATEMENT,
-    DN_EXPRESSION_STATEMENT,
-    DN_BLOCK_STATEMENT,
-    DN__END_STATEMENT,
-
-    DN__START_EXPRESSION,
-    DN_IDENTIFIER,
-    DN_PREFIX_EXPRESSION,
-    DN_INFIX_EXPRESSION,
-    DN_IF_EXPRESSION,
-    DN_WHILE_EXPRESSION,
-    DN_CALL_EXPRESSION,
-    DN_INDEX_EXPRESSION,
-    DN__END_EXPRESSION,
-
-    DN__START_LITERAL,
-    DN_FUNCTION_LITERAL,
-    DN_ARRAY_LITERAL,
-    DN_HASH_LITERAL,
-    DN_MACRO_LITERAL,
-    DN_BOOLEAN_LITERAL,
-    DN_STRING_LITERAL,
-    DN_INTEGER_LITERAL,
-    DN__END_LITERAL,
-
-    DN__MAX,
-} DNType;
-
-#define __dn_group_is(NODE_TYPE, GROUP) (NODE_TYPE > DN__START_##GROUP && NODE_TYPE < DN__END_##GROUP)
-
-#define dn_group_is_statement(NODE_TYPE) __dn_group_is(NODE_TYPE, STATEMENT)
-#define dn_group_is_expression(NODE_TYPE) __dn_group_is(NODE_TYPE, EXPRESSION)
-#define dn_group_is_literal(NODE_TYPE) __dn_group_is(NODE_TYPE, LITERAL)
-#define dn_type_is_valid(NODE_TYPE)                                                                                            \
-    ((NODE_TYPE) == DN_PROGRAM || dn_group_is_expression(NODE_TYPE) || dn_group_is_statement(NODE_TYPE) ||                     \
-     dn_group_is_literal(NODE_TYPE))
-
-#define dn_child(NODE, INDEX) (dc_da_get_as(NODE->children, INDEX, DNodePtr))
-
-#define dn_child_count(NODE) ((NODE)->children.count)
-
-#define dn_data(NODE) (NODE)->data
-
-#define dn_data_as(NODE, TYPE) dc_dv_as(dn_data(NODE), TYPE)
-
-#define dn_child_data(NODE, INDEX) (dn_child(NODE, INDEX)->data)
-
-#define dn_child_data_as(NODE, INDEX, TYPE) dc_dv_as(dn_child_data(NODE, INDEX), TYPE)
-
-#define dn_child_push(NODE, CHILD) dc_da_push(&NODE->children, dc_dva(DNodePtr, CHILD))
-
-#define dn_child_push_unwrapped(NODE, CHILD_RES) dc_da_push(&NODE->children, dc_dva(DNodePtr, dc_unwrap2(CHILD_RES)))
-
-struct DNode
-{
-    DNType type;
-    DCDynVal data;
-    DCDynArr children;
-    b1 quoted;
-};
-
-DCResType(DNodePtr, ResNode);
-#endif
+#define node_is_unquote(NODE)                                                                                                  \
+    ((NODE).type == dc_dvt(DNodeCallExpression) &&                                                                             \
+     dc_dv_as((NODE), DNodeCallExpression).function->type == dc_dvt(DNodeIdentifier) &&                                        \
+     strcmp(dc_dv_as(*dc_dv_as((NODE), DNodeCallExpression).function, DNodeIdentifier).value, UNQUOTE) == 0)
 
 DCResVoid dang_program_inspect(DNodeProgram* program, string* result);
 

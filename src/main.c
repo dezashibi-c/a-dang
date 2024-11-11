@@ -14,11 +14,7 @@
 // *  Description:
 // ***************************************************************************************
 
-#if 0
-
-#define DCOMMON_IMPL
 #include "evaluator.h"
-#include "parser.h"
 
 #define DANG_REPL_EXIT ":q"
 
@@ -29,17 +25,16 @@ static void repl()
 
     char line[1024];
 
-    ResEnv de_res = dang_env_new();
+    DEvaluator de = {0};
+    DCResVoid de_res = dang_evaluator_init(&de);
     if (dc_is_err2(de_res))
     {
-        dc_err_log2(de_res, "cannot initialize environment");
+        dc_err_log2(de_res, "cannot initialize evaluator");
 
         dc_result_free(&de_res);
 
         return;
     }
-
-    DEnv* de = dc_unwrap2(de_res);
 
     while (true)
     {
@@ -53,73 +48,30 @@ static void repl()
 
         if (strncmp(line, DANG_REPL_EXIT, strlen(DANG_REPL_EXIT)) == 0) break;
 
-        DScanner s;
-        dang_scanner_init(&s, line);
-
-        DParser p;
-        DCResVoid res = dang_parser_init(&p, &s);
-
-        if (dc_is_err2(res))
+        ResEvaluated evaluation_res = dang_eval(&de, line, true);
+        if (dc_is_err2(evaluation_res))
         {
-            dc_err_log2(res, DC_FG_LRED "DParser initialization error");
-            printf("%s", DC_COLOR_RESET);
+            dc_log("evaluator could not finish the job properly: (code %d) %s", dc_err_code2(evaluation_res),
+                   dc_err_msg2(evaluation_res));
 
-            dc_result_free(&res);
+            dang_parser_log_errors(&de.parser);
 
-            continue;
-        }
-
-        ResNode program_res = dang_parse_program(&p);
-        if (dc_is_err2(program_res))
-        {
-            dc_log("parser could not finish the job properly: (code %d) %s", dc_err_code2(program_res),
-                   dc_err_msg2(program_res));
-
-            dc_result_free(&program_res);
+            dc_result_free(&evaluation_res);
         }
         else
         {
-            if (dang_parser_has_error(&p)) dang_parser_log_errors(&p);
+            Evaluated evaluated = dc_unwrap2(evaluation_res);
+            printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", evaluated.inspect);
 
-            DNodePtr program = dc_unwrap2(program_res);
+            printf("%s", "Result: " DC_FG_LGREEN);
 
-            string result = NULL;
-            DCResVoid inspection_res = dang_node_inspect(program, &result);
-            if (dc_is_err2(inspection_res))
-            {
-                dc_err_log2(inspection_res, "Inspection error");
+            do_print(&evaluated.result);
 
-                dc_result_free(&inspection_res);
-            }
-            else
-            {
-                printf("Evaluated text:\n" dc_colorize_fg(LGREEN, "%s") "\n", result);
-
-                DCRes evaluated = dang_eval(program, de);
-                if (dc_is_err2(evaluated))
-                {
-                    dc_err_log2(evaluated, DC_FG_LRED "Evaluation error");
-                    printf("%s", DC_COLOR_RESET);
-
-                    dc_result_free(&evaluated);
-                }
-                else
-                {
-                    printf("%s", "Result: " DC_FG_LGREEN);
-
-                    do_print(&dc_unwrap2(evaluated));
-
-                    printf("\n%s", DC_COLOR_RESET);
-                }
-            }
-
-            if (result) free(result);
+            printf("\n%s", DC_COLOR_RESET);
         }
-
-        dang_parser_free(&p);
     }
 
-    dang_env_free(de);
+    dang_evaluator_free(&de);
 }
 
 int main(int argc, string argv[])
@@ -141,12 +93,3 @@ int main(int argc, string argv[])
 
     return 0;
 }
-
-#else
-
-int main()
-{
-    return 0;
-}
-
-#endif

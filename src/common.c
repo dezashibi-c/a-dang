@@ -90,6 +90,12 @@ string dv_type_tostr(DCDynValPtr dv)
             if (dc_dv_as(*dv, voidptr) == NULL) return "(null)";
             break;
 
+        case dc_dvt(DoReturn):
+            return "return object";
+
+        case dc_dvt(DoQuote):
+            return "quote object";
+
         default:
             break;
     };

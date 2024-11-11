@@ -60,7 +60,7 @@ static b1 perform_evaluation_tests(TestCase tests[])
 {
     dc_foreach(main_test_loop, tests, TestCase, {
         DEvaluator de;
-        DCResVoid init_res = de_init(&de);
+        DCResVoid init_res = dang_evaluator_init(&de);
         if (dc_is_err2(init_res))
         {
             dc_log("Evaluator initialization error on input");
@@ -84,32 +84,29 @@ static b1 perform_evaluation_tests(TestCase tests[])
 
         if (_it->expected.type == dc_dvt(DCDynArrPtr))
             dc_action_on(!test_evaluated_array_literal(dc_dv_as(result, DCDynArrPtr), dc_dv_as(_it->expected, DCDynArrPtr)),
-                         de_free(&de);
+                         dang_evaluator_free(&de);
                          return false, "array test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
 
-        // todo:: fix this later
-        /*else if (do_get_type(&dc_unwrap2(res)) == DO_QUOTE)
+        else if (result.type == DO_QUOTE)
         {
-            DCResString str_res = do_tostr(&dc_unwrap2(res));
-            dc_action_on(dc_is_err2(str_res), dang_env_free(de);
+            DCResString str_res = do_tostr(&result);
+            dc_action_on(dc_is_err2(str_res), dang_evaluator_free(&de);
                          return false, "quote test '" dc_fmt(usize) "' failed: string conversion failed", _idx);
 
-            bool result = strcmp(dc_unwrap2(str_res), dc_dv_as(_it->expected, string)) == 0;
-            if (!result)
+            bool comparison_result = strcmp(dc_unwrap2(str_res), dc_dv_as(_it->expected, string)) == 0;
+            if (!comparison_result)
             {
                 dc_log("quote/unquote test '" dc_fmt(usize) "' failed: expected '%s' bot got '%s'", _idx,
                        dc_dv_as(_it->expected, string), dc_unwrap2(str_res));
             }
             free(dc_unwrap2(str_res));
-
-            return result;
-        } */
+        }
 
         else
-            dc_action_on(!test_evaluated_literal(&result, &_it->expected), ; de_free(&de);
+            dc_action_on(!test_evaluated_literal(&result, &_it->expected), dang_evaluator_free(&de);
                          return false, "literal test '" dc_fmt(usize) "' failed: wrong evaluation result", _idx);
 
-        de_free(&de);
+        dang_evaluator_free(&de);
     });
 
 
@@ -546,7 +543,7 @@ CLOVE_TEST(closures)
         CLOVE_FAIL();
     }
 }
-#if 0
+
 CLOVE_TEST(quote)
 {
     TestCase tests[] = {
@@ -571,6 +568,200 @@ CLOVE_TEST(quote)
     }
 }
 
+static DECL_DNODE_MODIFIER_FN(modifier_fn)
+{
+    DC_RES();
+
+    (void)de;
+    (void)env;
+
+    if (dn->type != DO_INTEGER) dc_ret_ok(*dn);
+
+    i64 value = do_as_int(*dn);
+    if (value != 1) dc_ret_ok(*dn);
+
+    dc_ret_ok(do_int(2));
+}
+
+CLOVE_TEST(modify_program_node)
+{
+    DCDynVal one = do_int(1);
+    DCDynVal two = do_int(2);
+
+    DCDynArr statements;
+    dc_da_init(&statements, NULL);
+
+    dc_da_push(&statements, one);
+    dc_da_push(&statements, two);
+
+    DCDynVal program = dc_dv(DNodeProgram, dn_program(&statements));
+
+    DCRes modified = dn_modify(NULL, &program, NULL, modifier_fn);
+    if (dc_is_err2(modified))
+    {
+        dc_err_log2(modified, "program modify test failed");
+        CLOVE_FAIL();
+    }
+
+    // verifications
+    DCDynVal modified_node = dc_unwrap2(modified);
+    CLOVE_IS_TRUE(modified_node.type == dc_dvt(DNodeProgram));
+    DNodeProgram modified_program = dc_dv_as(modified_node, DNodeProgram);
+
+    // tests
+    CLOVE_IS_TRUE(modified_program.statements->elements[0].value.i64_val == 2);
+    CLOVE_IS_TRUE(modified_program.statements->elements[1].value.i64_val == 2);
+
+    dc_da_free(&statements);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(modify_infix_node)
+{
+    DCDynVal one = do_int(1);
+    DCDynVal two = do_int(2);
+
+    DCDynVal infix = dc_dv(DNodeInfixExpression, dn_infix("+", &one, &two));
+
+    DCRes modified_res = dn_modify(NULL, &infix, NULL, modifier_fn);
+    if (dc_is_err2(modified_res))
+    {
+        dc_err_log2(modified_res, "infix modify test failed");
+        CLOVE_FAIL();
+    }
+
+    // verifications
+    DCDynVal modified = dc_unwrap2(modified_res);
+    CLOVE_IS_TRUE(modified.type == dc_dvt(DNodeInfixExpression));
+    DNodeInfixExpression modified_node = dc_dv_as(modified, DNodeInfixExpression);
+
+    // tests
+    CLOVE_IS_TRUE(modified_node.left->value.i64_val == 2);
+    CLOVE_IS_TRUE(modified_node.right->value.i64_val == 2);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(modify_prefix_node)
+{
+    DCDynVal one = do_int(1);
+
+    DCDynVal prefix = dc_dv(DNodePrefixExpression, dn_prefix("-", &one));
+
+    DCRes modified_res = dn_modify(NULL, &prefix, NULL, modifier_fn);
+    if (dc_is_err2(modified_res))
+    {
+        dc_err_log2(modified_res, "prefix modify test failed");
+        CLOVE_FAIL();
+    }
+
+    // verifications
+    DCDynVal modified = dc_unwrap2(modified_res);
+    CLOVE_IS_TRUE(modified.type == dc_dvt(DNodePrefixExpression));
+    DNodePrefixExpression modified_node = dc_dv_as(modified, DNodePrefixExpression);
+
+    // tests
+    CLOVE_IS_TRUE(modified_node.operand->value.i64_val == 2);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(modify_index_node)
+{
+    DCDynVal one = do_int(1);
+
+    DCDynVal index = dc_dv(DNodeIndexExpression, dn_index(&one, &one));
+
+    DCRes modified_res = dn_modify(NULL, &index, NULL, modifier_fn);
+    if (dc_is_err2(modified_res))
+    {
+        dc_err_log2(modified_res, "index modify test failed");
+        CLOVE_FAIL();
+    }
+
+    // verifications
+    DCDynVal modified = dc_unwrap2(modified_res);
+    CLOVE_IS_TRUE(modified.type == dc_dvt(DNodeIndexExpression));
+    DNodeIndexExpression modified_node = dc_dv_as(modified, DNodeIndexExpression);
+
+    // tests
+    CLOVE_IS_TRUE(modified_node.operand->value.i64_val == 2);
+    CLOVE_IS_TRUE(modified_node.index->value.i64_val == 2);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(modify_return_node)
+{
+    DCDynVal one = do_int(1);
+
+    DCDynVal return_node = dc_dv(DNodeReturnStatement, dn_return(&one));
+
+    DCRes modified_res = dn_modify(NULL, &return_node, NULL, modifier_fn);
+    if (dc_is_err2(modified_res))
+    {
+        dc_err_log2(modified_res, "return modify test failed");
+        CLOVE_FAIL();
+    }
+
+    // verifications
+    DCDynVal modified = dc_unwrap2(modified_res);
+    CLOVE_IS_TRUE(modified.type == dc_dvt(DNodeReturnStatement));
+    DNodeReturnStatement modified_node = dc_dv_as(modified, DNodeReturnStatement);
+
+    // tests
+    CLOVE_IS_TRUE(modified_node.ret_val->value.i64_val == 2);
+
+    CLOVE_PASS();
+}
+
+CLOVE_TEST(modify_if_expression_node)
+{
+    DCDynVal one = do_int(1);
+
+    DCDynArr cons;
+    dc_da_init(&cons, NULL);
+
+    DCDynArr alt;
+    dc_da_init(&alt, NULL);
+
+    dc_da_push(&cons, one);
+    dc_da_push(&cons, one);
+
+    dc_da_push(&alt, one);
+    dc_da_push(&alt, one);
+
+
+    DCDynVal if_expression_node = dc_dv(DNodeIfExpression, dn_if(&one, &cons, &alt));
+
+    DCRes modified_res = dn_modify(NULL, &if_expression_node, NULL, modifier_fn);
+    if (dc_is_err2(modified_res))
+    {
+        dc_err_log2(modified_res, "if expression modify test failed");
+        CLOVE_FAIL();
+    }
+
+    // verifications
+    DCDynVal modified = dc_unwrap2(modified_res);
+    CLOVE_IS_TRUE(modified.type == dc_dvt(DNodeIfExpression));
+    DNodeIfExpression modified_node = dc_dv_as(modified, DNodeIfExpression);
+
+    // tests
+    CLOVE_IS_TRUE(modified_node.condition->value.i64_val == 2);
+
+    CLOVE_IS_TRUE(modified_node.consequence->elements[0].value.i64_val == 2);
+    CLOVE_IS_TRUE(modified_node.consequence->elements[1].value.i64_val == 2);
+
+    CLOVE_IS_TRUE(modified_node.alternative->elements[0].value.i64_val == 2);
+    CLOVE_IS_TRUE(modified_node.alternative->elements[1].value.i64_val == 2);
+
+    dc_da_free(&cons);
+    dc_da_free(&alt);
+
+    CLOVE_PASS();
+}
+
 CLOVE_TEST(quote_unquote)
 {
     TestCase tests[] = {
@@ -582,13 +773,18 @@ CLOVE_TEST(quote_unquote)
 
         {.input = "quote ${unquote 4 + 4} + 8", .expected = do_string("QUOTE((8 + 8))")},
 
-        {.input = "let foobar = 8; quote foobar", .expected = do_string("QUOTE(foobar)")},
+        {.input = "let foobar 8; quote foobar", .expected = do_string("QUOTE(foobar)")},
 
-        {.input = "let foobar 8; quote ${unquote foobar}", .expected = do_string("QUOTE(8)")},
+        {.input = "let foobar 8; quote ${unquote 4}", .expected = do_string("QUOTE(4)")},
 
         {.input = "quote ${unquote true}", .expected = do_string("QUOTE(true)")},
 
         {.input = "quote ${unquote true == false}", .expected = do_string("QUOTE(false)")},
+
+        {.input = "quote ${unquote ${quote 4 + 4}}", .expected = do_string("QUOTE((4 + 4))")},
+
+        {.input = "let quoted_infix ${quote 4 + 4}; quote ${unquote 4 + 4} + ${unquote quoted_infix}",
+         .expected = do_string("QUOTE((8 + (4 + 4)))")},
 
 
         {.input = "", .expected = dc_dv_nullptr()},
@@ -602,7 +798,6 @@ CLOVE_TEST(quote_unquote)
         CLOVE_FAIL();
     }
 }
-#endif
 
 CLOVE_TEST(error_handling)
 {
@@ -647,7 +842,7 @@ CLOVE_TEST(error_handling)
 
     dc_foreach(error_checking_loop, error_tests, string, {
         DEvaluator de;
-        DCResVoid init_res = de_init(&de);
+        DCResVoid init_res = dang_evaluator_init(&de);
         if (dc_is_err2(init_res))
         {
             dc_log("Evaluator initialization error on input");
