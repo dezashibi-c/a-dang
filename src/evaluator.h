@@ -131,6 +131,7 @@ typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCDynValPtr dn, DEnv* env);
 DCResVoid dang_evaluator_init(DEvaluator* de);
 DCResVoid dang_evaluator_free(DEvaluator* de);
 
+ResDNodeProgram dang_define_macros(DEvaluator* de, const string source);
 ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect);
 
 DCResString do_tostr(DCDynValPtr obj);
@@ -141,8 +142,6 @@ ResEnv dang_env_new();
 DCResVoid dang_env_free(DEnv* de);
 DCRes dang_env_get(DEnv* env, string name);
 DCRes dang_env_set(DEnv* env, string name, DCDynValPtr value, b1 update_only);
-
-string tostr_DoType(DCDynValPtr obj);
 
 DCRes dn_modify(DEvaluator* de, DCDynValPtr dn, DEnv* env, DNodeModifierFn modifier);
 

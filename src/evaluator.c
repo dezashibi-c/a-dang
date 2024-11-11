@@ -962,6 +962,52 @@ DCResVoid dang_evaluator_free(DEvaluator* de)
     dc_ret();
 }
 
+ResDNodeProgram dang_define_macros(DEvaluator* de, const string source)
+{
+    DC_RES2(ResDNodeProgram);
+
+    if (!de) dc_ret_e(dc_e_code(NV), "cannot continue macro definition NULL evaluator");
+    if (!source) dc_ret_e(dc_e_code(NV), "cannot run macro definition on NULL source");
+
+    dc_try_fail(dang_parse(&de->parser, source));
+
+    DCDynArrPtr statements = dc_unwrap().statements;
+
+    DCDynArr definitions;
+    dc_try_fail_temp(DCResVoid, dc_da_init(&definitions, NULL));
+
+    dc_da_for(macro_definition_loop, *statements, {
+        if (_it->type != dc_dvt(DNodeLetStatement)) continue;
+
+        DNodeLetStatement let_node = dc_dv_as(*_it, DNodeLetStatement);
+
+        if (let_node.value && let_node.value->type != dc_dvt(DNodeMacro)) continue;
+
+        // add env to macro_node
+        DCDynValPtr macro_node = let_node.value;
+        // macro_node->env = &de->main_env; // todo:: fix this
+
+        // add the macro
+        dc_try_or_fail_with3(DCRes, macro_add_res, dang_env_set(&de->main_env, let_node.name, macro_node, false),
+                             dc_try_fail_temp(DCResVoid, dc_da_free(&definitions)));
+
+        // keep record of the statement index
+        dc_try_or_fail_with3(DCResVoid, res, dc_da_push(&definitions, dc_dv(usize, _idx)),
+                             dc_try_fail_temp(DCResVoid, dc_da_free(&definitions)));
+    });
+
+    // removing the definition lines
+    dc_da_for(definitions_loop, definitions, {
+        // attempt to remove the kept statement indexes for macro definitions
+        dc_try_or_fail_with3(DCResVoid, res, dc_da_delete(statements, dc_dv_as(*_it, usize)),
+                             dc_try_fail_temp(DCResVoid, dc_da_free(&definitions)));
+    });
+
+    dc_try_fail_temp(DCResVoid, dc_da_free(&definitions));
+
+    dc_ret();
+}
+
 /**
  * Evaluate input code and return a result containing the evaluated object
  * And the inspected source code if asked for
@@ -976,7 +1022,7 @@ ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect)
     if (!de) dc_ret_e(dc_e_code(NV), "cannot evaluate using NULL evaluator");
     if (!source) dc_ret_e(dc_e_code(NV), "cannot run evaluation on NULL source");
 
-    dc_try_or_fail_with3(ResDNodeProgram, program_res, dang_parse(&de->parser, source), {});
+    dc_try_or_fail_with3(ResDNodeProgram, program_res, dang_define_macros(de, source), {});
 
     DNodeProgram program = dc_unwrap2(program_res);
 
@@ -1090,7 +1136,7 @@ DCRes dang_env_get(DEnv* env, string name)
 
     dc_dbg_log("key '%s' not found in the environment", name);
 
-    dc_ret_ea(6, "'%s' is not defined", name);
+    dc_ret_ea(dc_e_code(NF), "'%s' is not defined", name);
 }
 
 DCRes dang_env_set(DEnv* env, string name, DCDynValPtr value, b1 update_only)

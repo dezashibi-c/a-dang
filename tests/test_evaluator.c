@@ -67,7 +67,7 @@ static b1 perform_evaluation_tests(TestCase tests[])
 
             dc_err_log2(init_res, "error");
 
-            exit(dc_err_code2(init_res));
+            return false;
         }
 
         ResEvaluated res = dang_eval(&de, _it->input, false);
@@ -799,6 +799,58 @@ CLOVE_TEST(quote_unquote)
     }
 }
 
+CLOVE_TEST(define_macros)
+{
+    string input = "let number 1; let function fn (x y) { x + y }; let my_macro macro (x y) { x + y }";
+
+    DEvaluator de;
+    DCResVoid init_res = dang_evaluator_init(&de);
+    if (dc_is_err2(init_res))
+    {
+        dc_log("Evaluator initialization error on input");
+
+        dc_err_log2(init_res, "error");
+
+        CLOVE_FAIL();
+    }
+
+    ResDNodeProgram res = dang_define_macros(&de, input);
+    if (dc_is_err2(res))
+    {
+        dc_err_log2(res, "program is not evaluated");
+
+        dang_parser_log_errors(&de.parser);
+
+        CLOVE_FAIL();
+    }
+
+    DCRes env_res = dang_env_get(&de.main_env, "number");
+    CLOVE_IS_TRUE(dc_is_err2(env_res));
+    CLOVE_IS_TRUE(dc_err_code2(env_res) == dc_e_code(NF));
+
+    env_res = dang_env_get(&de.main_env, "function");
+    CLOVE_IS_TRUE(dc_is_err2(env_res));
+    CLOVE_IS_TRUE(dc_err_code2(env_res) == dc_e_code(NF));
+
+    env_res = dang_env_get(&de.main_env, "my_macro");
+    CLOVE_IS_TRUE(dc_is_ok2(env_res));
+    CLOVE_IS_TRUE(dc_unwrap2(env_res).type == dc_dvt(DNodeMacro));
+
+    DNodeMacro macro = dc_dv_as(dc_unwrap2(env_res), DNodeMacro);
+
+    CLOVE_IS_TRUE(macro.parameters->count == 2);
+
+    CLOVE_IS_TRUE(dc_da_get2(*macro.parameters, 0).type == dc_dvt(DNodeIdentifier));
+    CLOVE_IS_TRUE(strcmp(dc_dv_as(dc_da_get2(*macro.parameters, 0), DNodeIdentifier).value, "x") == 0);
+
+    CLOVE_IS_TRUE(dc_da_get2(*macro.parameters, 1).type == dc_dvt(DNodeIdentifier));
+    CLOVE_IS_TRUE(strcmp(dc_dv_as(dc_da_get2(*macro.parameters, 1), DNodeIdentifier).value, "y") == 0);
+
+    dang_evaluator_free(&de);
+
+    CLOVE_PASS();
+}
+
 CLOVE_TEST(error_handling)
 {
     string error_tests[] = {
@@ -849,7 +901,7 @@ CLOVE_TEST(error_handling)
 
             dc_err_log2(init_res, "error");
 
-            exit(dc_err_code2(init_res));
+            CLOVE_FAIL();
         }
 
         ResEvaluated res = dang_eval(&de, *_it, false);
