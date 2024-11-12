@@ -83,7 +83,7 @@ CLOVE_TEST(more_tokens)
                          "{\n"
                          "  x + y\n"
                          "}\n"
-                         "let result = (add five, ten) macro a";
+                         "let result = (add five, ten)";
 
     TestExpectedResult tests[] = {
         {.type = TOK_LET, .text = "let"},     {.type = TOK_IDENT, .text = "five"},   {.type = TOK_ASSIGN, .text = "="},
@@ -106,8 +106,6 @@ CLOVE_TEST(more_tokens)
         {.type = TOK_LET, .text = "let"},     {.type = TOK_IDENT, .text = "result"}, {.type = TOK_ASSIGN, .text = "="},
         {.type = TOK_LPAREN, .text = "("},    {.type = TOK_IDENT, .text = "add"},    {.type = TOK_IDENT, .text = "five"},
         {.type = TOK_COMMA, .text = ","},     {.type = TOK_IDENT, .text = "ten"},    {.type = TOK_RPAREN, .text = ")"},
-
-        {.type = TOK_MACRO, .text = "macro"}, {.type = TOK_IDENT, .text = "a"},
 
 
         {.type = TOK_EOF, .text = ""},

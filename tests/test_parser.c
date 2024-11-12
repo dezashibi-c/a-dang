@@ -113,9 +113,6 @@ CLOVE_TEST(literals)
         "fn (x y z) {}",
         "Fn (x, y, z) { }\n",
 
-        "macro (x y z) {}",
-        "MACRO (x, y, z) { }\n",
-
         "if x < y { x }",
         "if (x < y) { x; }\n",
 
@@ -205,9 +202,6 @@ CLOVE_TEST(statements)
 
         "let arr3 [1 2 3]; let i arr3[0]; arr3[i]",
         "let arr3 [1, 2, 3]\nlet i (arr3[0])\n(arr3[i])\n",
-
-        "quote 5",
-        "QUOTE(5)\n",
     };
 
     if (!perform_test_batch(tests, dc_count(tests)))

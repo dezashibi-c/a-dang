@@ -20,21 +20,9 @@
 #include "common.h"
 #include "token.h"
 
-#define node_is_quote(NODE)                                                                                                    \
-    ((NODE).type == dc_dvt(DNodeCallExpression) &&                                                                             \
-     dc_dv_as((NODE), DNodeCallExpression).function->type == dc_dvt(DNodeIdentifier) &&                                        \
-     strcmp(dc_dv_as(*dc_dv_as((NODE), DNodeCallExpression).function, DNodeIdentifier).value, QUOTE) == 0)
-
-#define node_is_unquote(NODE)                                                                                                  \
-    ((NODE).type == dc_dvt(DNodeCallExpression) &&                                                                             \
-     dc_dv_as((NODE), DNodeCallExpression).function->type == dc_dvt(DNodeIdentifier) &&                                        \
-     strcmp(dc_dv_as(*dc_dv_as((NODE), DNodeCallExpression).function, DNodeIdentifier).value, UNQUOTE) == 0)
-
 DCResVoid dang_program_inspect(DNodeProgram* program, string* result);
 
 DCResVoid dang_node_inspect(DCDynValPtr dn, string* result);
-
-DCRes dang_node_copy(DCDynValPtr dn, DCDynArrPtr pool);
 
 DC_DV_FREE_FN_DECL(dn_child_free);
 

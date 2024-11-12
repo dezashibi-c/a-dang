@@ -35,7 +35,6 @@ DCResType(DEnv*, ResEnv);
 struct DEvaluator
 {
     DEnv main_env;
-    DEnv macro_env;
 
     DParser parser;
 
@@ -55,8 +54,6 @@ typedef struct
 
 DCResType(Evaluated, ResEvaluated);
 
-typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCDynValPtr dn, DEnv* env);
-
 // ***************************************************************************************
 // * MACROS
 // ***************************************************************************************
@@ -69,7 +66,6 @@ typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCDynValPtr dn, DEnv* env);
 #define DO_FUNCTION dc_dvt(DNodeFunctionLiteral)
 #define DO_BUILTIN_FUNCTION dc_dvt(DBuiltinFunction)
 #define DO_RETURN dc_dvt(DoReturn)
-#define DO_QUOTE dc_dvt(DoQuote)
 
 #define dang_evaluated(RES, INSPECT)                                                                                           \
     (Evaluated)                                                                                                                \
@@ -123,8 +119,6 @@ typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCDynValPtr dn, DEnv* env);
         return dc_dv_nullptr();                                                                                                \
     }
 
-#define DECL_DNODE_MODIFIER_FN(NAME) DCRes NAME(DEvaluator* de, DCDynValPtr dn, DEnv* env)
-
 // ***************************************************************************************
 // * FUNCTION DECLARATIONS
 // ***************************************************************************************
@@ -132,8 +126,6 @@ typedef DCRes (*DNodeModifierFn)(DEvaluator* de, DCDynValPtr dn, DEnv* env);
 DCResVoid dang_evaluator_init(DEvaluator* de);
 DCResVoid dang_evaluator_free(DEvaluator* de);
 
-ResDNodeProgram dang_define_macros(DEvaluator* de, const string source);
-DCResVoid dang_expand_macros(DEvaluator* de, DCDynArrPtr program_statements);
 ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect);
 
 DCResString do_tostr(DCDynValPtr obj);
@@ -144,7 +136,5 @@ ResEnv dang_env_new();
 DCResVoid dang_env_free(DEnv* de);
 DCRes dang_env_get(DEnv* env, string name);
 DCRes dang_env_set(DEnv* env, string name, DCDynValPtr value, b1 update_only);
-
-DCRes dn_modify(DEvaluator* de, DCDynValPtr dn, DEnv* env, DNodeModifierFn modifier);
 
 #endif // DANG_EVAL_H

@@ -513,135 +513,6 @@ static DCRes apply_function(DEvaluator* de, DCDynValPtr call_obj, DNodeFunctionL
     dc_ret();
 }
 
-static DECL_DNODE_MODIFIER_FN(default_modifier)
-{
-    DC_RES();
-
-    if (!node_is_unquote(*dn)) dc_ret_ok(*dn);
-
-    /* The node is unquote call it must be evaluated and replaced by a node representing the result */
-
-    DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
-
-    // hold the first arg
-    DCDynVal arg = dc_da_get2(*call_exp.arguments, 0);
-
-    // eval the first arg
-    dc_try_fail(perform_evaluation_process(de, &arg, env));
-
-    // if the unquoted node is a quote it must be ignored
-    if (dc_unwrap().type == DO_QUOTE)
-    {
-        DoQuote quoted = dc_dv_as(dc_unwrap(), DoQuote);
-
-        dc_ret_ok(*quoted.node);
-    }
-
-    dc_ret();
-}
-
-static DCRes eval_unquote_calls(DEvaluator* de, DCDynValPtr dn, DEnv* env)
-{
-    return dn_modify(de, dn, env, default_modifier);
-}
-
-static DCRes eval_quote(DEvaluator* de, DCDynValPtr dn, DEnvPtr env)
-{
-    DC_RES();
-
-    dc_try_fail(eval_unquote_calls(de, dn, env));
-
-    *dn = dc_unwrap();
-
-    dc_ret_ok_dv(DoQuote, do_quote(dn));
-}
-
-static DECL_DNODE_MODIFIER_FN(expansion_modifier)
-{
-    DC_RES();
-
-    /* Step 1: the node must be a call expression, with identifier as its function field */
-
-    if (dn->type != dc_dvt(DNodeCallExpression)) dc_ret_ok(*dn);
-    DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
-
-    if (call_exp.function->type != dc_dvt(DNodeIdentifier)) dc_ret_ok(*dn);
-    string macro_name = dc_dv_as(*call_exp.function, DNodeIdentifier).value;
-
-    /* Step 2: the call expression's function field's value must be defined as macro in the env */
-
-    DCRes env_check_res = dang_env_get(env, macro_name);
-
-    dc_err_cpy(env_check_res);
-    if (dc_is_err())
-    {
-        if (dc_err_code() == dc_e_code(NF)) dc_ret_ok(*dn); // if it is not found
-
-        dc_ret(); // in case there are other errors
-    }
-
-    DCDynVal macro_val = dc_unwrap2(env_check_res);
-
-    if (macro_val.type != dc_dvt(DNodeMacro)) dc_ret_ok(*dn);
-
-    DNodeMacro macro = dc_dv_as(macro_val, DNodeMacro);
-
-    /* Step 3: number of passed arguments must met the required number of parameters for the macro */
-
-    if (macro.parameters->count != call_exp.arguments->count)
-        dc_ret_ea(-1, "macro needs " dc_fmt(usize) " arguments, got=" dc_fmt(usize), macro.parameters->count,
-                  call_exp.arguments->count);
-
-    /* Step 4: Creating a new environment and extending it with macro parameters and passed arguments */
-
-    DEnvPtr macro_env = macro_val.env;
-
-    dc_try_or_fail_with3(ResEnv, env_res, _env_new_enclosed(de, macro_env), {});
-
-    DEnvPtr extended_env = dc_unwrap2(env_res);
-
-    dc_da_for(env_extension_loop, *macro.parameters, {
-        string param_name = dc_dv_as(*_it, DNodeIdentifier).value;
-
-        // Creating a quoted version of passed argument with same index
-        DCDynVal quoted_arg = dc_dv(DoQuote, do_quote(&dc_da_get2(*call_exp.arguments, _idx)));
-
-        dc_try_or_fail_with3(DCRes, temp_res, dang_env_set(extended_env, param_name, &quoted_arg, false), {});
-    });
-
-    /* Step 5: Running evaluation on a copy of macro body and with the extended env */
-
-    DCDynVal macro_body = dc_dv(DCDynArrPtr, macro.body);
-
-    string temp_str = NULL;
-    dang_node_inspect(&dc_dv(DNodeBlockStatement, dn_block(macro.body)), &temp_str);
-
-    dc_log("macro body before: %s", temp_str);
-
-    dc_try_or_fail_with3(DCRes, body_copy_res, dang_node_copy(&macro_body, &de->pool), {});
-
-    DCDynArrPtr macro_body_copy = dc_dv_as(dc_unwrap2(body_copy_res), DCDynArrPtr);
-
-
-    dc_try_or_fail_with3(DCRes, evaluated_res,
-                         perform_evaluation_process(de, &dc_dv(DNodeBlockStatement, dn_block(macro_body_copy)), extended_env),
-                         {});
-
-    free(temp_str);
-    temp_str = NULL;
-
-    dang_node_inspect(&dc_dv(DNodeBlockStatement, dn_block(macro.body)), &temp_str);
-
-    dc_log("macro body after: %s", temp_str);
-
-    /* Step 6: Only quote object results are accepted */
-
-    if (dc_unwrap2(evaluated_res).type != DO_QUOTE) dc_ret_e(-1, "only quoted nodes must be returned from the macros");
-
-    DoQuote quoted = dc_dv_as(dc_unwrap2(evaluated_res), DoQuote);
-    dc_ret_ok(*quoted.node);
-}
-
 // ***************************************************************************************
 // * BUILTIN FUNCTIONS
 // ***************************************************************************************
@@ -947,8 +818,6 @@ static DCRes perform_evaluation_process(DEvaluator* de, DCDynValPtr dn, DEnv* en
         {
             DNodeCallExpression call_exp = dc_dv_as(*dn, DNodeCallExpression);
 
-            if (node_is_quote(*dn)) return eval_quote(de, &dc_da_get2(*call_exp.arguments, 0), env);
-
             // evaluating it must return a function object
             // that is in fact the function literal node saved in the environment before
             // it also holds pointer to its environment
@@ -1020,14 +889,12 @@ DCResVoid dang_evaluator_init(DEvaluator* de)
     DC_RES_void();
 
     dc_try_fail(dang_env_init(&de->main_env));
-    dc_try_fail(dang_env_init(&de->macro_env));
 
     dc_try_fail(dc_da_init2(&de->pool, 50, 3, evaluator_pool_cleanup));
     dc_try_fail(dc_da_init2(&de->errors, 20, 2, NULL));
 
     dc_try_or_fail_with(dang_parser_init(&de->parser, &de->pool, &de->errors), {
         dc_try_fail_temp(DCResVoid, dang_env_free(&de->main_env));
-        dc_try_fail_temp(DCResVoid, dang_env_free(&de->macro_env));
         dc_try_fail_temp(DCResVoid, dc_da_free(&de->pool));
         dc_try_fail_temp(DCResVoid, dc_da_free(&de->errors));
     });
@@ -1043,57 +910,9 @@ DCResVoid dang_evaluator_free(DEvaluator* de)
 
     dc_try_fail(dang_env_free(&de->main_env));
 
-    dc_try_fail(dang_env_free(&de->macro_env));
-
     dc_try_fail(dc_da_free(&de->pool));
 
     dc_try_fail(dc_da_free(&de->errors));
-
-    dc_ret();
-}
-
-ResDNodeProgram dang_define_macros(DEvaluator* de, const string source)
-{
-    DC_RES2(ResDNodeProgram);
-
-    if (!de) dc_ret_e(dc_e_code(NV), "cannot continue macro definition NULL evaluator");
-    if (!source) dc_ret_e(dc_e_code(NV), "cannot run macro definition on NULL source");
-
-    dc_try_fail(dang_parse(&de->parser, source));
-
-    DCDynArrPtr statements = dc_unwrap().statements;
-
-    dc_da_for(macro_definition_loop, *statements, {
-        if (_it->type != dc_dvt(DNodeLetStatement)) continue;
-
-        DNodeLetStatement let_node = dc_dv_as(*_it, DNodeLetStatement);
-        if (let_node.value == NULL || let_node.value->type != dc_dvt(DNodeMacro)) continue;
-
-        // add env to macro_node
-        DCDynValPtr macro_node = let_node.value;
-        macro_node->env = &de->macro_env;
-
-        // add the macro
-        dc_try_or_fail_with3(DCRes, macro_add_res, dang_env_set(&de->macro_env, let_node.name, macro_node, false), {});
-
-        // attempt to remove the macro definitions (let statement)
-        dc_try_or_fail_with3(DCResVoid, res, dc_da_delete(statements, _idx), {});
-    });
-
-    dc_ret();
-}
-
-DCResVoid dang_expand_macros(DEvaluator* de, DCDynArrPtr program_statements)
-{
-    DC_RES_void();
-
-    if (!program_statements) dc_ret_e(dc_e_code(NV), "program statements must not be NULL");
-
-    dc_da_for(statements_macro_expansion_loop, *program_statements, {
-        dc_try_or_fail_with3(DCRes, temp_modified_res, dn_modify(de, _it, &de->macro_env, expansion_modifier), {});
-
-        *_it = dc_unwrap2(temp_modified_res);
-    });
 
     dc_ret();
 }
@@ -1112,11 +931,9 @@ ResEvaluated dang_eval(DEvaluator* de, const string source, b1 inspect)
     if (!de) dc_ret_e(dc_e_code(NV), "cannot evaluate using NULL evaluator");
     if (!source) dc_ret_e(dc_e_code(NV), "cannot run evaluation on NULL source");
 
-    dc_try_or_fail_with3(ResDNodeProgram, program_res, dang_define_macros(de, source), {});
+    dc_try_or_fail_with3(ResDNodeProgram, program_res, dang_parse(&de->parser, source), {});
 
     DNodeProgram program = dc_unwrap2(program_res);
-
-    dc_try_fail_temp(DCResVoid, dang_expand_macros(de, program.statements));
 
     dc_try_or_fail_with3(DCRes, result, perform_evaluation_process(de, &dc_dv(DNodeProgram, program), &de->main_env), {});
 
@@ -1149,12 +966,6 @@ DCResString do_tostr(DCDynValPtr obj)
         case DO_INTEGER:
         case DO_STRING:
             return dc_tostr_dv(obj);
-            break;
-
-        case DO_QUOTE:
-            dc_sappend(&result, "%s", "QUOTE(");
-            dang_node_inspect(dc_dv_as(*obj, DoQuote).node, &result);
-            dc_sappend(&result, "%s", ")");
             break;
 
         case DO_FUNCTION:
@@ -1246,151 +1057,4 @@ DCRes dang_env_set(DEnv* env, string name, DCDynValPtr value, b1 update_only)
     }
 
     dc_ret_ok(val_to_save);
-}
-
-/**
- * The function dn_modify is based on DCDynValPtr that is a pointer to a dynamic value
- * This value can be in the pool or from another node's field (recursive call).
- *
- * As I've already have the pool implemented to hold track of every single "allocated" nodes
- * And "every single" DCDynValPtr in any node is in fact placed in the pool.
- *
- * We can indeed replace them without any problem as:
- *  1. any new allocation will be also pushed back to the pool
- *  2. the previous value will be replaced without making it dangled (if allocated)
- */
-DCRes dn_modify(DEvaluator* de, DCDynValPtr dn, DEnv* env, DNodeModifierFn modifier)
-{
-    DC_RES();
-
-#define modify_case(T, ACTIONS)                                                                                                \
-    case dc_dvt(T):                                                                                                            \
-    {                                                                                                                          \
-        T node = dc_dv_as(*dn, T);                                                                                             \
-        ACTIONS;                                                                                                               \
-        /* dc_dv_set(*dn, T, node); */ /* todo:: remove this if not needed */                                                  \
-        break;                                                                                                                 \
-    }
-
-    DCRes temp_modified_res;
-
-    switch (dn->type)
-    {
-        modify_case(DNodeProgram, {
-            dc_da_for(program_node_modify_loop, *node.statements, {
-                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
-
-                *_it = dc_unwrap2(temp_modified_res);
-            });
-        });
-
-
-        modify_case(DNodeInfixExpression, {
-            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.left, env, modifier), {});
-
-            *node.left = dc_unwrap2(temp_modified_res);
-
-            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.right, env, modifier), {});
-
-            *node.right = dc_unwrap2(temp_modified_res);
-        });
-
-        modify_case(DNodePrefixExpression, {
-            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.operand, env, modifier), {});
-
-            *node.operand = dc_unwrap2(temp_modified_res);
-        });
-
-        modify_case(DNodeIndexExpression, {
-            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.operand, env, modifier), {});
-
-            *node.operand = dc_unwrap2(temp_modified_res);
-
-            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.index, env, modifier), {});
-
-            *node.index = dc_unwrap2(temp_modified_res);
-        });
-
-        modify_case(DNodeBlockStatement, {
-            dc_da_for(block_node_modify_loop, *node.statements, {
-                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
-
-                *_it = dc_unwrap2(temp_modified_res);
-            });
-        });
-
-        modify_case(DNodeIfExpression, {
-            dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.condition, env, modifier), {});
-
-            *node.condition = dc_unwrap2(temp_modified_res);
-
-            dc_da_for(if_cons_mod_loop, *node.consequence, {
-                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
-
-                *_it = dc_unwrap2(temp_modified_res);
-            });
-
-            if (node.alternative)
-                dc_da_for(if_alt_mod_loop, *node.alternative, {
-                    dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
-
-                    *_it = dc_unwrap2(temp_modified_res);
-                });
-        });
-
-        modify_case(DNodeReturnStatement, {
-            if (node.ret_val)
-            {
-                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.ret_val, env, modifier), {});
-
-                *node.ret_val = dc_unwrap2(temp_modified_res);
-            }
-        });
-
-        modify_case(DNodeLetStatement, {
-            if (node.value)
-            {
-                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, node.value, env, modifier), {});
-
-                *node.value = dc_unwrap2(temp_modified_res);
-            }
-        });
-
-        modify_case(DNodeFunctionLiteral, {
-            dc_da_for(fn_lit_param_mod_loop, *node.parameters, {
-                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
-
-                *_it = dc_unwrap2(temp_modified_res);
-            });
-
-            dc_da_for(fn_lit_body_mod_loop, *node.body, {
-                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
-
-                *_it = dc_unwrap2(temp_modified_res);
-            });
-        });
-
-        modify_case(DNodeArrayLiteral, {
-            dc_da_for(array_lit_mod_loop, *node.array, {
-                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
-
-                *_it = dc_unwrap2(temp_modified_res);
-            });
-        });
-
-        modify_case(DNodeHashTableLiteral, {
-            dc_da_for(hash_table_lit_mod_loop, *node.key_values, {
-                dc_try_or_fail_with2(temp_modified_res, dn_modify(de, _it, env, modifier), {});
-
-                *_it = dc_unwrap2(temp_modified_res);
-            });
-        });
-
-        default:
-            break;
-    };
-
-    return modifier(de, dn, env);
-
-#undef modify_case
 }

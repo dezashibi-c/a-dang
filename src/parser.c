@@ -50,19 +50,6 @@ static DCRes parse_statement(DParser* p);
 #define dang_parser_location_revert(P) (P)->loc = __dang_parser_loc_snapshot
 #define dang_parser_location_set(P, LOC) (P)->loc = LOC
 
-#define check_quote(CALLEE, PARAMS)                                                                                            \
-    do                                                                                                                         \
-    {                                                                                                                          \
-        if (dc_unwrap2(CALLEE).type == dc_dvt(DNodeIdentifier) &&                                                              \
-            (strcmp(dc_dv_as(dc_unwrap2(CALLEE), DNodeIdentifier).value, "quote") == 0 ||                                      \
-             strcmp(dc_dv_as(dc_unwrap2(CALLEE), DNodeIdentifier).value, "unquote") == 0))                                     \
-        {                                                                                                                      \
-            if (dc_unwrap2(PARAMS)->count != 1)                                                                                \
-                dc_ea(-1, "'%s' accept only and only one argument, got=" dc_fmt(usize),                                        \
-                      dc_dv_as(dc_unwrap2(CALLEE), DNodeIdentifier).value, dc_unwrap2(PARAMS)->count);                         \
-        }                                                                                                                      \
-    } while (0)
-
 /**
  * expands to checking if the token is end of statement or not
  *
@@ -336,48 +323,6 @@ static DCRes parse_function_literal(DParser* p)
 }
 
 /**
- * Macro: 'macro' '(' (identifier (,)?)*  ')' '{' statement* '}'
- */
-static DCRes parse_macro(DParser* p)
-{
-    DC_RES();
-
-    dc_try_fail_temp(DCResVoid, move_if_peek_token_is(p, TOK_LPAREN));
-
-    /* parsing macro parameters  */
-    dc_try_or_fail_with3(DCResDa, params_arr_res, parse_function_params(p), {});
-
-    DCDynArrPtr params_arr = dc_unwrap2(params_arr_res);
-
-    /* a macro also needs body which can be empty but it's mandatory */
-
-    DCResVoid res = move_if_peek_token_is(p, TOK_LBRACE);
-    dc_ret_if_err2(res, {
-        dc_err_dbg_log2(res, "macro needs body");
-
-        dc_try_fail_temp(DCResVoid, dc_da_free(params_arr));
-        free(params_arr);
-    });
-
-    dang_parser_location_preserve(p);
-    DCRes body = parse_block_statement(p);
-    dang_parser_location_revert(p);
-
-    dc_ret_if_err2(body, {
-        dc_err_dbg_log2(body, "could not parse macro body");
-
-        dc_try_fail_temp(DCResVoid, dc_da_free(params_arr));
-        free(params_arr);
-    });
-
-    DCDynArrPtr body_statements = dc_dv_as(dc_unwrap2(body), DNodeBlockStatement).statements;
-
-    /* add body to macro to finish up parsing */
-
-    dc_ret_ok_dv(DNodeMacro, dn_macro(params_arr, body_statements));
-}
-
-/**
  * Call Params are expressions separated by whitespace or ','
  * Until it reaches the proper end of statement that is proper for current location
  * Generally they are '\n' and ';' but also EOF, '}' based on the context
@@ -461,9 +406,6 @@ static DCRes parse_call_expression(DParser* p)
         dang_parser_location_revert(p);
 
         dc_ret_if_err2(res, {});
-
-        check_quote(callee, params_res);
-        dc_ret_if_err({});
 
         params = dc_unwrap2(params_res);
     }
@@ -970,9 +912,6 @@ static DCRes parse_expression_statement(DParser* p)
 
     DCDynArrPtr params = dc_unwrap2(params_res);
 
-    check_quote(callee, params_res);
-    dc_ret_if_err({});
-
     // push the callee to the pool
     dc_try_fail_temp(DCResVoid, dc_da_push(p->pool, dc_unwrap2(callee)));
 
@@ -1167,7 +1106,6 @@ DCResVoid dang_parser_init(DParser* p, DCDynArrPtr pool, DCDynArrPtr errors)
     parse_prefix_fns[TOK_LBRACKET] = parse_array_literal;
     parse_prefix_fns[TOK_IF] = parse_if_expression;
     parse_prefix_fns[TOK_FUNCTION] = parse_function_literal;
-    parse_prefix_fns[TOK_MACRO] = parse_macro;
     parse_prefix_fns[TOK_DOLLAR_LBRACE] = parse_call_expression;
 
     // Illegal tokens that are supposed to be bypassed already
