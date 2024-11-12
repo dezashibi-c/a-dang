@@ -609,7 +609,7 @@ static DECL_DNODE_MODIFIER_FN(expansion_modifier)
         dc_try_or_fail_with3(DCRes, temp_res, dang_env_set(extended_env, param_name, &quoted_arg, false), {});
     });
 
-    /* Step 5: Running evaluation on macro body */
+    /* Step 5: Running evaluation on macro body and with the extended env */
 
     dc_try_or_fail_with3(DCRes, evaluated_res,
                          perform_evaluation_process(de, &dc_dv(DNodeBlockStatement, dn_block(macro.body)), extended_env), {});
