@@ -1,9 +1,6 @@
 # Dang Compiler
 
-The idea behind `dang` is to implement a simple programming language which:
-
-- Everything is statement
-- ...
+Dang is an experimental language to see how useful can be removing parenthesis and transform grammar to a form of sentence-like (statements).
 
 ## Structure
 
