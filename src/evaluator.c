@@ -609,10 +609,30 @@ static DECL_DNODE_MODIFIER_FN(expansion_modifier)
         dc_try_or_fail_with3(DCRes, temp_res, dang_env_set(extended_env, param_name, &quoted_arg, false), {});
     });
 
-    /* Step 5: Running evaluation on macro body and with the extended env */
+    /* Step 5: Running evaluation on a copy of macro body and with the extended env */
+
+    DCDynVal macro_body = dc_dv(DCDynArrPtr, macro.body);
+
+    string temp_str = NULL;
+    dang_node_inspect(&dc_dv(DNodeBlockStatement, dn_block(macro.body)), &temp_str);
+
+    dc_log("macro body before: %s", temp_str);
+
+    dc_try_or_fail_with3(DCRes, body_copy_res, dang_node_copy(&macro_body, &de->pool), {});
+
+    DCDynArrPtr macro_body_copy = dc_dv_as(dc_unwrap2(body_copy_res), DCDynArrPtr);
+
 
     dc_try_or_fail_with3(DCRes, evaluated_res,
-                         perform_evaluation_process(de, &dc_dv(DNodeBlockStatement, dn_block(macro.body)), extended_env), {});
+                         perform_evaluation_process(de, &dc_dv(DNodeBlockStatement, dn_block(macro_body_copy)), extended_env),
+                         {});
+
+    free(temp_str);
+    temp_str = NULL;
+
+    dang_node_inspect(&dc_dv(DNodeBlockStatement, dn_block(macro.body)), &temp_str);
+
+    dc_log("macro body after: %s", temp_str);
 
     /* Step 6: Only quote object results are accepted */
 
@@ -1248,7 +1268,7 @@ DCRes dn_modify(DEvaluator* de, DCDynValPtr dn, DEnv* env, DNodeModifierFn modif
     {                                                                                                                          \
         T node = dc_dv_as(*dn, T);                                                                                             \
         ACTIONS;                                                                                                               \
-        dc_dv_set(*dn, T, node);                                                                                               \
+        /* dc_dv_set(*dn, T, node); */ /* todo:: remove this if not needed */                                                  \
         break;                                                                                                                 \
     }
 

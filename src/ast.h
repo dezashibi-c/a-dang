@@ -34,6 +34,8 @@ DCResVoid dang_program_inspect(DNodeProgram* program, string* result);
 
 DCResVoid dang_node_inspect(DCDynValPtr dn, string* result);
 
+DCRes dang_node_copy(DCDynValPtr dn, DCDynArrPtr pool);
+
 DC_DV_FREE_FN_DECL(dn_child_free);
 
 #endif // DANG_AST_H

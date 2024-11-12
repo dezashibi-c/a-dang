@@ -99,6 +99,9 @@ string dv_type_tostr(DCDynValPtr dv)
         case dc_dvt(DoQuote):
             return "quote object";
 
+        case dc_dvt(DCDynValPtr):
+            return dv_type_tostr(dc_dv_as(*dv, DCDynValPtr));
+
         default:
             break;
     };
