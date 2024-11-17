@@ -19,8 +19,8 @@
 
 #define DN__MAX (dc_dvt(DNodeIndexExpression) + 1)
 
-static ParsePrefixFn parse_prefix_fns[DN__MAX];
-static ParseInfixFn parse_infix_fns[DN__MAX];
+static ParsePrefixFn parse_prefix_fns[DN__MAX] = {0};
+static ParseInfixFn parse_infix_fns[DN__MAX] = {0};
 
 // ***************************************************************************************
 // * PRIVATE FUNCTIONS DECLARATIONS
@@ -1089,10 +1089,6 @@ DCResVoid dang_parser_init(DParser* p, DCDynArrPtr pool, DCDynArrPtr errors)
 
     // Starting from body
     p->loc = LOC_BODY;
-
-    // Initialize function pointers
-    memset(parse_prefix_fns, 0, sizeof(parse_prefix_fns));
-    memset(parse_infix_fns, 0, sizeof(parse_infix_fns));
 
     parse_prefix_fns[TOK_IDENT] = parse_identifier;
     parse_prefix_fns[TOK_STRING] = parse_string_literal;
